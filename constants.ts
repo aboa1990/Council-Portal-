@@ -1,4 +1,5 @@
-import { CitizenRequest, RequestPriority, RequestStatus, Asset, House, AssetCategory, AssetStatusConfig, GaragePermit } from './types';
+
+import { CitizenRequest, RequestPriority, RequestStatus, Asset, House, AssetCategory, AssetStatusConfig, GaragePermit, User } from './types';
 
 export const DEFAULT_ASSET_CATEGORIES: AssetCategory[] = [
   { id: 'cat_fac', name: 'Facilities', code: '01' },
@@ -15,6 +16,33 @@ export const DEFAULT_ASSET_STATUSES: AssetStatusConfig[] = [
   { id: 'sts_rep', name: 'Repair Needed', color: 'bg-red-100 text-red-800 border-red-200' },
   { id: 'sts_ret', name: 'Retired', color: 'bg-slate-100 text-slate-800 border-slate-200' },
   { id: 'sts_sold', name: 'Sold', color: 'bg-blue-100 text-blue-800 border-blue-200' },
+];
+
+export const MOCK_STAFF: User[] = [
+  {
+    id: 'USR-001',
+    name: 'Ahmed Riza',
+    role: 'Admin',
+    email: 'riza@hanimaadhoo.gov.mv',
+    designation: 'Director of IT',
+    rcNo: 'RC-2024-001',
+    address: 'H. Noon Villa, Male',
+    idNo: 'A101010',
+    joinedDate: '2023-01-15',
+    password: 'password123'
+  },
+  {
+    id: 'USR-002',
+    name: 'Fathimath Nazeer',
+    role: 'Executive',
+    email: 'nazeer@hanimaadhoo.gov.mv',
+    designation: 'Council President',
+    rcNo: 'RC-2024-002',
+    address: 'M. Blue Sky, Male',
+    idNo: 'A202020',
+    joinedDate: '2022-12-01',
+    password: 'password123'
+  }
 ];
 
 export const MOCK_REQUESTS: CitizenRequest[] = [

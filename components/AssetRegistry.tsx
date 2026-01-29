@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect } from 'react';
 import { Asset, AssetCategory, AssetStatusConfig, AccessLog, User } from '../types';
 import { Search, MapPin, Truck, Monitor, Armchair, Hammer, CheckCircle, Upload, Plus, X, Filter, Printer, FileText, Layers, QrCode, FileDown, FileSpreadsheet, Pencil, Trash2 } from 'lucide-react';
@@ -297,7 +298,8 @@ const AssetRegistry: React.FC<AssetRegistryProps> = ({ currentUser, assets, cate
   const uniqueCategories = Array.from(new Set(assets.map(a => a.category))).sort();
   const reportAssets = assets.filter(a => new Date(a.entryDate).getFullYear() === reportYear);
 
-  const canManage = currentUser.role === 'Admin' || currentUser.role === 'Secretary General';
+  // Fix: Comparison with overlapping types 'Admin' | 'Executive'
+  const canManage = currentUser.role === 'Admin' || currentUser.role === 'Executive';
 
   return (
     <div className="space-y-6 animate-fade-in pb-10">

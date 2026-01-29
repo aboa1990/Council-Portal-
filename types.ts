@@ -46,6 +46,7 @@ export interface AccessLog {
   userName: string;
   timestamp: string;
   details?: string;
+  role?: UserRole;
 }
 
 export interface Asset {
@@ -129,19 +130,21 @@ export interface GaragePermitTemplate {
   fieldPositions: Record<string, TemplateFieldPos>;
 }
 
-export type UserRole = 'Admin' | 'Secretary General' | 'Supervisor' | 'Staff';
+export type UserRole = 'Admin' | 'Executive' | 'Senior Management' | 'Staff';
 
 export interface User {
   id: string;
   name: string;
   role: UserRole;
   avatar?: string;
-  email?: string;
+  email: string;
   password?: string;
   sex?: 'Male' | 'Female';
   rcNo?: string;
   designation?: string;
   idNo?: string;
+  address?: string;
+  joinedDate?: string;
 }
 
 export interface SystemConfig {

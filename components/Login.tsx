@@ -1,47 +1,53 @@
+
 import React, { useState } from 'react';
 import { User, UserRole, SystemConfig } from '../types';
-import { Building2, Lock, ArrowRight, UserCircle2, ShieldCheck, Hexagon } from 'lucide-react';
+import { Building2, Lock, ArrowRight, UserCircle2, ShieldCheck, Hexagon, AlertCircle } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface LoginProps {
   onLogin: (user: User) => void;
   systemConfig: SystemConfig;
+  staffList: User[];
 }
 
-const Login: React.FC<LoginProps> = ({ onLogin, systemConfig }) => {
+const Login: React.FC<LoginProps> = ({ onLogin, systemConfig, staffList }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { t, isRTL } = useLanguage();
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
     
-    // Simulate API delay and Role Logic based on username for demo purposes
-    // In production, the backend returns the role.
-    const lowerUser = username.toLowerCase();
-    let assignedRole: UserRole = 'Staff';
-    
-    if (lowerUser.includes('admin')) {
-        assignedRole = 'Admin';
-    } else if (lowerUser.includes('manager') || lowerUser.includes('sg') || lowerUser.includes('sec')) {
-        assignedRole = 'Secretary General';
-    } else if (lowerUser.includes('sup')) {
-        assignedRole = 'Supervisor';
-    }
-
+    // Simulate API delay and check credentials
     setTimeout(() => {
-      onLogin({
-        id: 'USR-' + Math.floor(Math.random() * 1000),
-        name: username || 'Council Staff',
-        role: assignedRole,
-        email: `${(username || 'staff').toLowerCase().replace(' ', '.')}@hanimaadhoo.gov.mv`,
-        designation: assignedRole === 'Admin' ? 'IT Admin' : 'Officer',
-        idNo: 'A123456',
-        rcNo: 'RC-999',
-        sex: 'Male'
-      });
+      // Find staff member by email or name (for demo convenience, we check both)
+      const staffMember = staffList.find(s => 
+        (s.email.toLowerCase() === username.toLowerCase() || s.name.toLowerCase() === username.toLowerCase()) && 
+        (s.password === password || (!s.password && password === 'password123'))
+      );
+
+      if (staffMember) {
+        onLogin(staffMember);
+      } else {
+        // Fallback for demo users if list is empty or specific logic needed
+        const lowerUser = username.toLowerCase();
+        if (lowerUser === 'admin' && password === 'admin') {
+            onLogin({
+                id: 'ADM-001',
+                name: 'System Admin',
+                role: 'Admin',
+                email: 'admin@hanimaadhoo.gov.mv',
+                designation: 'IT Administrator',
+                password: 'admin'
+            });
+        } else {
+            setError('Invalid credentials. Please check your staff ID/Email and password.');
+        }
+      }
       setLoading(false);
     }, 1200);
   };
@@ -96,7 +102,14 @@ const Login: React.FC<LoginProps> = ({ onLogin, systemConfig }) => {
                 <p className="text-slate-500 mt-2">{t('login_instruction')}</p>
             </div>
 
-            <form onSubmit={handleLogin} className="space-y-6 mt-8 flex-1">
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-center gap-3 animate-in slide-in-from-top-2">
+                <AlertCircle size={20} />
+                <span className="text-sm font-medium">{error}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleLogin} className="space-y-6 mt-4 flex-1">
                 
                 {/* Username Input */}
                 <div className="space-y-2">
@@ -109,7 +122,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, systemConfig }) => {
                             type="text" 
                             required
                             className={`block w-full ${isRTL ? 'pr-10 pl-4' : 'pl-10 pr-4'} py-3 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all bg-slate-50 focus:bg-white`}
-                            placeholder="e.g. admin, manager, staff"
+                            placeholder="Staff Name or Email"
                             value={username}
                             onChange={e => setUsername(e.target.value)}
                         />

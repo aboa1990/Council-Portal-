@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { ViewState, CitizenRequest, RequestStatus, Asset, User, UserRole, House, AssetCategory, AssetStatusConfig, SystemConfig, GaragePermit, TemplateFieldPos } from './types';
-import { MOCK_REQUESTS, MOCK_ASSETS, MOCK_HOUSES, DEFAULT_ASSET_CATEGORIES, DEFAULT_ASSET_STATUSES, MOCK_GARAGE_PERMITS } from './constants';
+import { ViewState, CitizenRequest, RequestStatus, Asset, User, UserRole, House, AssetCategory, AssetStatusConfig, SystemConfig, GaragePermit, TemplateFieldPos, AccessLog } from './types';
+import { MOCK_REQUESTS, MOCK_ASSETS, MOCK_HOUSES, DEFAULT_ASSET_CATEGORIES, DEFAULT_ASSET_STATUSES, MOCK_GARAGE_PERMITS, MOCK_STAFF } from './constants';
 import Sidebar from './components/Sidebar';
 import DashboardStats from './components/DashboardStats';
 import RequestList from './components/RequestList';
@@ -39,6 +39,8 @@ const DEFAULT_FIELD_POSITIONS: Record<string, TemplateFieldPos> = {
 const AppContent: React.FC = () => {
   // Auth State
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [staffMembers, setStaffMembers] = useState<User[]>(MOCK_STAFF);
+  const [accessLogs, setAccessLogs] = useState<AccessLog[]>([]);
 
   // App State
   const [currentView, setCurrentView] = useState<ViewState>('dashboard');
@@ -70,19 +72,62 @@ const AppContent: React.FC = () => {
 
   const { t, isRTL } = useLanguage();
 
+  const handleAddAccessLog = (action: string, details: string) => {
+    if (!currentUser) return;
+    const log: AccessLog = {
+      id: `log-${Date.now()}`,
+      userId: currentUser.id,
+      userName: currentUser.name,
+      role: currentUser.role,
+      action,
+      timestamp: new Date().toISOString(),
+      details
+    };
+    setAccessLogs(prev => [log, ...prev]);
+  };
+
   // Handlers
   const handleLogin = (user: User) => {
     setCurrentUser(user);
     setCurrentView('dashboard');
+    
+    // Add Access Log
+    const log: AccessLog = {
+      id: `log-${Date.now()}`,
+      userId: user.id,
+      userName: user.name,
+      role: user.role,
+      action: 'Login',
+      timestamp: new Date().toISOString(),
+      details: 'User successfully logged into the system.'
+    };
+    setAccessLogs(prev => [log, ...prev]);
   };
 
   const handleLogout = () => {
+    if (currentUser) {
+        const log: AccessLog = {
+            id: `log-${Date.now()}`,
+            userId: currentUser.id,
+            userName: currentUser.name,
+            role: currentUser.role,
+            action: 'Logout',
+            timestamp: new Date().toISOString(),
+            details: 'User logged out.'
+        };
+        setAccessLogs(prev => [log, ...prev]);
+    }
     setCurrentUser(null);
     setCurrentView('dashboard');
   };
 
   const handleUpdateProfile = (updatedUser: User) => {
       setCurrentUser(updatedUser);
+      setStaffMembers(prev => prev.map(s => s.id === updatedUser.id ? updatedUser : s));
+  };
+
+  const handleUpdateStaff = (updatedStaff: User[]) => {
+      setStaffMembers(updatedStaff);
   };
 
   const handleSelectRequest = (req: CitizenRequest) => {
@@ -211,7 +256,7 @@ const AppContent: React.FC = () => {
         if (currentUser?.role === 'Staff') {
             return (
                 <div className="flex flex-col items-center justify-center h-96 text-slate-500 bg-white rounded-lg border border-slate-200">
-                    <p>Access Restricted: Supervisors, Secretary General and Admin only.</p>
+                    <p>Access Restricted: Executive, Senior Management and Admin only.</p>
                 </div>
             )
         }
@@ -251,6 +296,10 @@ const AppContent: React.FC = () => {
             <Settings 
                 currentUser={currentUser!}
                 onUpdateUser={handleUpdateProfile}
+                staffMembers={staffMembers}
+                onUpdateStaff={handleUpdateStaff}
+                onAddAccessLog={handleAddAccessLog}
+                accessLogs={accessLogs}
                 assetCategories={assetCategories}
                 onUpdateCategories={handleUpdateCategories}
                 assetStatuses={assetStatuses}
@@ -265,7 +314,7 @@ const AppContent: React.FC = () => {
   };
 
   if (!currentUser) {
-    return <Login onLogin={handleLogin} systemConfig={systemConfig} />;
+    return <Login onLogin={handleLogin} systemConfig={systemConfig} staffList={staffMembers} />;
   }
 
   return (

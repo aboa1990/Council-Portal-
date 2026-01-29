@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { LayoutDashboard, FileText, BarChart3, Settings, Building2, LogOut, Box, Users, Home, Globe, Hexagon, Car } from 'lucide-react';
 import { ViewState, UserRole, SystemConfig } from '../types';
@@ -15,13 +16,13 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, userRole, 
   const { t, language, setLanguage, isRTL } = useLanguage();
   
   const allNavItems = [
-    { id: 'dashboard', label: t('nav_dashboard'), icon: LayoutDashboard, roles: ['Admin', 'Secretary General', 'Supervisor', 'Staff'] },
-    { id: 'requests', label: t('nav_requests'), icon: FileText, roles: ['Admin', 'Secretary General', 'Supervisor', 'Staff'] },
-    { id: 'houses', label: t('nav_houses'), icon: Home, roles: ['Admin', 'Secretary General', 'Supervisor', 'Staff'] },
-    { id: 'assets', label: t('nav_assets'), icon: Box, roles: ['Admin', 'Secretary General', 'Supervisor'] },
-    { id: 'garage', label: t('nav_garage'), icon: Car, roles: ['Admin', 'Secretary General', 'Supervisor', 'Staff'] },
-    { id: 'analytics', label: t('nav_analytics'), icon: BarChart3, roles: ['Admin', 'Secretary General'] },
-    { id: 'settings', label: t('nav_settings'), icon: Settings, roles: ['Admin', 'Secretary General'] },
+    { id: 'dashboard', label: t('nav_dashboard'), icon: LayoutDashboard, roles: ['Admin', 'Executive', 'Senior Management', 'Staff'] },
+    { id: 'requests', label: t('nav_requests'), icon: FileText, roles: ['Admin', 'Executive', 'Senior Management', 'Staff'] },
+    { id: 'houses', label: t('nav_houses'), icon: Home, roles: ['Admin', 'Executive', 'Senior Management', 'Staff'] },
+    { id: 'assets', label: t('nav_assets'), icon: Box, roles: ['Admin', 'Executive', 'Senior Management'] },
+    { id: 'garage', label: t('nav_garage'), icon: Car, roles: ['Admin', 'Executive', 'Senior Management', 'Staff'] },
+    { id: 'analytics', label: t('nav_analytics'), icon: BarChart3, roles: ['Admin', 'Executive'] },
+    { id: 'settings', label: t('nav_settings'), icon: Settings, roles: ['Admin', 'Executive', 'Senior Management'] },
   ];
 
   const navItems = allNavItems.filter(item => item.roles.includes(userRole));
