@@ -1,15 +1,23 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { CitizenRequest, Asset } from "../types";
 
-const apiKey = process.env.API_KEY || '';
-// Note: In a real production app, we would handle missing API keys more gracefully 
-// or proxy requests through a backend to protect the key. 
-// For this client-side demo, we assume the environment variable is injected.
-
-const ai = new GoogleGenAI({ apiKey });
+// Helper to get safe AI instance
+// This prevents top-level crashes if API_KEY is missing during app initialization
+const getAI = () => {
+  const apiKey = process.env.API_KEY || '';
+  if (!apiKey) {
+    console.warn("API_KEY is missing. AI features will not work.");
+    // Return a dummy object or handle gracefully in calls
+    return null;
+  }
+  return new GoogleGenAI({ apiKey });
+};
 
 export const analyzeRequestPriority = async (description: string, category: string): Promise<{ priority: string, reasoning: string, suggestedAction: string }> => {
   try {
+    const ai = getAI();
+    if (!ai) throw new Error("API Key missing");
+
     const model = 'gemini-3-flash-preview';
     const prompt = `
       You are an AI assistant for a city council internal operations team. Analyze the following service request.
@@ -46,7 +54,7 @@ export const analyzeRequestPriority = async (description: string, category: stri
     console.error("Error analyzing request:", error);
     return {
       priority: 'Medium',
-      reasoning: 'AI Analysis failed, defaulting to Medium.',
+      reasoning: 'AI Analysis failed or API Key missing.',
       suggestedAction: 'Manual review required.'
     };
   }
@@ -54,6 +62,9 @@ export const analyzeRequestPriority = async (description: string, category: stri
 
 export const generateOfficialResponse = async (request: CitizenRequest): Promise<string> => {
   try {
+    const ai = getAI();
+    if (!ai) return "AI Service Unavailable (Missing Key)";
+
     const model = 'gemini-3-flash-preview';
     const prompt = `
       Draft a formal internal note or external email response (if applicable) regarding a citizen service request.
@@ -81,6 +92,9 @@ export const generateOfficialResponse = async (request: CitizenRequest): Promise
 
 export const generateMaintenancePlan = async (asset: Asset): Promise<string> => {
   try {
+    const ai = getAI();
+    if (!ai) return "AI Service Unavailable";
+
     const model = 'gemini-3-flash-preview';
     const prompt = `
       You are a senior facility and fleet manager for a city council.
@@ -112,6 +126,9 @@ export const generateMaintenancePlan = async (asset: Asset): Promise<string> => 
 
 export const chatWithPolicyBot = async (query: string, history: string[]): Promise<string> => {
     try {
+        const ai = getAI();
+        if (!ai) return "I am currently offline (API Key missing).";
+
         const model = 'gemini-3-flash-preview';
         const prompt = `
         You are "CivicBot", a helpful assistant for city council internal staff. 

@@ -1,15 +1,22 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
-export default defineConfig({
-  plugins: [react()],
-  define: {
-    // Safely replace process.env with an empty object to prevent browser crashes
-    // If you add an API_KEY in Vercel Settings, it will just be undefined here unless prefixed with VITE_
-    // This config mainly ensures the app loads without "ReferenceError: process is not defined"
-    'process.env': JSON.stringify({}), 
-  },
-  build: {
-    outDir: 'dist',
-  },
+export default defineConfig(({ mode }) => {
+  // Load env file based on `mode` in the current working directory.
+  // Set the third parameter to '' to load all env regardless of the `VITE_` prefix.
+  const env = loadEnv(mode, process.cwd(), '');
+  
+  return {
+    plugins: [react()],
+    define: {
+      // Defines process.env for compatibility
+      // We explicitly map API_KEY to ensure it's available if set in Vercel
+      'process.env': JSON.stringify({
+        API_KEY: env.API_KEY || ''
+      }), 
+    },
+    build: {
+      outDir: 'dist',
+    },
+  };
 });
