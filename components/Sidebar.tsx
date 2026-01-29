@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { LayoutDashboard, FileText, BarChart3, Settings, Building2, LogOut, Box, Users, Home, Globe, Hexagon, Car } from 'lucide-react';
+import { LayoutDashboard, FileText, BarChart3, Settings, Building2, LogOut, Box, Users, Home, Globe, Hexagon, Car, Database, Cloud, CloudOff, RefreshCw } from 'lucide-react';
 import { ViewState, UserRole, SystemConfig } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -10,9 +10,10 @@ interface SidebarProps {
   userRole: UserRole;
   onLogout: () => void;
   systemConfig: SystemConfig;
+  syncStatus?: 'idle' | 'syncing' | 'synced' | 'error' | 'local';
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, userRole, onLogout, systemConfig }) => {
+const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, userRole, onLogout, systemConfig, syncStatus = 'local' }) => {
   const { t, language, setLanguage, isRTL } = useLanguage();
   
   const allNavItems = [
@@ -27,12 +28,27 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, userRole, 
 
   const navItems = allNavItems.filter(item => item.roles.includes(userRole));
 
+  const getSyncBadge = () => {
+    switch(syncStatus) {
+      case 'syncing':
+        return { icon: <RefreshCw size={14} className="animate-spin text-teal-400" />, label: 'Syncing...', color: 'text-teal-400' };
+      case 'synced':
+        return { icon: <Cloud size={14} className="text-emerald-400" />, label: 'Synced with Cloud', color: 'text-emerald-400' };
+      case 'error':
+        return { icon: <CloudOff size={14} className="text-red-400" />, label: 'Sync Failed', color: 'text-red-400' };
+      case 'local':
+        return { icon: <Database size={14} className="text-slate-400" />, label: 'Local Storage Only', color: 'text-slate-400' };
+      default:
+        return { icon: <Database size={14} className="text-slate-400" />, label: 'Database Active', color: 'text-slate-400' };
+    }
+  };
+
+  const badge = getSyncBadge();
+
   return (
     <div className={`w-64 bg-teal-900 text-teal-100 flex flex-col h-screen fixed top-0 z-20 hidden md:flex shadow-2xl transition-all duration-300 ${isRTL ? 'right-0' : 'left-0'}`}>
-      {/* Council Branding Header */}
       <div className={`h-24 flex items-center gap-4 px-6 bg-teal-950 border-b border-teal-800 ${isRTL ? 'flex-row-reverse text-right' : 'flex-row text-left'}`}>
         <div className="bg-white p-2 rounded-lg border-2 border-emerald-500 shadow-lg shadow-teal-900/50 flex-shrink-0">
-           {/* Primary Logo Placement */}
            <Building2 size={32} className="text-teal-700" />
         </div>
         <div className="flex flex-col overflow-hidden">
@@ -66,10 +82,22 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, userRole, 
             );
           })}
         </nav>
+
+        <div className={`mt-8 px-2 py-3 rounded-xl bg-teal-950/40 border border-teal-800/50 flex items-center gap-3 ${isRTL ? 'flex-row-reverse text-right' : 'flex-row text-left'}`}>
+            <div className="relative">
+                {badge.icon}
+                {syncStatus === 'synced' && (
+                  <div className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-500 rounded-full animate-pulse border border-teal-900"></div>
+                )}
+            </div>
+            <div>
+                <p className={`text-[10px] font-black uppercase tracking-widest leading-none ${badge.color}`}>Cloud Sync Status</p>
+                <p className="text-[11px] text-teal-500 mt-1 font-medium">{badge.label}</p>
+            </div>
+        </div>
       </div>
 
       <div className="p-4 border-t border-teal-800 bg-teal-950 space-y-4">
-         {/* Language Switcher with premium toggle feel */}
         <div className="flex bg-teal-900/50 rounded-xl p-1 border border-teal-800/50 shadow-inner">
             <button 
                 onClick={() => setLanguage('en')}
@@ -93,7 +121,6 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, userRole, 
           <span>{t('sign_out')}</span>
         </button>
         
-        {/* Aboa Works Footer */}
         <div className="pt-2 border-t border-teal-900 flex justify-center">
             <div className="flex items-center gap-1.5 text-teal-600/40 hover:text-teal-400 transition-colors cursor-default">
                 <Hexagon size={12} />

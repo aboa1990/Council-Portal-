@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ViewState, CitizenRequest, RequestStatus, Asset, User, UserRole, House, AssetCategory, AssetStatusConfig, SystemConfig, GaragePermit, TemplateFieldPos, AccessLog } from './types';
 import { MOCK_REQUESTS, MOCK_ASSETS, MOCK_HOUSES, DEFAULT_ASSET_CATEGORIES, DEFAULT_ASSET_STATUSES, MOCK_GARAGE_PERMITS, MOCK_STAFF } from './constants';
 import Sidebar from './components/Sidebar';
@@ -13,8 +13,20 @@ import GaragePermitRegistry from './components/GaragePermitRegistry';
 import AIChat from './components/AIChat';
 import Login from './components/Login';
 import Settings from './components/Settings';
-import { Menu } from 'lucide-react';
+import { Menu, Cloud, CloudOff, RefreshCw } from 'lucide-react';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
+import { fetchPortalState, savePortalState, isMongoConfigured } from './services/mongoService';
+
+const STORAGE_KEYS = {
+  REQUESTS: 'civicpulse_requests',
+  ASSETS: 'civicpulse_assets',
+  HOUSES: 'civicpulse_houses',
+  GARAGE_PERMITS: 'civicpulse_garage_permits',
+  STAFF: 'civicpulse_staff',
+  CONFIG: 'civicpulse_config',
+  LOGS: 'civicpulse_logs',
+  USER: 'civicpulse_current_user'
+};
 
 const DEFAULT_FIELD_POSITIONS: Record<string, TemplateFieldPos> = {
   permitId: { top: 12, left: 75, fontSize: 14, visible: true, fontWeight: 'bold' },
@@ -37,25 +49,35 @@ const DEFAULT_FIELD_POSITIONS: Record<string, TemplateFieldPos> = {
 };
 
 const AppContent: React.FC = () => {
-  // Auth State
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [staffMembers, setStaffMembers] = useState<User[]>(MOCK_STAFF);
-  const [accessLogs, setAccessLogs] = useState<AccessLog[]>([]);
+  const loadLocal = <T,>(key: string, fallback: T): T => {
+    try {
+      const saved = localStorage.getItem(key);
+      return saved ? JSON.parse(saved) : fallback;
+    } catch (e) {
+      console.error(`Error loading ${key}`, e);
+      return fallback;
+    }
+  };
 
-  // App State
+  // Auth State
+  const [currentUser, setCurrentUser] = useState<User | null>(() => loadLocal<User | null>(STORAGE_KEYS.USER, null));
+  const [staffMembers, setStaffMembers] = useState<User[]>(() => loadLocal<User[]>(STORAGE_KEYS.STAFF, MOCK_STAFF));
+  const [accessLogs, setAccessLogs] = useState<AccessLog[]>(() => loadLocal<AccessLog[]>(STORAGE_KEYS.LOGS, []));
+
+  // App Data State
+  const [requests, setRequests] = useState<CitizenRequest[]>(() => loadLocal<CitizenRequest[]>(STORAGE_KEYS.REQUESTS, MOCK_REQUESTS));
+  const [assets, setAssets] = useState<Asset[]>(() => loadLocal<Asset[]>(STORAGE_KEYS.ASSETS, MOCK_ASSETS));
+  const [houses, setHouses] = useState<House[]>(() => loadLocal<House[]>(STORAGE_KEYS.HOUSES, MOCK_HOUSES));
+  const [garagePermits, setGaragePermits] = useState<GaragePermit[]>(() => loadLocal<GaragePermit[]>(STORAGE_KEYS.GARAGE_PERMITS, MOCK_GARAGE_PERMITS));
+
   const [currentView, setCurrentView] = useState<ViewState>('dashboard');
-  const [requests, setRequests] = useState<CitizenRequest[]>(MOCK_REQUESTS);
   const [selectedRequest, setSelectedRequest] = useState<CitizenRequest | null>(null);
-  
-  const [assets, setAssets] = useState<Asset[]>(MOCK_ASSETS);
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
+  
   const [assetCategories, setAssetCategories] = useState<AssetCategory[]>(DEFAULT_ASSET_CATEGORIES);
   const [assetStatuses, setAssetStatuses] = useState<AssetStatusConfig[]>(DEFAULT_ASSET_STATUSES);
 
-  const [houses, setHouses] = useState<House[]>(MOCK_HOUSES);
-  const [garagePermits, setGaragePermits] = useState<GaragePermit[]>(MOCK_GARAGE_PERMITS);
-
-  const [systemConfig, setSystemConfig] = useState<SystemConfig>({
+  const [systemConfig, setSystemConfig] = useState<SystemConfig>(() => loadLocal<SystemConfig>(STORAGE_KEYS.CONFIG, {
       councilName: 'Hanimaadhoo Council',
       secretariatName: 'Secretariat of',
       garagePermitTemplate: {
@@ -66,11 +88,65 @@ const AppContent: React.FC = () => {
           useCustomTemplate: false,
           fieldPositions: DEFAULT_FIELD_POSITIONS
       }
-  });
+  }));
 
+  // DB Sync States
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'error' | 'local'>(isMongoConfigured() ? 'idle' : 'local');
+  const isInitialLoad = useRef(true);
+
+  // Language and UI state
+  // FIX: Extract language tools and define mobile menu state
+  const { t, isRTL } = useLanguage();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const { t, isRTL } = useLanguage();
+  // Background Sync from MongoDB on mount
+  useEffect(() => {
+    if (isMongoConfigured()) {
+      const syncFromCloud = async () => {
+        setSyncStatus('syncing');
+        const cloudData = await fetchPortalState(systemConfig.councilName);
+        if (cloudData) {
+          if (cloudData.requests) setRequests(cloudData.requests);
+          if (cloudData.assets) setAssets(cloudData.assets);
+          if (cloudData.houses) setHouses(cloudData.houses);
+          if (cloudData.garagePermits) setGaragePermits(cloudData.garagePermits);
+          if (cloudData.staffMembers) setStaffMembers(cloudData.staffMembers);
+          if (cloudData.systemConfig) setSystemConfig(cloudData.systemConfig);
+          if (cloudData.accessLogs) setAccessLogs(cloudData.accessLogs);
+          setSyncStatus('synced');
+        } else {
+          setSyncStatus('error');
+        }
+        isInitialLoad.current = false;
+      };
+      syncFromCloud();
+    }
+  }, []);
+
+  // Sync state to localStorage AND MongoDB
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.REQUESTS, JSON.stringify(requests));
+    localStorage.setItem(STORAGE_KEYS.ASSETS, JSON.stringify(assets));
+    localStorage.setItem(STORAGE_KEYS.HOUSES, JSON.stringify(houses));
+    localStorage.setItem(STORAGE_KEYS.GARAGE_PERMITS, JSON.stringify(garagePermits));
+    localStorage.setItem(STORAGE_KEYS.STAFF, JSON.stringify(staffMembers));
+    localStorage.setItem(STORAGE_KEYS.CONFIG, JSON.stringify(systemConfig));
+    localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(accessLogs));
+    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(currentUser));
+
+    // Cloud Sync Debounce/Throttle logic simplified for prompt
+    if (!isInitialLoad.current && isMongoConfigured()) {
+      const syncToCloud = async () => {
+        setSyncStatus('syncing');
+        const success = await savePortalState(systemConfig.councilName, {
+          requests, assets, houses, garagePermits, staffMembers, systemConfig, accessLogs
+        });
+        setSyncStatus(success ? 'synced' : 'error');
+      };
+      const timer = setTimeout(syncToCloud, 2000); // 2-second debounce for cloud sync
+      return () => clearTimeout(timer);
+    }
+  }, [requests, assets, houses, garagePermits, staffMembers, systemConfig, accessLogs, currentUser]);
 
   const handleAddAccessLog = (action: string, details: string) => {
     if (!currentUser) return;
@@ -86,36 +162,15 @@ const AppContent: React.FC = () => {
     setAccessLogs(prev => [log, ...prev]);
   };
 
-  // Handlers
   const handleLogin = (user: User) => {
     setCurrentUser(user);
     setCurrentView('dashboard');
-    
-    // Add Access Log
-    const log: AccessLog = {
-      id: `log-${Date.now()}`,
-      userId: user.id,
-      userName: user.name,
-      role: user.role,
-      action: 'Login',
-      timestamp: new Date().toISOString(),
-      details: 'User successfully logged into the system.'
-    };
-    setAccessLogs(prev => [log, ...prev]);
+    handleAddAccessLog('Login', 'User successfully logged into the system.');
   };
 
   const handleLogout = () => {
     if (currentUser) {
-        const log: AccessLog = {
-            id: `log-${Date.now()}`,
-            userId: currentUser.id,
-            userName: currentUser.name,
-            role: currentUser.role,
-            action: 'Logout',
-            timestamp: new Date().toISOString(),
-            details: 'User logged out.'
-        };
-        setAccessLogs(prev => [log, ...prev]);
+        handleAddAccessLog('Logout', 'User logged out.');
     }
     setCurrentUser(null);
     setCurrentView('dashboard');
@@ -143,8 +198,7 @@ const AppContent: React.FC = () => {
   }
 
   const handleUpdateStatus = (id: string, status: RequestStatus) => {
-    const updated = requests.map(r => r.id === id ? { ...r, status } : r);
-    setRequests(updated);
+    setRequests(prev => prev.map(r => r.id === id ? { ...r, status } : r));
     if (selectedRequest && selectedRequest.id === id) {
         setSelectedRequest({ ...selectedRequest, status });
     }
@@ -163,42 +217,41 @@ const AppContent: React.FC = () => {
         date: new Date().toISOString(),
         location: data.location || 'Not specified'
     } as CitizenRequest;
-
-    setRequests([newRequest, ...requests]);
+    setRequests(prev => [newRequest, ...prev]);
   };
 
   const handleImportAssets = (newAssets: Asset[]) => {
-      setAssets([...newAssets, ...assets]);
+      setAssets(prev => [...newAssets, ...prev]);
   };
 
   const handleUpdateAsset = (updatedAsset: Asset) => {
-      setAssets(assets.map(a => a.id === updatedAsset.id ? updatedAsset : a));
+      setAssets(prev => prev.map(a => a.id === updatedAsset.id ? updatedAsset : a));
       if (selectedAsset && selectedAsset.id === updatedAsset.id) {
           setSelectedAsset(updatedAsset);
       }
   };
 
   const handleDeleteAsset = (assetId: string) => {
-      setAssets(assets.filter(a => a.id !== assetId));
+      setAssets(prev => prev.filter(a => a.id !== assetId));
       if (selectedAsset && selectedAsset.id === assetId) {
           setSelectedAsset(null);
       }
   };
 
   const handleAddHouse = (newHouse: House) => {
-      setHouses([newHouse, ...houses]);
+      setHouses(prev => [newHouse, ...prev]);
   };
 
   const handleAddGaragePermit = (newPermit: GaragePermit) => {
-      setGaragePermits([newPermit, ...garagePermits]);
+      setGaragePermits(prev => [newPermit, ...prev]);
   };
 
   const handleUpdateGaragePermit = (updatedPermit: GaragePermit) => {
-      setGaragePermits(garagePermits.map(p => p.permitId === updatedPermit.permitId ? updatedPermit : p));
+      setGaragePermits(prev => prev.map(p => p.permitId === updatedPermit.permitId ? updatedPermit : p));
   };
 
   const handleDeleteGaragePermit = (permitId: string) => {
-    setGaragePermits(garagePermits.filter(p => p.permitId !== permitId));
+    setGaragePermits(prev => prev.filter(p => p.permitId !== permitId));
   };
 
   const handleUpdateCategories = (newCategories: AssetCategory[]) => {
@@ -347,6 +400,7 @@ const AppContent: React.FC = () => {
         userRole={currentUser.role}
         onLogout={handleLogout}
         systemConfig={systemConfig}
+        syncStatus={syncStatus}
       />
 
       <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${isRTL ? 'md:mr-64' : 'md:ml-64'}`}>
@@ -373,9 +427,12 @@ const AppContent: React.FC = () => {
                         )}
                      </div>
                      <div>
-                        <h2 className="text-2xl font-bold text-slate-900 capitalize tracking-tight">
-                            {selectedRequest ? 'Request Details' : selectedAsset ? 'Asset Details' : currentView === 'dashboard' ? systemConfig.councilName : currentView.replace('-', ' ')}
-                        </h2>
+                        <div className="flex items-center gap-3">
+                          <h2 className="text-2xl font-bold text-slate-900 capitalize tracking-tight">
+                              {selectedRequest ? 'Request Details' : selectedAsset ? 'Asset Details' : currentView === 'dashboard' ? systemConfig.councilName : currentView.replace('-', ' ')}
+                          </h2>
+                          {syncStatus === 'syncing' && <RefreshCw size={16} className="animate-spin text-teal-500" />}
+                        </div>
                         <p className="text-slate-500 text-sm mt-1">
                             {t('welcome_back')}, <span className="font-medium text-teal-700">{currentUser.name}</span> ({currentUser.role})
                         </p>

@@ -1,8 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { User, UserRole, AssetCategory, AssetStatusConfig, SystemConfig, TemplateFieldPos, AccessLog } from '../types';
-// Fixed: Added User as UserIcon to imports from lucide-react to resolve the error on line 275
-import { UserCircle, Upload, Save, Plus, Trash2, Shield, Mail, Check, Camera, X, Layers, Activity, Globe, Key, FileBadge, Briefcase, UserSquare2, FileText, Layout, Move, Settings as SettingsIcon, Eye, Type, Bold, Info, Lock, History, UserPlus, Search, Phone, MapPin, BadgeCheck, Fingerprint, Users, Pencil, Hash, ShieldAlert, ShieldCheck, CheckCircle2, User as UserIcon } from 'lucide-react';
+import { UserCircle, Upload, Save, Plus, Trash2, Shield, Mail, Check, Camera, X, Layers, Activity, Globe, Key, FileBadge, Briefcase, UserSquare2, FileText, Layout, Move, Settings as SettingsIcon, Eye, Type, Bold, Info, Lock, History, UserPlus, Search, Phone, MapPin, BadgeCheck, Fingerprint, Users, Pencil, Hash, ShieldAlert, ShieldCheck, CheckCircle2, User as UserIcon, Database, Download, RefreshCw, FileJson } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface SettingsProps {
@@ -29,7 +28,7 @@ const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
 
 const Settings: React.FC<SettingsProps> = ({ currentUser, onUpdateUser, staffMembers = [], onUpdateStaff, onAddAccessLog, accessLogs = [], assetCategories = [], onUpdateCategories, assetStatuses = [], onUpdateStatuses, systemConfig, onUpdateSystemConfig }) => {
   const { t, isRTL } = useLanguage();
-  const [activeTab, setActiveTab] = useState<'general' | 'profile' | 'staff' | 'logs' | 'config' | 'permit-template'>('profile');
+  const [activeTab, setActiveTab] = useState<'general' | 'profile' | 'staff' | 'logs' | 'config' | 'permit-template' | 'data'>('profile');
   
   // Profile State
   const [name, setName] = useState(currentUser.name);
@@ -38,6 +37,7 @@ const Settings: React.FC<SettingsProps> = ({ currentUser, onUpdateUser, staffMem
   const fileInputRef = useRef<HTMLInputElement>(null);
   const staffPhotoInputRef = useRef<HTMLInputElement>(null);
   const templateInputRef = useRef<HTMLInputElement>(null);
+  const importDatabaseRef = useRef<HTMLInputElement>(null);
   const [showSuccess, setShowSuccess] = useState(false);
 
   // Staff Management State
@@ -182,6 +182,70 @@ const Settings: React.FC<SettingsProps> = ({ currentUser, onUpdateUser, staffMem
     }
   };
 
+  const handleExportDatabase = () => {
+      const data = {
+          requests: localStorage.getItem('civicpulse_requests'),
+          assets: localStorage.getItem('civicpulse_assets'),
+          houses: localStorage.getItem('civicpulse_houses'),
+          garage_permits: localStorage.getItem('civicpulse_garage_permits'),
+          staff: localStorage.getItem('civicpulse_staff'),
+          config: localStorage.getItem('civicpulse_config'),
+          logs: localStorage.getItem('civicpulse_logs'),
+          export_date: new Date().toISOString()
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `civicpulse_backup_${new Date().toISOString().split('T')[0]}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+  };
+
+  const handleImportDatabase = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+          try {
+              const data = JSON.parse(event.target?.result as string);
+              if (window.confirm("This will overwrite your current local database with the backup file. Proceed?")) {
+                  if (data.requests) localStorage.setItem('civicpulse_requests', data.requests);
+                  if (data.assets) localStorage.setItem('civicpulse_assets', data.assets);
+                  if (data.houses) localStorage.setItem('civicpulse_houses', data.houses);
+                  if (data.garage_permits) localStorage.setItem('civicpulse_garage_permits', data.garage_permits);
+                  if (data.staff) localStorage.setItem('civicpulse_staff', data.staff);
+                  if (data.config) localStorage.setItem('civicpulse_config', data.config);
+                  if (data.logs) localStorage.setItem('civicpulse_logs', data.logs);
+                  alert("Database restored successfully. The application will now reload.");
+                  window.location.reload();
+              }
+          } catch (err) {
+              alert("Error parsing backup file.");
+          }
+      };
+      reader.readAsText(file);
+  };
+
+  const handleClearDatabase = () => {
+      if (window.confirm("CRITICAL ACTION: This will delete ALL data in the portal (assets, houses, permits, etc) and reset to factory defaults. Are you absolutely sure?")) {
+          Object.values(localStorage).forEach(key => {
+              if (key && (key.startsWith('civicpulse_') || key.includes('requests') || key.includes('assets'))) {
+                  // This is a bit aggressive, safer to just clear our specific keys
+              }
+          });
+          localStorage.removeItem('civicpulse_requests');
+          localStorage.removeItem('civicpulse_assets');
+          localStorage.removeItem('civicpulse_houses');
+          localStorage.removeItem('civicpulse_garage_permits');
+          localStorage.removeItem('civicpulse_staff');
+          localStorage.removeItem('civicpulse_config');
+          localStorage.removeItem('civicpulse_logs');
+          localStorage.removeItem('civicpulse_current_user');
+          window.location.reload();
+      }
+  };
+
   const filteredStaff = staffMembers.filter(s => 
     s.name.toLowerCase().includes(staffSearch.toLowerCase()) ||
     s.designation?.toLowerCase().includes(staffSearch.toLowerCase()) ||
@@ -198,7 +262,7 @@ const Settings: React.FC<SettingsProps> = ({ currentUser, onUpdateUser, staffMem
   };
 
   return (
-    <div className="animate-fade-in space-y-6 max-w-5xl mx-auto">
+    <div className="animate-fade-in space-y-6 max-w-5xl mx-auto pb-20">
         <div className="flex border-b border-slate-200 overflow-x-auto">
              <button 
                 onClick={() => setActiveTab('profile')}
@@ -243,8 +307,93 @@ const Settings: React.FC<SettingsProps> = ({ currentUser, onUpdateUser, staffMem
                     Permit Template
                 </button>
             )}
+            {(currentUser.role === 'Admin') && (
+              <button 
+                onClick={() => setActiveTab('data')}
+                className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${activeTab === 'data' ? 'border-teal-600 text-teal-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+              >
+                <Database size={18} />
+                Data & Storage
+              </button>
+            )}
         </div>
 
+        {activeTab === 'data' && (
+          <div className="space-y-8">
+            <div>
+              <h2 className="text-xl font-bold text-slate-900">Data Management & Persistence</h2>
+              <p className="text-sm text-slate-500">Manage your portal's data lifecycle. Your data is currently stored securely in your browser's persistent storage.</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div className="w-12 h-12 rounded-xl bg-teal-50 flex items-center justify-center text-teal-600 mb-4">
+                            <Download size={24} />
+                        </div>
+                        <h3 className="font-bold text-slate-900 mb-2">Full Database Export</h3>
+                        <p className="text-sm text-slate-500 mb-6 leading-relaxed">Download a complete snapshot of all portal records (assets, houses, permits, staff, and logs) as a JSON file. Use this for backups or data migration.</p>
+                    </div>
+                    <button onClick={handleExportDatabase} className="w-full bg-teal-600 text-white py-2.5 rounded-xl font-bold hover:bg-teal-700 transition-colors flex items-center justify-center gap-2">
+                        <FileJson size={18} /> Export Portal Data
+                    </button>
+                </div>
+
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 mb-4">
+                            <RefreshCw size={24} />
+                        </div>
+                        <h3 className="font-bold text-slate-900 mb-2">Restore from Backup</h3>
+                        <p className="text-sm text-slate-500 mb-6 leading-relaxed">Restore your council records from a previously exported JSON file. <strong>Note:</strong> This will replace all current local data.</p>
+                    </div>
+                    <button onClick={() => importDatabaseRef.current?.click()} className="w-full bg-blue-600 text-white py-2.5 rounded-xl font-bold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+                        <Upload size={18} /> Import Backup File
+                    </button>
+                    <input type="file" ref={importDatabaseRef} className="hidden" accept=".json" onChange={handleImportDatabase} />
+                </div>
+
+                <div className="bg-red-50 p-6 rounded-2xl border border-red-100 flex flex-col justify-between md:col-span-2">
+                    <div className="flex gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center text-red-600 flex-shrink-0 shadow-sm">
+                            <Trash2 size={24} />
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-red-900 mb-1 uppercase tracking-tight">Factory Reset</h3>
+                            <p className="text-sm text-red-700 mb-6">Wipe all portal data and reset to factory mock data. This action is destructive and irreversible. Please ensure you have an export if you need your current data.</p>
+                            <button onClick={handleClearDatabase} className="bg-red-600 text-white px-8 py-2.5 rounded-xl font-bold hover:bg-red-700 transition-colors shadow-lg shadow-red-600/20">
+                                Reset Database & Reload
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div className="bg-slate-100 p-6 rounded-2xl border border-slate-200">
+                <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2"><Info size={14}/> Storage Information</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-white p-3 rounded-xl border border-slate-200">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase">Requests</p>
+                        <p className="text-lg font-black text-slate-800">{localStorage.getItem('civicpulse_requests')?.length || 0} bytes</p>
+                    </div>
+                    <div className="bg-white p-3 rounded-xl border border-slate-200">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase">Asset Registry</p>
+                        <p className="text-lg font-black text-slate-800">{localStorage.getItem('civicpulse_assets')?.length || 0} bytes</p>
+                    </div>
+                    <div className="bg-white p-3 rounded-xl border border-slate-200">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase">Houses</p>
+                        <p className="text-lg font-black text-slate-800">{localStorage.getItem('civicpulse_houses')?.length || 0} bytes</p>
+                    </div>
+                    <div className="bg-white p-3 rounded-xl border border-slate-200">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase">Permits</p>
+                        <p className="text-lg font-black text-slate-800">{localStorage.getItem('civicpulse_garage_permits')?.length || 0} bytes</p>
+                    </div>
+                </div>
+            </div>
+          </div>
+        )}
+
+        {/* ... existing activeTab logic ... */}
         {activeTab === 'staff' && (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
