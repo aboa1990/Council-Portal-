@@ -20,17 +20,16 @@ export interface CitizenRequest {
   category: string;
   status: RequestStatus;
   priority: RequestPriority;
-  date: string; // ISO Date string
+  date: string; 
   location?: string;
-  aiAnalysis?: string; // Stored summary from AI
+  aiAnalysis?: string; 
   suggestedResponse?: string;
 }
 
-// Removed AssetStatus enum in favor of dynamic strings
 export interface AssetStatusConfig {
   id: string;
   name: string;
-  color: string; // e.g. 'bg-emerald-100 text-emerald-800'
+  color: string; 
 }
 
 export interface AssetCategory {
@@ -41,7 +40,7 @@ export interface AssetCategory {
 
 export interface AccessLog {
   id: string;
-  action: string; // 'Created', 'Updated', 'Maintenance', 'Status Change'
+  action: string; 
   userId: string;
   userName: string;
   timestamp: string;
@@ -52,15 +51,13 @@ export interface Asset {
   id: string;
   name: string;
   category: string;
-  status: string; // Now a dynamic string
+  status: string; 
   location: string;
   purchaseDate: string;
-  entryDate: string; // Date entered into system
+  entryDate: string; 
   value: number;
-  // New Fields
   modelNumber?: string;
   serialNumber?: string;
-  // Maintenance only for vehicles
   lastMaintenance?: string;
   notes?: string;
   logs?: AccessLog[];
@@ -71,12 +68,12 @@ export type RegistryType = 'Bandara Goathi' | 'Amilla Goathi' | 'Government Plot
 export interface House {
   id: string;
   houseName: string;
-  registryNumber: string; // New
-  houseOrderNumber: string; // New
-  registryType: RegistryType; // New
+  registryNumber: string;
+  houseOrderNumber: string;
+  registryType: RegistryType;
   ownerName: string;
   address: string;
-  plotLocation: string; // New specific location
+  plotLocation: string;
   islandZone: string;
   inhabitants: number;
   permitStatus: 'Valid' | 'Expired' | 'Pending';
@@ -85,59 +82,70 @@ export interface House {
 }
 
 export interface GaragePermit {
-  permitId: string; // e.g., 258/2026/04
+  permitId: string;
   issueDate: string;
-  expiryDate: string;
-  status: 'Active' | 'Expired' | 'Pending';
+  status: 'Issued' | 'Void';
   
-  // Vehicle Details
   vehicleChassisNumber: string;
   vehicleRegistryNumber: string;
   
-  // Vehicle Owner
   vehicleOwnerName: string;
-  vehicleOwnerAddress: string; // Atoll + Island + House Name
+  vehicleOwnerAddress: string;
   vehicleOwnerId: string;
   vehicleOwnerContact: string;
 
-  // Garage Details
   garageAddress: string;
   garageSizeSqft: number;
   houseRegistryNumber: string;
 
-  // Garage Owner Details
   garageOwnerName: string;
   garageOwnerAddress: string;
   garageOwnerId: string;
   garageOwnerContact: string;
+
+  checkedBy?: string;
+  authorizedBy?: string;
+
+  logs?: AccessLog[];
 }
 
-export interface DashboardStats {
-  totalRequests: number;
-  resolvedToday: number;
-  criticalPending: number;
-  avgResponseTimeHours: number;
+export interface TemplateFieldPos {
+  top: number;
+  left: number;
+  fontSize: number;
+  visible: boolean;
+  fontWeight?: string;
+}
+
+export interface GaragePermitTemplate {
+  header: string;
+  footer: string;
+  title: string;
+  declaration: string;
+  useCustomTemplate: boolean;
+  backgroundImage?: string;
+  fieldPositions: Record<string, TemplateFieldPos>;
 }
 
 export type UserRole = 'Admin' | 'Secretary General' | 'Supervisor' | 'Staff';
 
 export interface User {
-  id: string; // System ID
+  id: string;
   name: string;
   role: UserRole;
   avatar?: string;
   email?: string;
-  // Extended Details
   password?: string;
   sex?: 'Male' | 'Female';
   rcNo?: string;
   designation?: string;
-  idNo?: string; // National ID / Card ID
+  idNo?: string;
 }
 
 export interface SystemConfig {
   councilName: string;
   secretariatName: string;
+  garagePermitTemplate: GaragePermitTemplate;
 }
 
 export type ViewState = 'dashboard' | 'requests' | 'assets' | 'houses' | 'garage' | 'analytics' | 'settings';

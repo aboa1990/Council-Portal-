@@ -5,18 +5,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CivicPulse Council Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Thaana:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Thaana:wght@400;700&display=swap" rel="stylesheet">
     <style>
-      body { font-family: 'Inter', sans-serif; }
+      body { 
+        font-family: 'Inter', sans-serif; 
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
       
-      /* Thaana Font Class */
-      .font-thaana { font-family: 'Noto Sans Thaana', sans-serif; }
+      /* Thaana Font Class with optimized rendering */
+      .font-thaana { 
+        font-family: 'Noto Sans Thaana', sans-serif;
+        line-height: 1.8;
+        letter-spacing: 0;
+      }
 
-      /* Custom Scrollbar for cleaner look */
+      /* Adjust font sizes for Thaana as they appear smaller than Latin */
+      [dir="rtl"].font-thaana input,
+      [dir="rtl"].font-thaana select,
+      [dir="rtl"].font-thaana textarea,
+      [dir="rtl"].font-thaana button,
+      [dir="rtl"].font-thaana p,
+      [dir="rtl"].font-thaana span {
+        font-size: 105%;
+      }
+
+      /* Custom Scrollbar */
       ::-webkit-scrollbar { width: 8px; height: 8px; }
       ::-webkit-scrollbar-track { background: #f1f1f1; }
       ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
       ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+      @media print {
+        .font-thaana { line-height: 1.6; }
+      }
     </style>
   <script type="importmap">
 {

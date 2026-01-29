@@ -22,228 +22,23 @@ export const MOCK_REQUESTS: CitizenRequest[] = [
     id: 'REQ-2024-001',
     citizenName: 'Alice Johnson',
     title: 'Large Pothole on Main St',
-    description: 'There is a very large pothole near the intersection of Main St and 4th Ave. It caused a flat tire on my sedan. Please fix immediately.',
+    description: 'There is a very large pothole near the intersection of Main St and 4th Ave.',
     category: 'Infrastructure',
     status: RequestStatus.NEW,
     priority: RequestPriority.HIGH,
     date: '2024-05-20T09:30:00Z',
     location: 'Main St & 4th Ave'
-  },
-  {
-    id: 'REQ-2024-002',
-    citizenName: 'Bob Smith',
-    title: 'Missed Recycling Pickup',
-    description: 'My recycling bin was skipped this Tuesday. This is the second time this month.',
-    category: 'Waste Management',
-    status: RequestStatus.IN_PROGRESS,
-    priority: RequestPriority.MEDIUM,
-    date: '2024-05-19T14:15:00Z',
-    location: '123 Oak Lane'
-  },
-  {
-    id: 'REQ-2024-003',
-    citizenName: 'Charlie Davis',
-    title: 'Noise Complaint - Construction',
-    description: 'Construction work starting at 5 AM on the new apartment complex. City ordinance says 7 AM.',
-    category: 'Noise Control',
-    status: RequestStatus.NEW,
-    priority: RequestPriority.MEDIUM,
-    date: '2024-05-21T05:10:00Z',
-    location: 'Sunset Blvd Construction Site'
-  },
-  {
-    id: 'REQ-2024-004',
-    citizenName: 'Diana Prince',
-    title: 'Street Light Outage',
-    description: 'The street light in front of the elementary school is flickering and goes dark frequently.',
-    category: 'Infrastructure',
-    status: RequestStatus.RESOLVED,
-    priority: RequestPriority.HIGH,
-    date: '2024-05-15T20:00:00Z',
-    location: 'Lincoln Elementary'
-  },
-  {
-    id: 'REQ-2024-005',
-    citizenName: 'Evan Wright',
-    title: 'Park Bench Broken',
-    description: 'One of the benches in Central Park has a broken slat. Could be dangerous for kids.',
-    category: 'Parks & Rec',
-    status: RequestStatus.NEW,
-    priority: RequestPriority.LOW,
-    date: '2024-05-21T11:45:00Z',
-    location: 'Central Park, North Entrance'
   }
 ];
 
-export const MOCK_ASSETS: Asset[] = [
-  {
-    id: '258-2020-04-01',
-    name: 'Garbage Truck #42',
-    category: 'Fleet',
-    status: 'Operational',
-    location: 'Central Depot',
-    purchaseDate: '2020-03-15',
-    entryDate: '2020-03-20',
-    value: 250000,
-    lastMaintenance: '2024-04-10',
-    modelNumber: 'GT-5000-X',
-    serialNumber: 'VIN99887766',
-    logs: [
-        { id: 'l1', action: 'Created', userId: 'USR-001', userName: 'Ahmed Riza', timestamp: '2020-03-20T10:00:00Z', details: 'Asset registered.' },
-        { id: 'l2', action: 'Maintenance', userId: 'USR-002', userName: 'Fathimath Nazeer', timestamp: '2024-04-10T14:30:00Z', details: 'Routine oil change and brake check.' }
-    ]
-  },
-  {
-    id: '258-2019-01-01',
-    name: 'Community Center Generator',
-    category: 'Facilities',
-    status: 'Maintenance',
-    location: 'Westside Community Center',
-    purchaseDate: '2019-11-20',
-    entryDate: '2019-11-25',
-    value: 45000,
-    modelNumber: 'GEN-CAT-200',
-    serialNumber: 'SN-223344',
-    notes: 'Scheduled for annual servicing.',
-    logs: [
-         { id: 'l3', action: 'Created', userId: 'USR-001', userName: 'Ahmed Riza', timestamp: '2019-11-25T09:00:00Z', details: 'Asset registered.' },
-         { id: 'l4', action: 'Status Change', userId: 'USR-003', userName: 'Ali Shiyam', timestamp: '2024-05-20T08:15:00Z', details: 'Changed status to Maintenance.' }
-    ]
-  },
-  {
-    id: '258-2022-03-01',
-    name: 'Council Main Server Rack A',
-    category: 'IT Hardware',
-    status: 'Operational',
-    location: 'City Hall Basement',
-    purchaseDate: '2022-06-01',
-    entryDate: '2022-06-05',
-    value: 85000,
-    modelNumber: 'DELL-R750',
-    serialNumber: 'SRV-001-HA',
-    logs: [
-        { id: 'l5', action: 'Created', userId: 'USR-001', userName: 'Ahmed Riza', timestamp: '2022-06-05T11:00:00Z', details: 'Asset registered.' }
-    ]
-  },
-  {
-    id: '258-2023-03-01',
-    name: 'MacBook Pro - Mayor Office',
-    category: 'IT Hardware',
-    status: 'Operational',
-    location: 'City Hall - Floor 3',
-    purchaseDate: '2023-09-15',
-    entryDate: '2023-09-16',
-    value: 2500,
-    modelNumber: 'M2-MAX',
-    serialNumber: 'FVFG6788',
-    logs: [
-        { id: 'l6', action: 'Created', userId: 'USR-002', userName: 'Fathimath Nazeer', timestamp: '2023-09-16T13:45:00Z', details: 'Handover to Mayor.' }
-    ]
-  },
-  {
-    id: '258-2021-05-01',
-    name: 'Industrial Lawn Mower ZT',
-    category: 'Tools & Equipment',
-    status: 'Repair Needed',
-    location: 'North Park Shed',
-    purchaseDate: '2021-04-10',
-    entryDate: '2021-04-15',
-    value: 12000,
-    modelNumber: 'DEERE-Z500',
-    serialNumber: 'LM-9988-AA',
-    notes: 'Blade assembly rattling.',
-    logs: [
-        { id: 'l7', action: 'Created', userId: 'USR-003', userName: 'Ali Shiyam', timestamp: '2021-04-15T10:00:00Z' },
-        { id: 'l8', action: 'Status Change', userId: 'USR-003', userName: 'Ali Shiyam', timestamp: '2024-05-01T16:20:00Z', details: 'Reported rattling noise.' }
-    ]
-  },
-  {
-    id: '258-2023-04-01',
-    name: 'Utility Van (Electric)',
-    category: 'Fleet',
-    status: 'Operational',
-    location: 'Central Depot',
-    purchaseDate: '2023-01-10',
-    entryDate: '2023-01-12',
-    value: 55000,
-    lastMaintenance: '2024-01-10',
-    modelNumber: 'FORD-E-TRANSIT',
-    serialNumber: 'VIN-EL-8833',
-    logs: [
-        { id: 'l9', action: 'Created', userId: 'USR-001', userName: 'Ahmed Riza', timestamp: '2023-01-12T09:30:00Z' }
-    ]
-  }
-];
-
-export const MOCK_HOUSES: House[] = [
-    {
-        id: 'H-001',
-        houseName: 'Rose Villa',
-        registryNumber: 'R-1001',
-        houseOrderNumber: '001',
-        registryType: 'Bandara Goathi',
-        ownerName: 'Ibrahim Rasheed',
-        address: 'Violet Magu',
-        plotLocation: 'Block 4, Plot 12',
-        islandZone: 'North',
-        inhabitants: 5,
-        permitStatus: 'Valid',
-        contactNumber: '777-1234',
-        constructionDate: '1998-05-12'
-    },
-    {
-        id: 'H-002',
-        houseName: 'Ocean Breeze',
-        registryNumber: 'R-1002',
-        houseOrderNumber: '002',
-        registryType: 'Amilla Goathi',
-        ownerName: 'Mariyam Faiza',
-        address: 'Bodu Magu',
-        plotLocation: 'Beachfront, Lot 5',
-        islandZone: 'West',
-        inhabitants: 3,
-        permitStatus: 'Valid',
-        contactNumber: '999-5678',
-        constructionDate: '2010-11-20'
-    },
-    {
-        id: 'H-003',
-        houseName: 'Sun Set',
-        registryNumber: 'R-1003',
-        houseOrderNumber: '003',
-        registryType: 'Bandara Goathi',
-        ownerName: 'Ahmed Niyaz',
-        address: 'Ameenee Magu',
-        plotLocation: 'Plot 22A',
-        islandZone: 'South',
-        inhabitants: 8,
-        permitStatus: 'Expired',
-        contactNumber: '765-4321',
-        constructionDate: '2005-03-15'
-    },
-    {
-        id: 'H-004',
-        houseName: 'Palm Shade',
-        registryNumber: 'R-1004',
-        houseOrderNumber: '004',
-        registryType: 'Government Plot',
-        ownerName: 'Fathimath Didi',
-        address: 'Orchid Magu',
-        plotLocation: 'Sector 7, Plot 9',
-        islandZone: 'East',
-        inhabitants: 4,
-        permitStatus: 'Pending',
-        contactNumber: '988-1122',
-        constructionDate: '2023-01-10'
-    }
-];
+export const MOCK_ASSETS: Asset[] = [];
+export const MOCK_HOUSES: House[] = [];
 
 export const MOCK_GARAGE_PERMITS: GaragePermit[] = [
   {
     permitId: '258/2024/01',
     issueDate: '2024-01-15',
-    expiryDate: '2025-01-15',
-    status: 'Active',
+    status: 'Issued',
     vehicleChassisNumber: 'CHS-99887766',
     vehicleRegistryNumber: 'C-1020',
     vehicleOwnerName: 'Hassan Moosa',
@@ -256,25 +51,11 @@ export const MOCK_GARAGE_PERMITS: GaragePermit[] = [
     garageOwnerName: 'Ibrahim Rasheed',
     garageOwnerAddress: 'Rose Villa, Hanimaadhoo',
     garageOwnerId: 'A202020',
-    garageOwnerContact: '9991122'
-  },
-  {
-    permitId: '258/2024/02',
-    issueDate: '2024-03-10',
-    expiryDate: '2025-03-10',
-    status: 'Active',
-    vehicleChassisNumber: 'CHS-11223344',
-    vehicleRegistryNumber: 'C-3344',
-    vehicleOwnerName: 'Aminath Sifa',
-    vehicleOwnerAddress: 'G. Green House, Male',
-    vehicleOwnerId: 'A303030',
-    vehicleOwnerContact: '7654321',
-    garageAddress: 'Bodu Magu, Plot 12',
-    garageSizeSqft: 400,
-    houseRegistryNumber: 'R-1002',
-    garageOwnerName: 'Mariyam Faiza',
-    garageOwnerAddress: 'Ocean Breeze, Hanimaadhoo',
-    garageOwnerId: 'A404040',
-    garageOwnerContact: '9876543'
+    garageOwnerContact: '9991122',
+    checkedBy: 'Ahmed Riza',
+    authorizedBy: 'Fathimath Nazeer',
+    logs: [
+      { id: 'log-1', action: 'Created', userId: 'USR-001', userName: 'Ahmed Riza', timestamp: '2024-01-15T10:00:00Z', details: 'Initial permit issuance.' }
+    ]
   }
 ];
