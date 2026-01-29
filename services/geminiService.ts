@@ -1,23 +1,17 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { CitizenRequest, Asset } from "../types";
 
-// Helper to get safe AI instance
-// This prevents top-level crashes if API_KEY is missing during app initialization
-const getAI = () => {
-  const apiKey = process.env.API_KEY || '';
-  if (!apiKey) {
-    console.warn("API_KEY is missing. AI features will not work.");
-    // Return a dummy object or handle gracefully in calls
-    return null;
-  }
-  return new GoogleGenAI({ apiKey });
-};
+// Always use const ai = new GoogleGenAI({apiKey: process.env.API_KEY});
+// The API key must be obtained exclusively from the environment variable process.env.API_KEY.
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
+/**
+ * Analyzes the priority of a citizen service request using Gemini.
+ */
 export const analyzeRequestPriority = async (description: string, category: string): Promise<{ priority: string, reasoning: string, suggestedAction: string }> => {
   try {
-    const ai = getAI();
-    if (!ai) throw new Error("API Key missing");
-
+    // Basic text task uses gemini-3-flash-preview
     const model = 'gemini-3-flash-preview';
     const prompt = `
       You are an AI assistant for a city council internal operations team. Analyze the following service request.
@@ -29,6 +23,7 @@ export const analyzeRequestPriority = async (description: string, category: stri
       Provide a brief reasoning and a suggested immediate action for the council staff to take (e.g., "Dispatch road crew", "Assign to parks dept").
     `;
 
+    // Must use ai.models.generateContent to query GenAI with both the model name and prompt.
     const response = await ai.models.generateContent({
       model,
       contents: prompt,
@@ -46,9 +41,12 @@ export const analyzeRequestPriority = async (description: string, category: stri
       }
     });
 
+    // The GenerateContentResponse object features a text property (not a method).
     const jsonText = response.text;
     if (!jsonText) throw new Error("No response from AI");
-    return JSON.parse(jsonText);
+    
+    // Clean potential markdown or whitespace before parsing
+    return JSON.parse(jsonText.trim());
 
   } catch (error) {
     console.error("Error analyzing request:", error);
@@ -60,11 +58,11 @@ export const analyzeRequestPriority = async (description: string, category: stri
   }
 };
 
+/**
+ * Generates a formal official response draft.
+ */
 export const generateOfficialResponse = async (request: CitizenRequest): Promise<string> => {
   try {
-    const ai = getAI();
-    if (!ai) return "AI Service Unavailable (Missing Key)";
-
     const model = 'gemini-3-flash-preview';
     const prompt = `
       Draft a formal internal note or external email response (if applicable) regarding a citizen service request.
@@ -82,6 +80,7 @@ export const generateOfficialResponse = async (request: CitizenRequest): Promise
       contents: prompt,
     });
 
+    // Directly access response.text property.
     return response.text || "Could not generate response.";
 
   } catch (error) {
@@ -90,11 +89,11 @@ export const generateOfficialResponse = async (request: CitizenRequest): Promise
   }
 };
 
+/**
+ * Generates a maintenance plan for a council asset.
+ */
 export const generateMaintenancePlan = async (asset: Asset): Promise<string> => {
   try {
-    const ai = getAI();
-    if (!ai) return "AI Service Unavailable";
-
     const model = 'gemini-3-flash-preview';
     const prompt = `
       You are a senior facility and fleet manager for a city council.
@@ -124,11 +123,11 @@ export const generateMaintenancePlan = async (asset: Asset): Promise<string> => 
   }
 };
 
+/**
+ * Chat with a policy bot using conversational context.
+ */
 export const chatWithPolicyBot = async (query: string, history: string[]): Promise<string> => {
     try {
-        const ai = getAI();
-        if (!ai) return "I am currently offline (API Key missing).";
-
         const model = 'gemini-3-flash-preview';
         const prompt = `
         You are "CivicBot", a helpful assistant for city council internal staff. 

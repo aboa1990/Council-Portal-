@@ -1,12 +1,25 @@
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 
 // Simple Error Boundary to catch render errors
-class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean, error: any}> {
-  constructor(props: any) {
+// Define interfaces for props and state to ensure proper typing in environments with strict settings
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: any;
+}
+
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  // Fix: Declare state as a property initializer to resolve "Property 'state' does not exist" errors
+  public state: ErrorBoundaryState = { hasError: false, error: null };
+
+  constructor(props: ErrorBoundaryProps) {
     super(props);
-    this.state = { hasError: false, error: null };
   }
 
   static getDerivedStateFromError(error: any) {
@@ -18,6 +31,7 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasErr
   }
 
   render() {
+    // Fix: Access state safely through explicit typing from generic React.Component
     if (this.state.hasError) {
       return (
         <div style={{
@@ -59,6 +73,7 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasErr
       );
     }
 
+    // Fix: Access props correctly as defined in generic React.Component
     return this.props.children; 
   }
 }
