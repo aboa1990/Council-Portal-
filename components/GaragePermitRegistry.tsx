@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { GaragePermit } from '../types';
-import { Search, Plus, X, Car, User, MapPin, FileText, Calendar, CheckCircle, AlertCircle } from 'lucide-react';
+import { Search, Plus, X, Car, User, MapPin, FileText, Calendar, CheckCircle, AlertCircle, Printer, Filter } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface GaragePermitRegistryProps {
@@ -14,6 +14,11 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ permits, on
     const { t, isRTL } = useLanguage();
     const [searchTerm, setSearchTerm] = useState('');
     const [isAdding, setIsAdding] = useState(false);
+    
+    // Report State
+    const [showReport, setShowReport] = useState(false);
+    const [reportYear, setReportYear] = useState(new Date().getFullYear());
+    const [reportStatus, setReportStatus] = useState('All');
 
     // Initial State for New Permit
     const initialPermitState: Partial<GaragePermit> = {
@@ -70,6 +75,12 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ permits, on
         p.vehicleChassisNumber.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    const reportPermits = permits.filter(p => {
+        const matchesYear = new Date(p.issueDate).getFullYear() === reportYear;
+        const matchesStatus = reportStatus === 'All' || p.status === reportStatus;
+        return matchesYear && matchesStatus;
+    });
+
     return (
         <div className="space-y-6 animate-fade-in pb-10">
             {/* Header */}
@@ -78,13 +89,22 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ permits, on
                     <h2 className="text-xl font-bold text-slate-900">{t('garage_title')}</h2>
                     <p className="text-sm text-slate-500">{t('garage_subtitle')}</p>
                 </div>
-                <button 
-                    onClick={handleAddClick}
-                    className="bg-teal-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-teal-700 transition-colors flex items-center gap-2 shadow-sm"
-                >
-                    <Plus size={16} />
-                    {t('new_permit')}
-                </button>
+                <div className="flex gap-2">
+                    <button 
+                        onClick={() => setShowReport(true)}
+                        className="bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-slate-50 transition-colors flex items-center gap-2 shadow-sm"
+                    >
+                        <Printer size={16} />
+                        Report
+                    </button>
+                    <button 
+                        onClick={handleAddClick}
+                        className="bg-teal-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-teal-700 transition-colors flex items-center gap-2 shadow-sm"
+                    >
+                        <Plus size={16} />
+                        {t('new_permit')}
+                    </button>
+                </div>
             </div>
 
             {/* Search */}
@@ -172,6 +192,143 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ permits, on
                     </table>
                 </div>
             </div>
+
+            {/* Report Modal */}
+            {showReport && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col">
+                        <div className="p-4 border-b border-slate-200 flex justify-between items-center print:hidden bg-slate-50 rounded-t-xl">
+                            <div className="flex items-center gap-4">
+                                <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2">
+                                    <FileText className="text-teal-600" />
+                                    Garage Permits Report
+                                </h3>
+                                <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2 bg-white rounded-lg px-2 py-1 border border-slate-200">
+                                        <span className="text-xs font-semibold text-slate-500">Year:</span>
+                                        <select 
+                                            className="bg-transparent text-sm py-1 px-1 focus:ring-0 outline-none text-slate-700 font-medium"
+                                            value={reportYear}
+                                            onChange={(e) => setReportYear(Number(e.target.value))}
+                                        >
+                                            {Array.from({length: 5}, (_, i) => new Date().getFullYear() - i + 1).map(y => (
+                                                <option key={y} value={y}>{y}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="flex items-center gap-2 bg-white rounded-lg px-2 py-1 border border-slate-200">
+                                        <span className="text-xs font-semibold text-slate-500">Status:</span>
+                                        <select 
+                                            className="bg-transparent text-sm py-1 px-1 focus:ring-0 outline-none text-slate-700 font-medium"
+                                            value={reportStatus}
+                                            onChange={(e) => setReportStatus(e.target.value)}
+                                        >
+                                            <option value="All">All Statuses</option>
+                                            <option value="Active">Active</option>
+                                            <option value="Expired">Expired</option>
+                                            <option value="Pending">Pending</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex gap-2">
+                                <button onClick={() => window.print()} className="bg-teal-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-teal-700 flex items-center gap-2 shadow-sm">
+                                    <Printer size={16} /> Print Report
+                                </button>
+                                <button onClick={() => setShowReport(false)} className="bg-white border border-slate-300 text-slate-700 px-3 py-2 rounded hover:bg-slate-50 transition-colors">
+                                    <X size={18} />
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="flex-1 overflow-auto p-8 print:p-0" id="print-area">
+                            <div className="print:block">
+                                <div className="text-center mb-8 border-b-2 border-slate-800 pb-4">
+                                    <h1 className="text-2xl font-bold uppercase tracking-wide text-slate-900">{t('council_name')}</h1>
+                                    <h2 className="text-lg font-medium text-slate-600 mt-2">Official Garage Permit Report</h2>
+                                    <div className="flex justify-center gap-4 mt-2 text-sm text-slate-500">
+                                        <span>Year: {reportYear}</span>
+                                        <span>Status: {reportStatus === 'All' ? 'All Records' : reportStatus}</span>
+                                        <span>Generated: {new Date().toLocaleDateString()}</span>
+                                    </div>
+                                </div>
+                                
+                                <table className="w-full text-sm text-left border-collapse mb-10">
+                                    <thead>
+                                        <tr className="border-b-2 border-slate-800 bg-slate-50 print:bg-transparent">
+                                            <th className="py-2 px-2 font-bold text-slate-900">Permit ID</th>
+                                            <th className="py-2 px-2 font-bold text-slate-900">Issue Date</th>
+                                            <th className="py-2 px-2 font-bold text-slate-900">Vehicle Info</th>
+                                            <th className="py-2 px-2 font-bold text-slate-900">Vehicle Owner</th>
+                                            <th className="py-2 px-2 font-bold text-slate-900">Garage Owner</th>
+                                            <th className="py-2 px-2 font-bold text-slate-900">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-200">
+                                        {reportPermits.length > 0 ? reportPermits.map((permit) => (
+                                            <tr key={permit.permitId} className="break-inside-avoid hover:bg-slate-50 print:hover:bg-transparent">
+                                                <td className="py-3 px-2 font-mono text-xs font-semibold">{permit.permitId}</td>
+                                                <td className="py-3 px-2">{new Date(permit.issueDate).toLocaleDateString()}</td>
+                                                <td className="py-3 px-2">
+                                                    <div className="font-semibold">{permit.vehicleRegistryNumber}</div>
+                                                    <div className="text-xs text-slate-500">VIN: {permit.vehicleChassisNumber}</div>
+                                                </td>
+                                                <td className="py-3 px-2">
+                                                    <div>{permit.vehicleOwnerName}</div>
+                                                    <div className="text-xs text-slate-500">{permit.vehicleOwnerAddress}</div>
+                                                </td>
+                                                <td className="py-3 px-2">
+                                                    <div>{permit.garageOwnerName}</div>
+                                                    <div className="text-xs text-slate-500">{permit.garageAddress}</div>
+                                                </td>
+                                                <td className="py-3 px-2">
+                                                     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold uppercase border ${
+                                                        permit.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 
+                                                        'bg-red-50 text-red-700 border-red-200'
+                                                    }`}>
+                                                        {permit.status}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        )) : (
+                                            <tr>
+                                                <td colSpan={6} className="py-8 text-center text-slate-500 italic">No permits found matching the selected criteria.</td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                                
+                                {/* Signature Footer */}
+                                <div className="mt-16 break-inside-avoid print:flex hidden justify-between">
+                                    <div className="w-1/3">
+                                        <p className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-8">{t('report_footer_prepared')}</p>
+                                        <div className="border-b border-slate-400 h-8"></div>
+                                        <p className="text-xs text-slate-500 mt-1">Name / Signature</p>
+                                        <div className="border-b border-slate-400 h-8 mt-4"></div>
+                                        <p className="text-xs text-slate-500 mt-1">{t('report_footer_date')}</p>
+                                    </div>
+                                    <div className="w-1/3">
+                                        <p className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-8">{t('report_footer_verified')}</p>
+                                        <div className="border-b border-slate-400 h-8"></div>
+                                        <p className="text-xs text-slate-500 mt-1">Name / Signature / Stamp</p>
+                                        <div className="border-b border-slate-400 h-8 mt-4"></div>
+                                        <p className="text-xs text-slate-500 mt-1">{t('report_footer_date')}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {/* Print Styles */}
+                    <style>{`
+                        @media print {
+                            body * { visibility: hidden; }
+                            #print-area, #print-area * { visibility: visible; }
+                            #print-area { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; }
+                            @page { size: auto; margin: 10mm; }
+                        }
+                    `}</style>
+                </div>
+            )}
 
             {/* New Permit Modal */}
             {isAdding && (
