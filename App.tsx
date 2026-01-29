@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { ViewState, CitizenRequest, RequestStatus, Asset, User, UserRole, House, AssetCategory, AssetStatusConfig, SystemConfig } from './types';
-import { MOCK_REQUESTS, MOCK_ASSETS, MOCK_HOUSES, DEFAULT_ASSET_CATEGORIES, DEFAULT_ASSET_STATUSES } from './constants';
+import { ViewState, CitizenRequest, RequestStatus, Asset, User, UserRole, House, AssetCategory, AssetStatusConfig, SystemConfig, GaragePermit } from './types';
+import { MOCK_REQUESTS, MOCK_ASSETS, MOCK_HOUSES, DEFAULT_ASSET_CATEGORIES, DEFAULT_ASSET_STATUSES, MOCK_GARAGE_PERMITS } from './constants';
 import Sidebar from './components/Sidebar';
 import DashboardStats from './components/DashboardStats';
 import RequestList from './components/RequestList';
@@ -8,6 +8,7 @@ import RequestDetail from './components/RequestDetail';
 import AssetRegistry from './components/AssetRegistry';
 import AssetDetail from './components/AssetDetail';
 import HouseRegistry from './components/HouseRegistry';
+import GaragePermitRegistry from './components/GaragePermitRegistry';
 import AIChat from './components/AIChat';
 import Login from './components/Login';
 import Settings from './components/Settings';
@@ -29,6 +30,7 @@ const AppContent: React.FC = () => {
   const [assetStatuses, setAssetStatuses] = useState<AssetStatusConfig[]>(DEFAULT_ASSET_STATUSES);
 
   const [houses, setHouses] = useState<House[]>(MOCK_HOUSES);
+  const [garagePermits, setGaragePermits] = useState<GaragePermit[]>(MOCK_GARAGE_PERMITS);
 
   const [systemConfig, setSystemConfig] = useState<SystemConfig>({
       councilName: 'Hanimaadhoo Council',
@@ -114,6 +116,10 @@ const AppContent: React.FC = () => {
       setHouses([newHouse, ...houses]);
   };
 
+  const handleAddGaragePermit = (newPermit: GaragePermit) => {
+      setGaragePermits([newPermit, ...garagePermits]);
+  };
+
   const handleUpdateCategories = (newCategories: AssetCategory[]) => {
       setAssetCategories(newCategories);
   };
@@ -188,6 +194,13 @@ const AppContent: React.FC = () => {
                 onDeleteAsset={handleDeleteAsset}
             />
         );
+      case 'garage':
+        return (
+            <GaragePermitRegistry
+                permits={garagePermits}
+                onAddPermit={handleAddGaragePermit}
+            />
+        );
       case 'analytics':
         return (
             <div className="flex flex-col items-center justify-center h-[60vh] text-slate-400">
@@ -233,6 +246,7 @@ const AppContent: React.FC = () => {
                 <button onClick={() => { setCurrentView('requests'); setIsMobileMenuOpen(false); }} className="block w-full text-left py-3 border-b border-slate-100 text-slate-600">{t('nav_requests')}</button>
                 <button onClick={() => { setCurrentView('houses'); setIsMobileMenuOpen(false); }} className="block w-full text-left py-3 border-b border-slate-100 text-slate-600">{t('nav_houses')}</button>
                 <button onClick={() => { setCurrentView('assets'); setIsMobileMenuOpen(false); }} className="block w-full text-left py-3 border-b border-slate-100 text-slate-600">{t('nav_assets')}</button>
+                 <button onClick={() => { setCurrentView('garage'); setIsMobileMenuOpen(false); }} className="block w-full text-left py-3 border-b border-slate-100 text-slate-600">{t('nav_garage')}</button>
                 <button onClick={handleLogout} className="mt-4 text-sm text-red-500 font-medium">{t('sign_out')}</button>
              </div>
         </div>

@@ -1,4 +1,4 @@
-import { CitizenRequest, RequestPriority, RequestStatus, Asset, House, AssetCategory, AssetStatusConfig } from './types';
+import { CitizenRequest, RequestPriority, RequestStatus, Asset, House, AssetCategory, AssetStatusConfig, GaragePermit } from './types';
 
 export const DEFAULT_ASSET_CATEGORIES: AssetCategory[] = [
   { id: 'cat_fac', name: 'Facilities', code: '01' },
@@ -75,8 +75,6 @@ export const MOCK_REQUESTS: CitizenRequest[] = [
   }
 ];
 
-// Office Code: 258
-// Facilities (01), Furniture (02), IT (03), Fleet (04), Tools (05)
 export const MOCK_ASSETS: Asset[] = [
   {
     id: '258-2020-04-01',
@@ -238,4 +236,45 @@ export const MOCK_HOUSES: House[] = [
         contactNumber: '988-1122',
         constructionDate: '2023-01-10'
     }
+];
+
+export const MOCK_GARAGE_PERMITS: GaragePermit[] = [
+  {
+    permitId: '258/2024/01',
+    issueDate: '2024-01-15',
+    expiryDate: '2025-01-15',
+    status: 'Active',
+    vehicleChassisNumber: 'CHS-99887766',
+    vehicleRegistryNumber: 'C-1020',
+    vehicleOwnerName: 'Hassan Moosa',
+    vehicleOwnerAddress: 'H. Noon Villa, Male',
+    vehicleOwnerId: 'A101010',
+    vehicleOwnerContact: '7771122',
+    garageAddress: 'Violet Magu, Plot 44',
+    garageSizeSqft: 250,
+    houseRegistryNumber: 'R-1001',
+    garageOwnerName: 'Ibrahim Rasheed',
+    garageOwnerAddress: 'Rose Villa, Hanimaadhoo',
+    garageOwnerId: 'A202020',
+    garageOwnerContact: '9991122'
+  },
+  {
+    permitId: '258/2024/02',
+    issueDate: '2024-03-10',
+    expiryDate: '2025-03-10',
+    status: 'Active',
+    vehicleChassisNumber: 'CHS-11223344',
+    vehicleRegistryNumber: 'C-3344',
+    vehicleOwnerName: 'Aminath Sifa',
+    vehicleOwnerAddress: 'G. Green House, Male',
+    vehicleOwnerId: 'A303030',
+    vehicleOwnerContact: '7654321',
+    garageAddress: 'Bodu Magu, Plot 12',
+    garageSizeSqft: 400,
+    houseRegistryNumber: 'R-1002',
+    garageOwnerName: 'Mariyam Faiza',
+    garageOwnerAddress: 'Ocean Breeze, Hanimaadhoo',
+    garageOwnerId: 'A404040',
+    garageOwnerContact: '9876543'
+  }
 ];

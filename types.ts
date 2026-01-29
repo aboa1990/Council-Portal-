@@ -84,6 +84,34 @@ export interface House {
   contactNumber: string;
 }
 
+export interface GaragePermit {
+  permitId: string; // e.g., 258/2026/04
+  issueDate: string;
+  expiryDate: string;
+  status: 'Active' | 'Expired' | 'Pending';
+  
+  // Vehicle Details
+  vehicleChassisNumber: string;
+  vehicleRegistryNumber: string;
+  
+  // Vehicle Owner
+  vehicleOwnerName: string;
+  vehicleOwnerAddress: string; // Atoll + Island + House Name
+  vehicleOwnerId: string;
+  vehicleOwnerContact: string;
+
+  // Garage Details
+  garageAddress: string;
+  garageSizeSqft: number;
+  houseRegistryNumber: string;
+
+  // Garage Owner Details
+  garageOwnerName: string;
+  garageOwnerAddress: string;
+  garageOwnerId: string;
+  garageOwnerContact: string;
+}
+
 export interface DashboardStats {
   totalRequests: number;
   resolvedToday: number;
@@ -112,4 +140,4 @@ export interface SystemConfig {
   secretariatName: string;
 }
 
-export type ViewState = 'dashboard' | 'requests' | 'assets' | 'houses' | 'analytics' | 'settings';
+export type ViewState = 'dashboard' | 'requests' | 'assets' | 'houses' | 'garage' | 'analytics' | 'settings';
