@@ -15,7 +15,7 @@ interface GaragePermitRegistryProps {
 
 const OFFICE_CODE = "258";
 
-const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser, permits, onAddPermit, onUpdatePermit, systemConfig }) => {
+const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser, permits, onAddPermit, onUpdatePermit, onDeletePermit, systemConfig }) => {
     const { t, isRTL } = useLanguage();
     const [searchTerm, setSearchTerm] = useState('');
     const [isAdding, setIsAdding] = useState(false);
@@ -119,6 +119,18 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
         }
     };
 
+    const handleDeleteClick = (permitId: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (window.confirm("Are you sure you want to PERMANENTLY delete this permit? This action cannot be undone.")) {
+            if (onDeletePermit) {
+                onDeletePermit(permitId);
+                if (selectedPermitForView?.permitId === permitId) {
+                    setSelectedPermitForView(null);
+                }
+            }
+        }
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         
@@ -169,7 +181,8 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
     };
 
     // Helper to get printable value for a field key
-    const getFieldValue = (fieldKey: string, permit: GaragePermit) => {
+    const getFieldValue = (fieldKey: string, permit: GaragePermit | null) => {
+        if (!permit) return '';
         switch(fieldKey) {
             case 'permitId': return permit.permitId;
             case 'issueDate': return permit.issueDate;
@@ -186,6 +199,8 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
             case 'gOwnerAddress': return permit.garageOwnerAddress;
             case 'gOwnerPhone': return permit.garageOwnerContact;
             case 'authorizedBy': return permit.authorizedBy;
+            case 'checkedBy': return permit.checkedBy;
+            case 'notes': return permit.notes;
             default: return '';
         }
     };
@@ -249,7 +264,10 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                                         <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <button onClick={(e) => handleEditClick(permit, e)} className="p-1.5 text-slate-400 hover:text-teal-600 transition-colors" title="Edit Record"><Pencil size={18} /></button>
                                             {permit.status === 'Issued' && (
-                                                <button onClick={(e) => handleVoidClick(permit.permitId, e)} className="p-1.5 text-slate-400 hover:text-red-600 transition-colors" title={t('void_permit')}><Ban size={18} /></button>
+                                                <button onClick={(e) => handleVoidClick(permit.permitId, e)} className="p-1.5 text-slate-400 hover:text-orange-600 transition-colors" title={t('void_permit')}><Ban size={18} /></button>
+                                            )}
+                                            {currentUser.role === 'Admin' && (
+                                                <button onClick={(e) => handleDeleteClick(permit.permitId, e)} className="p-1.5 text-slate-400 hover:text-red-600 transition-colors" title="Delete Record"><Trash2 size={18} /></button>
                                             )}
                                             <button className="p-1.5 text-slate-400 hover:text-blue-600 transition-colors"><FileText size={18} /></button>
                                         </div>
@@ -262,8 +280,9 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
             </div>
 
             {selectedPermitForView && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto print:static print:bg-transparent print:p-0">
-                    <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col my-4 print:my-0 print:shadow-none print:max-w-none print:w-auto print:h-auto print:rounded-none">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto print:p-0 print:bg-white print:static print:overflow-visible">
+                    <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col my-4 print:shadow-none print:m-0 print:max-h-none print:max-w-none print:w-[210mm] print:h-[297mm]">
+                        {/* Detail Modal Header */}
                         <div className={`p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-xl sticky top-0 z-10 print:hidden ${isRTL ? 'flex-row-reverse' : ''}`}>
                             <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse text-right' : ''}`}>
                                 <div className={`p-2 rounded-lg ${selectedPermitForView.status === 'Issued' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
@@ -277,7 +296,7 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                             <button onClick={() => setSelectedPermitForView(null)} className="text-slate-400 hover:text-slate-600 p-1.5"><X size={24}/></button>
                         </div>
 
-                        {/* Screen Detail View */}
+                        {/* Screen Detail View Content */}
                         <div className="flex-1 overflow-y-auto p-6 space-y-8 print:hidden bg-slate-50">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <section className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
@@ -336,9 +355,9 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                             </div>
                         </div>
 
-                        {/* PRINT ONLY: THE OFFICIAL PERMIT CARD */}
-                        <div className="hidden print:block relative w-full h-full bg-white">
-                            <div className="relative mx-auto" style={{ width: '210mm', height: '297mm' }}>
+                        {/* OFFICIAL PRINTABLE PERMIT CARD (Rendered only during print) */}
+                        <div className="hidden print:block relative w-full h-full bg-white overflow-hidden">
+                            <div className="relative mx-auto bg-white" style={{ width: '210mm', height: '297mm' }}>
                                 {systemConfig.garagePermitTemplate.backgroundImage && (
                                     <img 
                                         src={systemConfig.garagePermitTemplate.backgroundImage} 
@@ -356,7 +375,9 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                                                 top: `${pos.top}%`, 
                                                 left: `${pos.left}%`, 
                                                 fontSize: `${pos.fontSize}pt`,
-                                                fontWeight: pos.fontWeight || 'normal'
+                                                fontWeight: pos.fontWeight || 'normal',
+                                                whiteSpace: 'pre-wrap',
+                                                maxWidth: '50%'
                                             }}
                                         >
                                             {getFieldValue(key, selectedPermitForView)}
@@ -366,10 +387,16 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                             </div>
                         </div>
 
+                        {/* Modal Footer Controls */}
                         <div className="p-4 border-t border-slate-100 bg-white sticky bottom-0 flex justify-end gap-2 print:hidden">
                             {selectedPermitForView.status === 'Issued' && (
-                                <button onClick={(e) => handleVoidClick(selectedPermitForView.permitId, e)} className="px-6 py-2 rounded-lg text-sm font-bold text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2">
+                                <button onClick={(e) => handleVoidClick(selectedPermitForView.permitId, e)} className="px-6 py-2 rounded-lg text-sm font-bold text-orange-600 hover:bg-orange-50 transition-colors flex items-center gap-2">
                                     <Ban size={16} /> {t('void_permit')}
+                                </button>
+                            )}
+                            {currentUser.role === 'Admin' && (
+                                <button onClick={(e) => handleDeleteClick(selectedPermitForView.permitId, e)} className="px-6 py-2 rounded-lg text-sm font-bold text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2">
+                                    <Trash2 size={16} /> Delete Record
                                 </button>
                             )}
                             <button onClick={printPermit} className="bg-teal-600 text-white px-6 py-2 rounded-lg text-sm font-bold hover:bg-teal-700 transition-colors flex items-center gap-2 shadow-lg shadow-teal-600/20">
@@ -381,7 +408,7 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
             )}
 
             {isAdding && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto print:hidden">
                     <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full border border-slate-200 animate-in zoom-in-95 duration-200">
                         <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-2xl">
                             <div>
@@ -526,12 +553,45 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
             )}
             <style>{`
                 @media print {
-                    body * { visibility: hidden; }
-                    .print\\:static, .print\\:static * { visibility: visible; }
-                    .print\\:block, .print\\:block * { visibility: visible; }
-                    .print\\:static { position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 9999; }
-                    .print\\:hidden { display: none !important; }
-                    @page { margin: 0; size: A4; }
+                    /* Hide everything by default */
+                    body > #root > :not(.print-container) { 
+                        display: none !important; 
+                    }
+                    
+                    /* If using fixed/absolute positioning for layouts, ensure parent containers allow full page print */
+                    #root {
+                        display: block !important;
+                        position: static !important;
+                        padding: 0 !important;
+                        margin: 0 !important;
+                    }
+
+                    /* Specifically hide the main sidebar and headers from the layout */
+                    header, nav, aside, .print\\:hidden {
+                        display: none !important;
+                    }
+
+                    /* Override the detail modal's fixed positioning to allow it to be the main print object */
+                    .fixed.inset-0 {
+                        position: static !important;
+                        display: block !important;
+                        background: white !important;
+                    }
+
+                    /* Only show the official card container */
+                    .bg-white.rounded-xl.shadow-2xl {
+                        box-shadow: none !important;
+                        border: none !important;
+                        max-width: none !important;
+                        width: 100% !important;
+                        max-height: none !important;
+                        display: block !important;
+                    }
+
+                    @page { 
+                        margin: 0; 
+                        size: A4; 
+                    }
                 }
             `}</style>
         </div>

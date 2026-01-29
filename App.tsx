@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ViewState, CitizenRequest, RequestStatus, Asset, User, UserRole, House, AssetCategory, AssetStatusConfig, SystemConfig, GaragePermit, TemplateFieldPos } from './types';
 import { MOCK_REQUESTS, MOCK_ASSETS, MOCK_HOUSES, DEFAULT_ASSET_CATEGORIES, DEFAULT_ASSET_STATUSES, MOCK_GARAGE_PERMITS } from './constants';
@@ -30,7 +31,9 @@ const DEFAULT_FIELD_POSITIONS: Record<string, TemplateFieldPos> = {
   gOwnerName: { top: 72, left: 15, fontSize: 13, visible: true, fontWeight: 'bold' },
   gOwnerAddress: { top: 76, left: 15, fontSize: 11, visible: true },
   gOwnerPhone: { top: 80, left: 15, fontSize: 11, visible: true },
-  authorizedBy: { top: 90, left: 65, fontSize: 12, visible: true, fontWeight: 'bold' }
+  authorizedBy: { top: 90, left: 65, fontSize: 12, visible: true, fontWeight: 'bold' },
+  checkedBy: { top: 90, left: 35, fontSize: 12, visible: true },
+  notes: { top: 85, left: 15, fontSize: 10, visible: true }
 };
 
 const AppContent: React.FC = () => {
@@ -149,6 +152,10 @@ const AppContent: React.FC = () => {
       setGaragePermits(garagePermits.map(p => p.permitId === updatedPermit.permitId ? updatedPermit : p));
   };
 
+  const handleDeleteGaragePermit = (permitId: string) => {
+    setGaragePermits(garagePermits.filter(p => p.permitId !== permitId));
+  };
+
   const handleUpdateCategories = (newCategories: AssetCategory[]) => {
       setAssetCategories(newCategories);
   };
@@ -227,6 +234,7 @@ const AppContent: React.FC = () => {
                 permits={garagePermits}
                 onAddPermit={handleAddGaragePermit}
                 onUpdatePermit={handleUpdateGaragePermit}
+                onDeletePermit={handleDeleteGaragePermit}
                 systemConfig={systemConfig}
             />
         );
