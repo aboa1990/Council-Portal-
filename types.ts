@@ -66,11 +66,17 @@ export interface Asset {
   logs?: AccessLog[];
 }
 
+export type RegistryType = 'Bandara Goathi' | 'Amilla Goathi' | 'Government Plot' | 'Agriculture Plot' | 'Industrial Plot';
+
 export interface House {
   id: string;
   houseName: string;
+  registryNumber: string; // New
+  houseOrderNumber: string; // New
+  registryType: RegistryType; // New
   ownerName: string;
   address: string;
+  plotLocation: string; // New specific location
   islandZone: string;
   inhabitants: number;
   permitStatus: 'Valid' | 'Expired' | 'Pending';
