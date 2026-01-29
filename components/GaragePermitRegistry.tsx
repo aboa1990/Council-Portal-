@@ -1,13 +1,15 @@
+
 import React, { useState, useEffect } from 'react';
 import { GaragePermit, AccessLog, User, SystemConfig, TemplateFieldPos } from '../types';
-import { Search, Plus, X, Car, FileText, CheckCircle, AlertCircle, Printer, UserCheck, ShieldCheck, MapPin, Home, History, Ban, User as UserIcon, Calendar, Info, BadgeCheck, Hash, UserCircle } from 'lucide-react';
+import { Search, Plus, X, Car, FileText, CheckCircle, AlertCircle, Printer, UserCheck, ShieldCheck, MapPin, Home, History, Ban, User as UserIcon, Calendar, Info, BadgeCheck, Hash, UserCircle, Pencil, Trash2, AlertTriangle, Notebook, XCircle } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface GaragePermitRegistryProps {
     currentUser: User;
     permits: GaragePermit[];
-    onAddPermit: (permit: GaragePermit) => void;
+    onAddPermit: (permit) => void;
     onUpdatePermit: (permit: GaragePermit) => void;
+    onDeletePermit?: (permitId: string) => void;
     systemConfig: SystemConfig;
 }
 
@@ -17,9 +19,10 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
     const { t, isRTL } = useLanguage();
     const [searchTerm, setSearchTerm] = useState('');
     const [isAdding, setIsAdding] = useState(false);
+    const [editingPermitId, setEditingPermitId] = useState<string | null>(null);
     const [selectedPermitForView, setSelectedPermitForView] = useState<GaragePermit | null>(null);
     
-    // Initial State for New Permit
+    // Initial State for Permit Form
     const initialPermitState: Partial<GaragePermit> = {
         permitId: '',
         issueDate: new Date().toISOString().split('T')[0],
@@ -37,11 +40,14 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
         garageOwnerAddress: '',
         garageOwnerId: '',
         garageOwnerContact: '',
-        checkedBy: currentUser.name,
-        authorizedBy: ''
+        checkedBy: '',
+        authorizedBy: '',
+        notes: ''
     };
 
     const [newPermit, setNewPermit] = useState<Partial<GaragePermit>>(initialPermitState);
+    const [ownerPermitCount, setOwnerPermitCount] = useState(0);
+    const [garageOwnerPermitCount, setGarageOwnerPermitCount] = useState(0);
 
     // Calculate Permit ID based on selected issue date and sequence for that year
     const calculateNextId = (dateStr: string) => {
@@ -52,49 +58,103 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
         return `${yearPrefix}${String(count).padStart(2, '0')}`;
     };
 
-    // Update ID when issue date changes
+    // Update ID when issue date changes (only if not editing)
     useEffect(() => {
-        if (isAdding && newPermit.issueDate) {
+        if (isAdding && newPermit.issueDate && !editingPermitId) {
             setNewPermit(prev => ({ ...prev, permitId: calculateNextId(newPermit.issueDate!) }));
         }
-    }, [newPermit.issueDate, isAdding, permits.length]);
+    }, [newPermit.issueDate, isAdding, permits.length, editingPermitId]);
+
+    // Check permit counts for owners
+    useEffect(() => {
+        if (newPermit.vehicleOwnerId) {
+            const count = permits.filter(p => p.vehicleOwnerId === newPermit.vehicleOwnerId && p.status === 'Issued').length;
+            setOwnerPermitCount(count);
+        } else {
+            setOwnerPermitCount(0);
+        }
+
+        if (newPermit.garageOwnerId) {
+            const gCount = permits.filter(p => p.garageOwnerId === newPermit.garageOwnerId && p.status === 'Issued').length;
+            setGarageOwnerPermitCount(gCount);
+        } else {
+            setGarageOwnerPermitCount(0);
+        }
+    }, [newPermit.vehicleOwnerId, newPermit.garageOwnerId, permits]);
 
     const handleAddClick = () => {
+        setEditingPermitId(null);
         const initialDate = new Date().toISOString().split('T')[0];
         setNewPermit({ ...initialPermitState, issueDate: initialDate, permitId: calculateNextId(initialDate) });
         setIsAdding(true);
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        const finalId = calculateNextId(newPermit.issueDate!);
-        const log: AccessLog = {
-            id: `log-${Date.now()}`,
-            action: 'Created',
-            userId: currentUser.id,
-            userName: currentUser.name,
-            timestamp: new Date().toISOString(),
-            details: `Permit issued by staff: ${currentUser.name}`
-        };
-        const permitToAdd = { ...newPermit, permitId: finalId, status: 'Issued' as const, logs: [log] } as GaragePermit;
-        onAddPermit(permitToAdd);
-        setIsAdding(false);
+    const handleEditClick = (permit: GaragePermit, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setEditingPermitId(permit.permitId);
+        setNewPermit({ ...permit });
+        setIsAdding(true);
     };
 
-    const handleVoidPermit = (permit: GaragePermit, e: React.MouseEvent) => {
+    const handleVoidClick = (permitId: string, e: React.MouseEvent) => {
         e.stopPropagation();
-        if (!window.confirm("Are you sure you want to VOID this permit? This action will be logged.")) return;
-        const log: AccessLog = { id: `log-${Date.now()}`, action: 'Voided', userId: currentUser.id, userName: currentUser.name, timestamp: new Date().toISOString(), details: `Permit voided by staff: ${currentUser.name}` };
-        const updatedPermit = { ...permit, status: 'Void' as const, logs: [...(permit.logs || []), log] };
-        onUpdatePermit(updatedPermit);
-        if (selectedPermitForView?.permitId === permit.permitId) setSelectedPermitForView(updatedPermit);
+        if (window.confirm("Are you sure you want to void this permit? This action will officially invalidate the record.")) {
+            const permit = permits.find(p => p.permitId === permitId);
+            if (permit) {
+                const log: AccessLog = { 
+                    id: `log-${Date.now()}`, 
+                    action: 'Voided', 
+                    userId: currentUser.id, 
+                    userName: currentUser.name, 
+                    timestamp: new Date().toISOString(), 
+                    details: `Permit status changed to Void by ${currentUser.name}.` 
+                };
+                const updatedPermit = { ...permit, status: 'Void' as const, logs: [...(permit.logs || []), log] };
+                onUpdatePermit(updatedPermit);
+                
+                if (selectedPermitForView?.permitId === permitId) {
+                    setSelectedPermitForView(updatedPermit);
+                }
+            }
+        }
+    };
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        
+        if (editingPermitId) {
+            const log: AccessLog = {
+                id: `log-${Date.now()}`,
+                action: 'Updated',
+                userId: currentUser.id,
+                userName: currentUser.name,
+                timestamp: new Date().toISOString(),
+                details: `Permit updated by staff: ${currentUser.name}`
+            };
+            const updatedPermit = { ...newPermit, logs: [...(newPermit.logs || []), log] } as GaragePermit;
+            onUpdatePermit(updatedPermit);
+        } else {
+            const finalId = calculateNextId(newPermit.issueDate!);
+            const log: AccessLog = {
+                id: `log-${Date.now()}`,
+                action: 'Created',
+                userId: currentUser.id,
+                userName: currentUser.name,
+                timestamp: new Date().toISOString(),
+                details: `Permit issued by staff: ${currentUser.name}.`
+            };
+            const permitToAdd = { ...newPermit, permitId: finalId, status: 'Issued' as const, logs: [log] } as GaragePermit;
+            onAddPermit(permitToAdd);
+        }
+        setIsAdding(false);
     };
 
     const filteredPermits = permits.filter(p => 
         p.permitId.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.vehicleRegistryNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.garageOwnerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.vehicleChassisNumber.toLowerCase().includes(searchTerm.toLowerCase())
+        p.vehicleChassisNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.vehicleOwnerId.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const DetailRow = ({ label, value, mono = false }: { label: string, value: string | number | undefined, mono?: boolean }) => (
@@ -104,11 +164,13 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
         </div>
     );
 
-    const printPermit = () => window.print();
+    const printPermit = () => {
+        window.print();
+    };
 
-    // Mapping for Custom Template Engine
-    const getFieldData = (permit: GaragePermit, fieldName: string) => {
-        switch(fieldName) {
+    // Helper to get printable value for a field key
+    const getFieldValue = (fieldKey: string, permit: GaragePermit) => {
+        switch(fieldKey) {
             case 'permitId': return permit.permitId;
             case 'issueDate': return permit.issueDate;
             case 'vehicleChassis': return permit.vehicleChassisNumber;
@@ -122,16 +184,15 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
             case 'houseReg': return permit.houseRegistryNumber;
             case 'gOwnerName': return permit.garageOwnerName;
             case 'gOwnerAddress': return permit.garageOwnerAddress;
-            case 'gOwnerId': return permit.garageOwnerId;
             case 'gOwnerPhone': return permit.garageOwnerContact;
-            case 'authorizedBy': return permit.authorizedBy || '-';
+            case 'authorizedBy': return permit.authorizedBy;
             default: return '';
         }
     };
 
     return (
         <div className="space-y-6 animate-fade-in pb-10">
-            <div className={`flex flex-col md:flex-row justify-between items-start md:items-center gap-4 ${isRTL ? 'text-right' : 'text-left'}`}>
+            <div className={`flex flex-col md:flex-row justify-between items-start md:items-center gap-4 ${isRTL ? 'text-right' : 'text-left'} print:hidden`}>
                 <div>
                     <h2 className="text-xl font-bold text-slate-900">{t('garage_title')}</h2>
                     <p className="text-sm text-slate-500">{t('garage_subtitle')}</p>
@@ -143,14 +204,14 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                 </div>
             </div>
 
-            <div className="relative">
+            <div className="relative print:hidden">
                 <div className={`absolute inset-y-0 ${isRTL ? 'right-0 pr-3' : 'left-0 pl-3'} flex items-center pointer-events-none`}>
                     <Search className="h-5 w-5 text-slate-400" />
                 </div>
                 <input type="text" placeholder={t('search_garage')} className={`block w-full ${isRTL ? 'pr-10 pl-3 text-right' : 'pl-10 pr-3 text-left'} py-3 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-teal-500 outline-none shadow-sm`} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
 
-            <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+            <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden print:hidden">
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-slate-200" dir={isRTL ? 'rtl' : 'ltr'}>
                         <thead className="bg-slate-50">
@@ -165,7 +226,7 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                         </thead>
                         <tbody className="bg-white divide-y divide-slate-200">
                             {filteredPermits.map((permit) => (
-                                <tr key={permit.permitId} onClick={() => setSelectedPermitForView(permit)} className="hover:bg-teal-50/30 cursor-pointer transition-colors">
+                                <tr key={permit.permitId} onClick={() => setSelectedPermitForView(permit)} className="hover:bg-teal-50/30 cursor-pointer transition-colors group">
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-mono font-bold text-slate-900">{permit.permitId}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="text-sm font-medium text-slate-900">{permit.vehicleOwnerName}</div>
@@ -184,8 +245,14 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                                             {permit.status}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right space-x-2">
-                                        <button className="p-1.5 text-slate-400 hover:text-teal-600 transition-colors"><FileText size={18} /></button>
+                                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button onClick={(e) => handleEditClick(permit, e)} className="p-1.5 text-slate-400 hover:text-teal-600 transition-colors" title="Edit Record"><Pencil size={18} /></button>
+                                            {permit.status === 'Issued' && (
+                                                <button onClick={(e) => handleVoidClick(permit.permitId, e)} className="p-1.5 text-slate-400 hover:text-red-600 transition-colors" title={t('void_permit')}><Ban size={18} /></button>
+                                            )}
+                                            <button className="p-1.5 text-slate-400 hover:text-blue-600 transition-colors"><FileText size={18} /></button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
@@ -195,8 +262,8 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
             </div>
 
             {selectedPermitForView && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto">
-                    <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col my-4">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto print:static print:bg-transparent print:p-0">
+                    <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col my-4 print:my-0 print:shadow-none print:max-w-none print:w-auto print:h-auto print:rounded-none">
                         <div className={`p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-xl sticky top-0 z-10 print:hidden ${isRTL ? 'flex-row-reverse' : ''}`}>
                             <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse text-right' : ''}`}>
                                 <div className={`p-2 rounded-lg ${selectedPermitForView.status === 'Issued' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
@@ -207,73 +274,10 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                                     <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Official View</p>
                                 </div>
                             </div>
-                            <div className="flex gap-2">
-                                <button onClick={() => setSelectedPermitForView(null)} className="text-slate-400 hover:text-slate-600 p-1.5"><X size={24}/></button>
-                            </div>
+                            <button onClick={() => setSelectedPermitForView(null)} className="text-slate-400 hover:text-slate-600 p-1.5"><X size={24}/></button>
                         </div>
 
-                        {/* Custom Template Printing Mode */}
-                        <div className="hidden print:block bg-white relative w-[210mm] h-[297mm] mx-auto overflow-hidden" id="custom-permit-print-area">
-                            {systemConfig.garagePermitTemplate.useCustomTemplate && systemConfig.garagePermitTemplate.backgroundImage ? (
-                                <div className="absolute inset-0">
-                                    <img src={systemConfig.garagePermitTemplate.backgroundImage} className="w-full h-full object-cover" alt="Official Template" />
-                                    {(Object.entries(systemConfig.garagePermitTemplate.fieldPositions) as [string, TemplateFieldPos][]).map(([fieldName, pos]) => (
-                                        pos.visible && (
-                                            <div 
-                                                key={fieldName}
-                                                className="absolute"
-                                                style={{ 
-                                                    top: `${pos.top}%`, 
-                                                    left: `${pos.left}%`, 
-                                                    fontSize: `${pos.fontSize}px`, 
-                                                    fontWeight: pos.fontWeight || 'normal' 
-                                                }}
-                                            >
-                                                {getFieldData(selectedPermitForView, fieldName)}
-                                            </div>
-                                        )
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="p-12 border-[8px] border-double border-slate-900 min-h-full flex flex-col m-8">
-                                    <div className="text-center mb-12">
-                                        <p className="text-[12px] font-bold text-slate-800 uppercase tracking-widest whitespace-pre-line leading-relaxed">{systemConfig.garagePermitTemplate.header}</p>
-                                        <div className="h-1 bg-slate-900 w-32 mx-auto mt-4"></div>
-                                    </div>
-                                    <div className="text-center mb-10">
-                                        <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2">{systemConfig.garagePermitTemplate.title}</h1>
-                                        <div className="inline-block px-4 py-1 bg-slate-900 text-white font-mono text-sm tracking-widest">REF NO: {selectedPermitForView.permitId}</div>
-                                    </div>
-                                    <div className="text-center mb-10 px-8">
-                                        <p className="text-[14px] text-slate-700 leading-relaxed italic">{systemConfig.garagePermitTemplate.declaration}</p>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-12 text-sm">
-                                        <div>
-                                            <h4 className="font-bold border-b border-slate-900 mb-2 uppercase tracking-wide">Vehicle Details</h4>
-                                            <p><span className="font-bold">Reg No:</span> {selectedPermitForView.vehicleRegistryNumber}</p>
-                                            <p><span className="font-bold">Chassis:</span> {selectedPermitForView.vehicleChassisNumber}</p>
-                                            <p className="mt-2 font-bold">Owner:</p>
-                                            <p>{selectedPermitForView.vehicleOwnerName}</p>
-                                            <p>{selectedPermitForView.vehicleOwnerAddress}</p>
-                                        </div>
-                                        <div>
-                                            <h4 className="font-bold border-b border-slate-900 mb-2 uppercase tracking-wide">Garage Details</h4>
-                                            <p><span className="font-bold">House Reg:</span> {selectedPermitForView.houseRegistryNumber}</p>
-                                            <p><span className="font-bold">Address:</span> {selectedPermitForView.garageAddress}</p>
-                                            <p className="mt-2 font-bold">Owner:</p>
-                                            <p>{selectedPermitForView.garageOwnerName}</p>
-                                            <p>{selectedPermitForView.garageOwnerAddress}</p>
-                                        </div>
-                                    </div>
-                                    <div className="mt-auto pt-20 flex justify-between">
-                                        <div className="border-t border-slate-800 w-48 text-center pt-2 text-xs">OFFICIAL SIGNATURE</div>
-                                        <div className="border-t border-slate-800 w-48 text-center pt-2 text-xs">OFFICIAL STAMP</div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Standard UI for Review */}
+                        {/* Screen Detail View */}
                         <div className="flex-1 overflow-y-auto p-6 space-y-8 print:hidden bg-slate-50">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <section className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
@@ -298,11 +302,76 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                                     <DetailRow label="Garage Owner Address" value={selectedPermitForView.garageOwnerAddress} />
                                     <DetailRow label="Garage Owner ID" value={selectedPermitForView.garageOwnerId} />
                                     <DetailRow label="Garage Owner Contact" value={selectedPermitForView.garageOwnerContact} />
+                                    <div className="mt-2 bg-blue-50 p-2 rounded text-xs font-bold text-blue-700 flex items-center gap-2">
+                                        <BadgeCheck size={14} /> Active Permits for this Garage Owner: {permits.filter(p => p.garageOwnerId === selectedPermitForView?.garageOwnerId && p.status === 'Issued').length}
+                                    </div>
+                                </section>
+
+                                {selectedPermitForView.notes && (
+                                    <section className="md:col-span-2 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                                        <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest border-b border-slate-50 pb-2 mb-3 flex items-center gap-2">
+                                            <Notebook size={14} /> Extra Notes
+                                        </h4>
+                                        <p className="text-sm text-slate-700 whitespace-pre-wrap">{selectedPermitForView.notes}</p>
+                                    </section>
+                                )}
+
+                                <section className="md:col-span-2 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                                    <h4 className="text-xs font-black text-emerald-700 uppercase tracking-widest border-b border-emerald-50 pb-2 mb-3 flex items-center gap-2">
+                                        <History size={14} /> Permit Access Log
+                                    </h4>
+                                    <div className="space-y-3">
+                                        {selectedPermitForView.logs && selectedPermitForView.logs.map(log => (
+                                            <div key={log.id} className="text-xs flex justify-between items-center border-b border-slate-50 pb-2 last:border-0">
+                                                <div className="flex gap-4">
+                                                    <span className="font-mono text-slate-400">{new Date(log.timestamp).toLocaleString()}</span>
+                                                    <span className={`font-bold ${log.action === 'Created' ? 'text-emerald-600' : 'text-blue-600'}`}>{log.action}</span>
+                                                    <span className="text-slate-600">{log.details}</span>
+                                                </div>
+                                                <span className="font-medium text-slate-500">{log.userName}</span>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </section>
                             </div>
                         </div>
 
+                        {/* PRINT ONLY: THE OFFICIAL PERMIT CARD */}
+                        <div className="hidden print:block relative w-full h-full bg-white">
+                            <div className="relative mx-auto" style={{ width: '210mm', height: '297mm' }}>
+                                {systemConfig.garagePermitTemplate.backgroundImage && (
+                                    <img 
+                                        src={systemConfig.garagePermitTemplate.backgroundImage} 
+                                        className="absolute inset-0 w-full h-full object-cover" 
+                                        alt="Official Template"
+                                    />
+                                )}
+                                
+                                {Object.entries(systemConfig.garagePermitTemplate.fieldPositions).map(([key, pos]) => (
+                                    pos.visible && (
+                                        <div 
+                                            key={key}
+                                            className="absolute"
+                                            style={{ 
+                                                top: `${pos.top}%`, 
+                                                left: `${pos.left}%`, 
+                                                fontSize: `${pos.fontSize}pt`,
+                                                fontWeight: pos.fontWeight || 'normal'
+                                            }}
+                                        >
+                                            {getFieldValue(key, selectedPermitForView)}
+                                        </div>
+                                    )
+                                ))}
+                            </div>
+                        </div>
+
                         <div className="p-4 border-t border-slate-100 bg-white sticky bottom-0 flex justify-end gap-2 print:hidden">
+                            {selectedPermitForView.status === 'Issued' && (
+                                <button onClick={(e) => handleVoidClick(selectedPermitForView.permitId, e)} className="px-6 py-2 rounded-lg text-sm font-bold text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2">
+                                    <Ban size={16} /> {t('void_permit')}
+                                </button>
+                            )}
                             <button onClick={printPermit} className="bg-teal-600 text-white px-6 py-2 rounded-lg text-sm font-bold hover:bg-teal-700 transition-colors flex items-center gap-2 shadow-lg shadow-teal-600/20">
                                 <Printer size={16} /> Print Official Permit
                             </button>
@@ -316,15 +385,15 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                     <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full border border-slate-200 animate-in zoom-in-95 duration-200">
                         <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-2xl">
                             <div>
-                                <h3 className="font-black text-lg text-slate-800 uppercase tracking-tight">Issue New Garage Permit</h3>
-                                <p className="text-xs text-slate-500">Form order: 258/YEAR/SEQ</p>
+                                <h3 className="font-black text-lg text-slate-800 uppercase tracking-tight">{editingPermitId ? 'Edit Garage Permit' : 'Issue New Garage Permit'}</h3>
+                                <p className="text-xs text-slate-500">Official Portal Access</p>
                             </div>
                             <button onClick={() => setIsAdding(false)} className="text-slate-400 hover:text-slate-600 p-2"><X size={20}/></button>
                         </div>
                         
                         <form onSubmit={handleSubmit} className="p-8 space-y-8 max-h-[75vh] overflow-y-auto bg-white">
-                            {/* Metadata Section */}
-                            <div className="bg-teal-50/50 p-4 rounded-xl border border-teal-100 grid grid-cols-1 md:grid-cols-3 gap-4">
+                            
+                            <div className="bg-teal-50/50 p-4 rounded-xl border border-teal-100 grid grid-cols-1 md:grid-cols-4 gap-4">
                                 <div>
                                     <label className="block text-[10px] font-black text-teal-700 uppercase mb-1">Issue Date</label>
                                     <input required type="date" className="w-full border border-teal-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none" 
@@ -336,14 +405,19 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                                         value={newPermit.permitId} />
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] font-black text-teal-700 uppercase mb-1">Authorized Signatory</label>
+                                    <label className="block text-[10px] font-black text-teal-700 uppercase mb-1">{t('garage_checked_by')}</label>
                                     <input required type="text" className="w-full border border-teal-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none" 
-                                        placeholder="Name of SG or Admin"
+                                        placeholder="Staff Name"
+                                        value={newPermit.checkedBy} onChange={e => setNewPermit({...newPermit, checkedBy: e.target.value})} />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-black text-teal-700 uppercase mb-1">{t('authorized_by_label')}</label>
+                                    <input required type="text" className="w-full border border-teal-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none" 
+                                        placeholder="Authorizer"
                                         value={newPermit.authorizedBy} onChange={e => setNewPermit({...newPermit, authorizedBy: e.target.value})} />
                                 </div>
                             </div>
 
-                            {/* Section 1: Vehicle Details */}
                             <div className="space-y-4">
                                 <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest border-l-4 border-teal-600 pl-3 flex items-center gap-2">
                                     <Car size={16} /> Vehicle Details
@@ -362,10 +436,14 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                                 </div>
                             </div>
 
-                            {/* Section 2: Vehicle Owner */}
                             <div className="space-y-4 pt-4 border-t border-slate-100">
-                                <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest border-l-4 border-teal-600 pl-3 flex items-center gap-2">
-                                    <UserCircle size={16} /> Vehicle Owner Section
+                                <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest border-l-4 border-teal-600 pl-3 flex items-center justify-between">
+                                    <div className="flex items-center gap-2"><UserCircle size={16} /> Vehicle Owner Section</div>
+                                    {newPermit.vehicleOwnerId && (
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${ownerPermitCount > 0 ? 'bg-amber-100 text-amber-700 border border-amber-200' : 'bg-emerald-100 text-emerald-700 border border-emerald-200'}`}>
+                                            Existing Vehicle Owner Permits: {ownerPermitCount}
+                                        </span>
+                                    )}
                                 </h4>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
@@ -391,34 +469,14 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                                 </div>
                             </div>
 
-                            {/* Section 3: Garage Details */}
                             <div className="space-y-4 pt-4 border-t border-slate-100">
-                                <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest border-l-4 border-teal-600 pl-3 flex items-center gap-2">
-                                    <Home size={16} /> Garage Details
-                                </h4>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    <div className="md:col-span-2">
-                                        <label className="block text-[10px] font-black text-slate-500 uppercase mb-1">Garage Address</label>
-                                        <input required type="text" className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none" 
-                                            value={newPermit.garageAddress} onChange={e => setNewPermit({...newPermit, garageAddress: e.target.value})} />
-                                    </div>
-                                    <div>
-                                        <label className="block text-[10px] font-black text-slate-500 uppercase mb-1">Garage Size (Sqft)</label>
-                                        <input required type="number" className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none" 
-                                            value={newPermit.garageSizeSqft} onChange={e => setNewPermit({...newPermit, garageSizeSqft: Number(e.target.value)})} />
-                                    </div>
-                                    <div className="md:col-span-3">
-                                        <label className="block text-[10px] font-black text-slate-500 uppercase mb-1">House Registry Number</label>
-                                        <input required type="text" className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none" 
-                                            value={newPermit.houseRegistryNumber} onChange={e => setNewPermit({...newPermit, houseRegistryNumber: e.target.value})} />
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Section 4: Garage Owner */}
-                            <div className="space-y-4 pt-4 border-t border-slate-100 pb-4">
-                                <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest border-l-4 border-teal-600 pl-3 flex items-center gap-2">
-                                    <BadgeCheck size={16} /> Garage Owner Details
+                                <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest border-l-4 border-teal-600 pl-3 flex items-center justify-between">
+                                    <div className="flex items-center gap-2"><BadgeCheck size={16} /> Garage Owner Details</div>
+                                    {newPermit.garageOwnerId && (
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${garageOwnerPermitCount > 0 ? 'bg-amber-100 text-amber-700 border border-amber-200' : 'bg-emerald-100 text-emerald-700 border border-emerald-200'}`}>
+                                            Existing Garage Owner Permits: {garageOwnerPermitCount}
+                                        </span>
+                                    )}
                                 </h4>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
@@ -427,7 +485,7 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                                             value={newPermit.garageOwnerName} onChange={e => setNewPermit({...newPermit, garageOwnerName: e.target.value})} />
                                     </div>
                                     <div>
-                                        <label className="block text-[10px] font-black text-slate-500 uppercase mb-1">Address (Atoll/Island)</label>
+                                        <label className="block text-[10px] font-black text-slate-500 uppercase mb-1">Address</label>
                                         <input required type="text" className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none" 
                                             value={newPermit.garageOwnerAddress} onChange={e => setNewPermit({...newPermit, garageOwnerAddress: e.target.value})} />
                                     </div>
@@ -443,32 +501,37 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                                     </div>
                                 </div>
                             </div>
+
+                            <div className="space-y-4 pt-4 border-t border-slate-100">
+                                <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest border-l-4 border-teal-600 pl-3 flex items-center gap-2">
+                                    <Notebook size={16} /> {t('extra_notes')}
+                                </h4>
+                                <textarea 
+                                    className="w-full border border-slate-300 rounded-xl px-3 py-3 text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none h-24 resize-none shadow-inner" 
+                                    placeholder="Add any additional notes or internal remarks here..."
+                                    value={newPermit.notes}
+                                    onChange={e => setNewPermit({...newPermit, notes: e.target.value})}
+                                />
+                            </div>
                         </form>
 
                         <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 rounded-b-2xl">
-                            <button type="button" onClick={() => setIsAdding(false)} className="px-6 py-2.5 text-sm font-bold text-slate-600 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-colors">Cancel Entry</button>
-                            <button onClick={handleSubmit} type="button" className="px-8 py-2.5 text-sm font-bold text-white bg-teal-600 rounded-xl hover:bg-teal-700 transition-all shadow-lg shadow-teal-600/20">Finalize & Issue Permit</button>
+                            <button type="button" onClick={() => setIsAdding(false)} className="px-6 py-2.5 text-sm font-bold text-slate-600 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-colors">Cancel</button>
+                            <button onClick={handleSubmit} type="button" className="px-8 py-2.5 text-sm font-bold text-white bg-teal-600 rounded-xl hover:bg-teal-700 transition-all shadow-lg shadow-teal-600/20">
+                                {editingPermitId ? 'Update Record' : 'Issue Permit'}
+                            </button>
                         </div>
                     </div>
                 </div>
             )}
-
             <style>{`
                 @media print {
                     body * { visibility: hidden; }
-                    #custom-permit-print-area, #custom-permit-print-area * { visibility: visible; }
-                    #custom-permit-print-area {
-                        position: fixed;
-                        left: 0;
-                        top: 0;
-                        width: 210mm;
-                        height: 297mm;
-                        margin: 0;
-                        padding: 0;
-                        background: white !important;
-                        z-index: 9999;
-                    }
-                    @page { size: A4; margin: 0; }
+                    .print\\:static, .print\\:static * { visibility: visible; }
+                    .print\\:block, .print\\:block * { visibility: visible; }
+                    .print\\:static { position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 9999; }
+                    .print\\:hidden { display: none !important; }
+                    @page { margin: 0; size: A4; }
                 }
             `}</style>
         </div>

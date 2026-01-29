@@ -1,6 +1,6 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { User, UserRole, AssetCategory, AssetStatusConfig, SystemConfig, TemplateFieldPos } from '../types';
-// Added Info icon
 import { UserCircle, Upload, Save, Plus, Trash2, Shield, Mail, Check, Camera, X, Layers, Activity, Globe, Key, FileBadge, Briefcase, UserSquare2, FileText, Layout, Move, Settings as SettingsIcon, Eye, Type, Bold, Info } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -15,21 +15,6 @@ interface SettingsProps {
   onUpdateSystemConfig?: (config: SystemConfig) => void;
 }
 
-const MOCK_STAFF_LIST: User[] = [
-    { id: 'USR-001', name: 'Ahmed Riza', role: 'Admin', email: 'ahmed.riza@council.gov.mv', designation: 'Council President', idNo: 'A000001', rcNo: 'RC-101', sex: 'Male' },
-    { id: 'USR-002', name: 'Fathimath Nazeer', role: 'Secretary General', email: 'f.nazeer@council.gov.mv', designation: 'SG', idNo: 'A000002', rcNo: 'RC-102', sex: 'Female' },
-    { id: 'USR-003', name: 'Ali Shiyam', role: 'Staff', email: 'ali.shiyam@council.gov.mv', designation: 'Admin Officer', idNo: 'A000003', rcNo: 'RC-103', sex: 'Male' },
-];
-
-const COLORS = [
-    { name: 'Emerald', class: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
-    { name: 'Blue', class: 'bg-blue-100 text-blue-800 border-blue-200' },
-    { name: 'Amber', class: 'bg-amber-100 text-amber-800 border-amber-200' },
-    { name: 'Red', class: 'bg-red-100 text-red-800 border-red-200' },
-    { name: 'Purple', class: 'bg-purple-100 text-purple-800 border-purple-200' },
-    { name: 'Gray', class: 'bg-slate-100 text-slate-800 border-slate-200' },
-];
-
 const Settings: React.FC<SettingsProps> = ({ currentUser, onUpdateUser, assetCategories = [], onUpdateCategories, assetStatuses = [], onUpdateStatuses, systemConfig, onUpdateSystemConfig }) => {
   const { t, isRTL } = useLanguage();
   const [activeTab, setActiveTab] = useState<'general' | 'profile' | 'staff' | 'config' | 'permit-template'>('profile');
@@ -42,7 +27,7 @@ const Settings: React.FC<SettingsProps> = ({ currentUser, onUpdateUser, assetCat
   const templateInputRef = useRef<HTMLInputElement>(null);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  // General Settings State
+  // General Settings State - Local copy for editing
   const [localSystemConfig, setLocalSystemConfig] = useState<SystemConfig>(systemConfig || { 
     councilName: '', 
     secretariatName: '',
@@ -56,6 +41,13 @@ const Settings: React.FC<SettingsProps> = ({ currentUser, onUpdateUser, assetCat
     }
   });
   const [generalSuccess, setGeneralSuccess] = useState(false);
+
+  // Sync with props when they change
+  useEffect(() => {
+    if (systemConfig) {
+      setLocalSystemConfig(systemConfig);
+    }
+  }, [systemConfig]);
 
   // Template Editor State
   const [selectedField, setSelectedField] = useState<string | null>(null);
@@ -106,7 +98,7 @@ const Settings: React.FC<SettingsProps> = ({ currentUser, onUpdateUser, assetCat
     setTimeout(() => setShowSuccess(false), 3000);
   };
 
-  const handleSaveGeneral = (e: React.FormEvent) => {
+  const handleSaveGeneral = (e: React.MouseEvent | React.FormEvent) => {
       e.preventDefault();
       if (onUpdateSystemConfig) {
           onUpdateSystemConfig(localSystemConfig);
@@ -152,7 +144,8 @@ const Settings: React.FC<SettingsProps> = ({ currentUser, onUpdateUser, assetCat
                         <h2 className="text-xl font-bold text-slate-900">Custom Permit Template Designer</h2>
                         <p className="text-sm text-slate-500">Upload your council's official document template and position data fields precisely.</p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 items-center">
+                        {generalSuccess && <span className="text-emerald-600 text-xs font-bold animate-fade-in">Saved!</span>}
                         <button 
                             onClick={() => templateInputRef.current?.click()}
                             className="bg-white border border-teal-600 text-teal-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-50 flex items-center gap-2"
@@ -183,13 +176,13 @@ const Settings: React.FC<SettingsProps> = ({ currentUser, onUpdateUser, assetCat
                                 </div>
                             )}
 
-                            {/* Dynamic Fields Overlays - Added explicit cast to TemplateFieldPos to fix unknown property errors */}
+                            {/* Dynamic Fields Overlays */}
                             {(Object.entries(localSystemConfig.garagePermitTemplate.fieldPositions) as [string, TemplateFieldPos][]).map(([key, pos]) => (
                                 pos.visible && (
                                     <div 
                                         key={key}
                                         onClick={() => setSelectedField(key)}
-                                        className={`absolute cursor-pointer border px-1 select-none transition-all ${selectedField === key ? 'border-blue-500 bg-blue-50/50 ring-2 ring-blue-500/20 z-20' : 'border-transparent hover:border-slate-300 z-10'}`}
+                                        className={`absolute cursor-pointer border px-1 select-none transition-all ${selectedField === key ? 'border-blue-500 bg-blue-50/50 ring-2 ring-blue-500/20 z-20 font-bold' : 'border-transparent hover:border-slate-300 z-10'}`}
                                         style={{ 
                                             top: `${pos.top}%`, 
                                             left: `${pos.left}%`, 
@@ -223,7 +216,7 @@ const Settings: React.FC<SettingsProps> = ({ currentUser, onUpdateUser, assetCat
                                                 value={localSystemConfig.garagePermitTemplate.fieldPositions[selectedField].top}
                                                 onChange={(e) => updateField(selectedField, { top: Number(e.target.value) })}
                                             />
-                                            <input type="range" min="0" max="100" className="w-full mt-2" 
+                                            <input type="range" min="0" max="100" step="0.1" className="w-full mt-2" 
                                                 value={localSystemConfig.garagePermitTemplate.fieldPositions[selectedField].top}
                                                 onChange={(e) => updateField(selectedField, { top: Number(e.target.value) })}
                                             />
@@ -236,7 +229,7 @@ const Settings: React.FC<SettingsProps> = ({ currentUser, onUpdateUser, assetCat
                                                 value={localSystemConfig.garagePermitTemplate.fieldPositions[selectedField].left}
                                                 onChange={(e) => updateField(selectedField, { left: Number(e.target.value) })}
                                             />
-                                            <input type="range" min="0" max="100" className="w-full mt-2" 
+                                            <input type="range" min="0" max="100" step="0.1" className="w-full mt-2" 
                                                 value={localSystemConfig.garagePermitTemplate.fieldPositions[selectedField].left}
                                                 onChange={(e) => updateField(selectedField, { left: Number(e.target.value) })}
                                             />
@@ -256,7 +249,7 @@ const Settings: React.FC<SettingsProps> = ({ currentUser, onUpdateUser, assetCat
                                         <div>
                                             <label className="text-[10px] font-black uppercase text-slate-500">Weight</label>
                                             <button 
-                                                onClick={() => updateField(selectedField, { fontWeight: localSystemConfig.garagePermitTemplate.fieldPositions[selectedField].fontWeight === 'bold' ? 'bold' : 'normal' })}
+                                                onClick={() => updateField(selectedField, { fontWeight: localSystemConfig.garagePermitTemplate.fieldPositions[selectedField].fontWeight === 'bold' ? 'normal' : 'bold' })}
                                                 className={`w-full flex items-center justify-center gap-2 py-1.5 border rounded text-xs font-bold transition-colors ${localSystemConfig.garagePermitTemplate.fieldPositions[selectedField].fontWeight === 'bold' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-300 text-slate-600'}`}
                                             >
                                                 <Bold size={14} /> Bold
@@ -276,13 +269,13 @@ const Settings: React.FC<SettingsProps> = ({ currentUser, onUpdateUser, assetCat
                             )}
                             
                             <div className="mt-8 border-t pt-6">
-                                <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
+                                <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2 sticky top-0 bg-slate-50 py-2 z-10">
                                     <Eye size={16} /> 
                                     Available Fields
                                 </h3>
                                 <div className="space-y-2">
                                     {Object.keys(localSystemConfig.garagePermitTemplate.fieldPositions).map(field => (
-                                        <div key={field} className="flex items-center justify-between p-2 bg-white rounded border border-slate-100 hover:bg-slate-50 cursor-pointer" onClick={() => setSelectedField(field)}>
+                                        <div key={field} className={`flex items-center justify-between p-2 rounded border cursor-pointer transition-colors ${selectedField === field ? 'bg-blue-50 border-blue-200' : 'bg-white border-slate-100 hover:bg-slate-50'}`} onClick={() => setSelectedField(field)}>
                                             <span className="text-[10px] font-black text-slate-600 uppercase tracking-tight">{field}</span>
                                             <button 
                                                 onClick={(e) => { e.stopPropagation(); updateField(field, { visible: !localSystemConfig.garagePermitTemplate.fieldPositions[field].visible }); }}
@@ -309,7 +302,6 @@ const Settings: React.FC<SettingsProps> = ({ currentUser, onUpdateUser, assetCat
             </div>
         )}
 
-        {/* Existing Tabs */}
         {activeTab === 'profile' && (
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8">
                 <h2 className="text-xl font-bold text-slate-900 mb-6">{t('tab_profile')}</h2>
