@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
-import { GaragePermit, User, SystemConfig, TemplateFieldPos } from '../types';
-import { Search, Plus, X, Car, FileText, CheckCircle, Printer, MapPin, Home, User as UserIcon, BadgeCheck, Pencil, Trash2, Ban, ZoomIn, ZoomOut } from 'lucide-react';
+import { GaragePermit, User, SystemConfig, TemplateFieldPos, AccessLog } from '../types';
+import { Search, Plus, X, Car, FileText, CheckCircle, Printer, MapPin, Home, User as UserIcon, BadgeCheck, Pencil, Trash2, Ban, ZoomIn, ZoomOut, History, Eye } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { DEFAULT_FIELD_POSITIONS } from '../constants';
 
@@ -185,11 +185,32 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        
+        const timestamp = new Date().toISOString();
+        const logEntry: AccessLog = {
+            id: `log-${Date.now()}`,
+            userId: currentUser.id,
+            userName: currentUser.name,
+            role: currentUser.role,
+            timestamp: timestamp,
+            action: editingPermit ? 'Updated' : 'Created',
+            details: editingPermit ? 'Permit details updated' : 'Permit issued'
+        };
+
         if (editingPermit) {
-             const updatedPermit: GaragePermit = { ...editingPermit, ...formData as GaragePermit };
+             const updatedPermit: GaragePermit = { 
+                 ...editingPermit, 
+                 ...formData as GaragePermit,
+                 logs: [logEntry, ...(editingPermit.logs || [])]
+             };
              onUpdatePermit(updatedPermit);
         } else {
-            const newPermit: GaragePermit = { ...formData as GaragePermit, checkedBy: currentUser.name, authorizedBy: '', logs: [] };
+            const newPermit: GaragePermit = { 
+                ...formData as GaragePermit, 
+                checkedBy: currentUser.name, 
+                authorizedBy: '', 
+                logs: [logEntry] 
+            };
             onAddPermit(newPermit);
         }
         setIsModalOpen(false);
@@ -206,7 +227,22 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
     };
 
     const handleVoid = (permit: GaragePermit) => {
-        if (window.confirm('Are you sure you want to void this permit?')) onUpdatePermit({ ...permit, status: 'Void' });
+        if (window.confirm('Are you sure you want to void this permit?')) {
+            const logEntry: AccessLog = {
+                id: `log-${Date.now()}`,
+                userId: currentUser.id,
+                userName: currentUser.name,
+                role: currentUser.role,
+                timestamp: new Date().toISOString(),
+                action: 'Voided',
+                details: 'Permit marked as void'
+            };
+            onUpdatePermit({ 
+                ...permit, 
+                status: 'Void',
+                logs: [logEntry, ...(permit.logs || [])]
+            });
+        }
     };
 
     return (
@@ -248,7 +284,7 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                                     <td className="px-6 py-4 whitespace-nowrap"><div className="flex flex-col"><div className="flex items-center gap-2 text-sm text-slate-900"><UserIcon size={14} className="text-slate-400"/> {permit.vehicleOwnerName}</div><div className="text-xs text-slate-500">{permit.vehicleOwnerContact}</div></div></td>
                                     <td className="px-6 py-4 whitespace-nowrap"><div className="flex flex-col"><div className="flex items-center gap-2 text-sm text-slate-700"><Home size={14} className="text-slate-400"/> {permit.houseRegistryNumber}</div><div className="text-xs text-slate-500">{permit.garageAddress}</div></div></td>
                                     <td className="px-6 py-4 whitespace-nowrap">{permit.status === 'Issued' ? <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200"><CheckCircle size={12} className="mr-1"/> Issued</span> : <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200"><Ban size={12} className="mr-1"/> Void</span>}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right"><div className="flex items-center justify-end gap-2"><button onClick={() => handlePrint(permit)} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"><Printer size={16} /></button><button onClick={() => handleOpenEdit(permit)} className="p-1.5 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded transition-colors"><Pencil size={16} /></button>{permit.status !== 'Void' && <button onClick={() => handleVoid(permit)} className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors"><Ban size={16} /></button>}{onDeletePermit && <button onClick={() => handleDelete(permit.permitId)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"><Trash2 size={16} /></button>}</div></td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-right"><div className="flex items-center justify-end gap-2"><button onClick={() => handleOpenEdit(permit)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="View Details"><Eye size={16} /></button><button onClick={() => handlePrint(permit)} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"><Printer size={16} /></button><button onClick={() => handleOpenEdit(permit)} className="p-1.5 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded transition-colors"><Pencil size={16} /></button>{permit.status !== 'Void' && <button onClick={() => handleVoid(permit)} className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors"><Ban size={16} /></button>}{onDeletePermit && <button onClick={() => handleDelete(permit.permitId)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"><Trash2 size={16} /></button>}</div></td>
                                 </tr>
                             ))}
                         </tbody>
@@ -293,6 +329,37 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                                     <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('contact_no')}</label><input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" value={formData.garageOwnerContact} onChange={e => setFormData({...formData, garageOwnerContact: e.target.value})} /></div>
                                 </div>
                             </div>
+                            
+                            {/* Access Log Section - ONLY when editing */}
+                            {editingPermit && (
+                                <div className="mt-8 pt-6 border-t border-slate-200">
+                                    <h4 className="text-sm font-bold text-slate-800 flex items-center gap-2 mb-4">
+                                        <History size={16} className="text-slate-500" />
+                                        Audit Log
+                                    </h4>
+                                    <div className="bg-slate-50 rounded-lg border border-slate-200 overflow-hidden max-h-48 overflow-y-auto">
+                                        <table className="min-w-full text-xs">
+                                            <thead className="bg-slate-100 text-slate-500 font-medium">
+                                                <tr>
+                                                    <th className="px-3 py-2 text-left sticky top-0 bg-slate-100">Date</th>
+                                                    <th className="px-3 py-2 text-left sticky top-0 bg-slate-100">User</th>
+                                                    <th className="px-3 py-2 text-left sticky top-0 bg-slate-100">Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-200 text-slate-600">
+                                                {editingPermit.logs?.map((log) => (
+                                                    <tr key={log.id}>
+                                                        <td className="px-3 py-2">{new Date(log.timestamp).toLocaleString()}</td>
+                                                        <td className="px-3 py-2">{log.userName}</td>
+                                                        <td className="px-3 py-2">{log.action}</td>
+                                                    </tr>
+                                                )) || <tr><td colSpan={3} className="px-3 py-2 text-center italic">No logs available</td></tr>}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
                                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 rounded hover:bg-slate-200">{t('cancel')}</button>
                                 <button type="submit" className="px-6 py-2 text-sm font-bold text-white bg-teal-600 rounded hover:bg-teal-700 shadow-sm">{editingPermit ? 'Update Permit' : t('issue_permit_btn')}</button>
