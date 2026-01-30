@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { GaragePermit, User, SystemConfig, TemplateFieldPos, AccessLog } from '../types';
-import { Search, Plus, X, Car, FileText, CheckCircle, Printer, MapPin, Home, User as UserIcon, BadgeCheck, Pencil, Trash2, Ban, ZoomIn, ZoomOut, History, Eye } from 'lucide-react';
+import { Search, Plus, X, Car, FileText, CheckCircle, Printer, MapPin, Home, User as UserIcon, BadgeCheck, Pencil, Trash2, Ban, ZoomIn, ZoomOut, History, Eye, AlertCircle } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { DEFAULT_FIELD_POSITIONS } from '../constants';
 
@@ -168,8 +168,13 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
         p.vehicleOwnerName.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const getOwnerPermitCount = (ownerId: string) => {
-        return permits.filter(p => p.vehicleOwnerId === ownerId && p.status === 'Issued').length;
+    // Calculate active permits for a given owner ID (both vehicle and garage roles)
+    const getActivePermitCount = (id: string, type: 'vehicle' | 'garage') => {
+        if (!id) return 0;
+        return permits.filter(p => 
+            p.status === 'Issued' && 
+            (type === 'vehicle' ? p.vehicleOwnerId === id : p.garageOwnerId === id)
+        ).length;
     };
 
     const handleOpenAdd = () => {
@@ -249,6 +254,10 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
         }
     };
 
+    // Live counts for form inputs
+    const activeVehiclePermitsInForm = getActivePermitCount(formData.vehicleOwnerId || '', 'vehicle');
+    const activeGaragePermitsInForm = getActivePermitCount(formData.garageOwnerId || '', 'garage');
+
     return (
         <div className="space-y-6 animate-fade-in pb-10">
              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -290,14 +299,31 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                                             <div className="flex items-center gap-2 text-sm text-slate-900"><UserIcon size={14} className="text-slate-400"/> {permit.vehicleOwnerName}</div>
                                             <div className="text-xs text-slate-500">{permit.vehicleOwnerContact}</div>
                                             <div className="mt-1">
-                                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200" title="Total active permits for this owner">
-                                                    <FileText size={10} />
-                                                    {t('permits_held')}: {getOwnerPermitCount(permit.vehicleOwnerId)}
+                                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200" title="Active vehicle permits for this owner">
+                                                    <Car size={10} />
+                                                    {t('permits_held')}: {getActivePermitCount(permit.vehicleOwnerId, 'vehicle')}
                                                 </span>
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap"><div className="flex flex-col"><div className="flex items-center gap-2 text-sm text-slate-700"><Home size={14} className="text-slate-400"/> {permit.houseRegistryNumber}</div><div className="text-xs text-slate-500">{permit.garageAddress}</div></div></td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="flex flex-col">
+                                            <div className="flex items-center gap-2 text-sm text-slate-700"><Home size={14} className="text-slate-400"/> {permit.houseRegistryNumber}</div>
+                                            <div className="text-xs text-slate-500">{permit.garageAddress}</div>
+                                            {/* Garage Owner Info Display */}
+                                            {permit.garageOwnerName && (
+                                                <div className="mt-1 flex flex-col">
+                                                    <div className="text-xs text-slate-400 flex items-center gap-1"><UserIcon size={10} /> {permit.garageOwnerName}</div>
+                                                    <div className="mt-0.5">
+                                                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200" title="Active garage allocations for this owner">
+                                                            <Home size={10} />
+                                                            Allocations: {getActivePermitCount(permit.garageOwnerId, 'garage')}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </td>
                                     <td className="px-6 py-4 whitespace-nowrap">{permit.status === 'Issued' ? <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200"><CheckCircle size={12} className="mr-1"/> Issued</span> : <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200"><Ban size={12} className="mr-1"/> Void</span>}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right"><div className="flex items-center justify-end gap-2"><button onClick={() => handleOpenEdit(permit)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="View Details"><Eye size={16} /></button><button onClick={() => handlePrint(permit)} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"><Printer size={16} /></button><button onClick={() => handleOpenEdit(permit)} className="p-1.5 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded transition-colors"><Pencil size={16} /></button>{permit.status !== 'Void' && <button onClick={() => handleVoid(permit)} className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors"><Ban size={16} /></button>}{onDeletePermit && <button onClick={() => handleDelete(permit.permitId)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"><Trash2 size={16} /></button>}</div></td>
                                 </tr>
@@ -316,30 +342,58 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                             <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X size={20}/></button>
                         </div>
                         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-                            {/* Standard Form Fields - Reduced for brevity, logic unchanged from previous */}
+                            {/* Standard Form Fields */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="col-span-1"><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('permit_id')}</label><input type="text" className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-slate-100 font-mono font-bold text-slate-700" value={formData.permitId} readOnly /></div>
                                 <div className="col-span-1"><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('issue_date')}</label><input type="date" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white outline-none" value={formData.issueDate} onChange={e => setFormData({...formData, issueDate: e.target.value})} /></div>
                             </div>
+                            
+                            {/* Vehicle Details Section */}
                             <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
                                 <h4 className="text-sm font-bold text-slate-700 flex items-center gap-2 mb-4 border-b border-slate-200 pb-2"><Car size={16} className="text-teal-600"/> {t('vehicle_details')}</h4>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                     <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('registry_no')}</label><input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white font-mono" value={formData.vehicleRegistryNumber} onChange={e => setFormData({...formData, vehicleRegistryNumber: e.target.value})} /></div>
                                     <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('chassis_no')}</label><input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white font-mono" value={formData.vehicleChassisNumber} onChange={e => setFormData({...formData, vehicleChassisNumber: e.target.value})} /></div>
+                                    
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1 flex justify-between">
+                                            {t('owner_id')}
+                                            {activeVehiclePermitsInForm > 0 && (
+                                                <span className="text-amber-600 text-[10px] flex items-center gap-1">
+                                                    <AlertCircle size={10} /> Active Permits: {activeVehiclePermitsInForm}
+                                                </span>
+                                            )}
+                                        </label>
+                                        <input type="text" required className={`w-full border rounded px-3 py-2 text-sm bg-white ${activeVehiclePermitsInForm > 0 ? 'border-amber-300 focus:ring-amber-500' : 'border-slate-300'}`} value={formData.vehicleOwnerId} onChange={e => setFormData({...formData, vehicleOwnerId: e.target.value})} />
+                                    </div>
+                                    
                                     <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('owner_name')}</label><input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" value={formData.vehicleOwnerName} onChange={e => setFormData({...formData, vehicleOwnerName: e.target.value})} /></div>
-                                    <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('owner_id')}</label><input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" value={formData.vehicleOwnerId} onChange={e => setFormData({...formData, vehicleOwnerId: e.target.value})} /></div>
                                     <div className="lg:col-span-2"><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('owner_address')}</label><input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" value={formData.vehicleOwnerAddress} onChange={e => setFormData({...formData, vehicleOwnerAddress: e.target.value})} /></div>
                                     <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('contact_no')}</label><input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" value={formData.vehicleOwnerContact} onChange={e => setFormData({...formData, vehicleOwnerContact: e.target.value})} /></div>
                                 </div>
                             </div>
+
+                            {/* Garage Details Section */}
                             <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
                                 <h4 className="text-sm font-bold text-slate-700 flex items-center gap-2 mb-4 border-b border-slate-200 pb-2"><Home size={16} className="text-teal-600"/> {t('garage_details')}</h4>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                     <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('house_reg_no')}</label><input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white font-mono" value={formData.houseRegistryNumber} onChange={e => setFormData({...formData, houseRegistryNumber: e.target.value})} /></div>
                                     <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('garage_size')}</label><input type="number" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" value={formData.garageSizeSqft} onChange={e => setFormData({...formData, garageSizeSqft: Number(e.target.value)})} /></div>
                                     <div className="lg:col-span-2"><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('garage_address')}</label><input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" value={formData.garageAddress} onChange={e => setFormData({...formData, garageAddress: e.target.value})} /></div>
+                                    
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1 flex justify-between">
+                                            {t('owner_id')}
+                                            {activeGaragePermitsInForm > 0 && (
+                                                <span className="text-amber-600 text-[10px] flex items-center gap-1">
+                                                    <AlertCircle size={10} /> Active Allocations: {activeGaragePermitsInForm}
+                                                </span>
+                                            )}
+                                        </label>
+                                        <input type="text" required className={`w-full border rounded px-3 py-2 text-sm bg-white ${activeGaragePermitsInForm > 0 ? 'border-amber-300 focus:ring-amber-500' : 'border-slate-300'}`} value={formData.garageOwnerId} onChange={e => setFormData({...formData, garageOwnerId: e.target.value})} />
+                                    </div>
+
                                     <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('owner_name')}</label><input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" value={formData.garageOwnerName} onChange={e => setFormData({...formData, garageOwnerName: e.target.value})} /></div>
-                                    <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('owner_id')}</label><input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" value={formData.garageOwnerId} onChange={e => setFormData({...formData, garageOwnerId: e.target.value})} /></div>
                                     <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('owner_address')}</label><input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" value={formData.garageOwnerAddress} onChange={e => setFormData({...formData, garageOwnerAddress: e.target.value})} /></div>
                                     <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('contact_no')}</label><input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" value={formData.garageOwnerContact} onChange={e => setFormData({...formData, garageOwnerContact: e.target.value})} /></div>
                                 </div>
