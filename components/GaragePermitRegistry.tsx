@@ -23,7 +23,7 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
     const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
     const [editingPermit, setEditingPermit] = useState<GaragePermit | null>(null);
     const [viewingPermit, setViewingPermit] = useState<GaragePermit | null>(null);
-    const [previewScale, setPreviewScale] = useState(1.0); // Default to 100%
+    const [previewScale, setPreviewScale] = useState(0.8);
 
     // Merge system config with defaults to ensure all layers are visible even if config is old
     const effectiveFieldPositions = {
@@ -121,7 +121,7 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
 
     const handlePrint = (permit: GaragePermit) => {
         setViewingPermit(permit);
-        setPreviewScale(0.8); // Default zoom out slightly for better modal viewing
+        setPreviewScale(0.8); 
         setIsPrintModalOpen(true);
     };
 
@@ -300,8 +300,7 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                                         value={formData.issueDate} onChange={e => setFormData({...formData, issueDate: e.target.value})} />
                                 </div>
                             </div>
-                            {/* ... (Existing form inputs unchanged for brevity) ... */}
-                            {/* Re-inserting form inputs to ensure file completeness */}
+                            
                             <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
                                 <h4 className="text-sm font-bold text-slate-700 flex items-center gap-2 mb-4 border-b border-slate-200 pb-2">
                                     <Car size={16} className="text-teal-600"/> {t('vehicle_details')}
@@ -403,7 +402,7 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                 </div>
             )}
 
-            {/* Print Preview Modal - Fixed Scaling Logic */}
+            {/* Print Preview Modal - FORCE FIT A4 */}
             {isPrintModalOpen && viewingPermit && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4 overflow-hidden modal-backdrop">
                      <div className="bg-white rounded-lg shadow-2xl h-[95vh] w-full max-w-6xl flex flex-col overflow-hidden relative modal-content">
@@ -579,52 +578,44 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                          <style>{`
                             @media print {
                                 @page { size: A4 portrait; margin: 0; }
-                                body { 
-                                    visibility: hidden; 
-                                    background: white; 
+                                html, body { 
+                                    height: auto; 
+                                    overflow: visible; 
                                     margin: 0; 
                                     padding: 0;
                                 }
                                 
-                                /* Hide modal overlays/UI but reveal print area */
-                                .modal-backdrop, .modal-content, .print-preview-wrapper {
-                                    visibility: visible;
-                                    position: absolute;
-                                    left: 0;
-                                    top: 0;
-                                    margin: 0;
-                                    padding: 0;
-                                    width: 100%;
-                                    height: 100%;
-                                    background: white;
-                                    overflow: visible;
-                                    transform: none !important;
+                                /* Hide everything initially */
+                                body * {
+                                    visibility: hidden;
                                 }
 
-                                /* The core print content */
-                                #print-area {
+                                /* Only make the print area visible */
+                                #print-area, #print-area * {
                                     visibility: visible !important;
-                                    position: absolute !important;
+                                }
+
+                                /* Force the print area to absolute top-left coordinates relative to page */
+                                #print-area {
+                                    position: fixed !important;
                                     left: 0 !important;
                                     top: 0 !important;
                                     width: 210mm !important;
                                     height: 297mm !important;
                                     margin: 0 !important;
                                     padding: 0 !important;
-                                    z-index: 9999;
-                                    overflow: hidden !important;
+                                    z-index: 2147483647 !important; /* Max z-index */
                                     background: white !important;
+                                    overflow: hidden !important;
                                     box-shadow: none !important;
+                                    transform: none !important;
                                 }
                                 
-                                #print-area * {
-                                    visibility: visible !important;
-                                }
-
-                                /* Hide non-print UI inside the modal */
-                                .modal-content > div:first-child, /* The header bar */
-                                .zoom-controls {
-                                    display: none !important;
+                                /* Reset wrapper transforms that might mess up coordinates */
+                                .print-preview-wrapper {
+                                    transform: none !important;
+                                    position: static !important;
+                                    display: block !important;
                                 }
                             }
                         `}</style>

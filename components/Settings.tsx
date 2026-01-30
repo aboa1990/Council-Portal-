@@ -29,13 +29,6 @@ interface SettingsProps {
   onUpdateSystemConfig?: (config: SystemConfig) => void;
 }
 
-const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
-  'Admin': ['Full Access', 'System Configuration', 'Access Logs', 'Staff Management', 'Asset Registry', 'Analytics', 'House Registry', 'Garage Permits'],
-  'Executive': ['Asset Management', 'Analytics', 'House Registry', 'Garage Permits', 'Request Triage', 'Permit Templates'],
-  'Senior Management': ['Asset Registry (View)', 'House Registry', 'Garage Permits', 'Request Management'],
-  'Staff': ['House Registry', 'Garage Permits', 'Request Handling']
-};
-
 const Settings: React.FC<SettingsProps> = ({ 
     currentUser, 
     onUpdateUser, 
@@ -417,7 +410,6 @@ const Settings: React.FC<SettingsProps> = ({
         <div className="bg-white rounded-b-xl border-x border-b border-slate-200 p-8 shadow-sm">
             {activeTab === 'profile' && (
                 <div className="space-y-8">
-                    {/* ... Profile Content (Unchanged) ... */}
                     <div className="flex justify-between items-start border-b border-slate-100 pb-4">
                         <div>
                             <h2 className="text-xl font-bold text-slate-900">{t('tab_profile')}</h2>
@@ -483,6 +475,125 @@ const Settings: React.FC<SettingsProps> = ({
                             {showSuccess && <span className="text-emerald-600 flex items-center gap-2 text-sm font-bold animate-in fade-in slide-in-from-left-2"><CheckCircle2 size={18} /> Changes saved successfully</span>}
                         </div>
                     </form>
+                </div>
+            )}
+
+            {activeTab === 'general' && (
+                <div className="space-y-8 animate-fade-in">
+                    <div className="flex justify-between items-start border-b border-slate-100 pb-4">
+                        <div>
+                            <h2 className="text-xl font-bold text-slate-900">{t('tab_general')}</h2>
+                            <p className="text-sm text-slate-500">{t('general_subtitle')}</p>
+                        </div>
+                    </div>
+                    <form onSubmit={handleSaveGeneral} className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">{t('council_name_label')}</label>
+                                <input type="text" value={localSystemConfig.councilName} onChange={(e) => setLocalSystemConfig({...localSystemConfig, councilName: e.target.value})} className="w-full border border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-teal-500 outline-none bg-slate-50 focus:bg-white" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">{t('secretariat_label')}</label>
+                                <input type="text" value={localSystemConfig.secretariatName} onChange={(e) => setLocalSystemConfig({...localSystemConfig, secretariatName: e.target.value})} className="w-full border border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-teal-500 outline-none bg-slate-50 focus:bg-white" />
+                            </div>
+                        </div>
+                        <div className="pt-4">
+                            <button type="submit" className="bg-teal-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-teal-700 flex items-center gap-2 shadow-lg">
+                                <Save size={16} /> Save Configuration
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            )}
+
+            {activeTab === 'staff' && (
+                <div className="space-y-6 animate-fade-in">
+                    <div className="flex justify-between items-start border-b border-slate-100 pb-4">
+                        <div>
+                            <h2 className="text-xl font-bold text-slate-900">{t('tab_staff')}</h2>
+                            <p className="text-sm text-slate-500">Manage portal access and user roles.</p>
+                        </div>
+                        <button onClick={() => openStaffModal()} className="bg-teal-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-teal-700 transition-all flex items-center gap-2 shadow-md">
+                            <UserPlus size={18} /> Add Staff
+                        </button>
+                    </div>
+
+                    <div className="relative">
+                        <Search className="absolute left-4 top-3.5 text-slate-400" size={18} />
+                        <input type="text" placeholder="Search staff members..." className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none" value={staffSearch} onChange={e => setStaffSearch(e.target.value)} />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {filteredStaff.map(staff => (
+                            <div key={staff.id} className="group bg-white rounded-2xl border border-slate-200 p-6 hover:shadow-xl hover:border-teal-200 transition-all duration-300 relative overflow-hidden">
+                                <div className={`absolute top-0 right-0 p-3 rounded-bl-2xl text-[10px] font-black uppercase tracking-widest border-b border-l ${getRoleColor(staff.role)}`}>
+                                    {staff.role}
+                                </div>
+                                <div className="flex items-center gap-4 mb-4">
+                                    <div className="w-14 h-14 rounded-2xl bg-slate-100 overflow-hidden flex items-center justify-center border-2 border-white shadow-sm">
+                                        {staff.avatar ? <img src={staff.avatar} className="w-full h-full object-cover" /> : <UserCircle size={32} className="text-slate-300" />}
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-slate-900">{staff.name}</h3>
+                                        <p className="text-xs text-slate-500 font-medium">{staff.designation || 'Council Staff'}</p>
+                                    </div>
+                                </div>
+                                <div className="space-y-2 mb-6">
+                                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                                        <Mail size={12} className="text-teal-600"/> {staff.email}
+                                    </div>
+                                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                                        <BadgeCheck size={12} className="text-teal-600"/> ID: {staff.rcNo || staff.id}
+                                    </div>
+                                </div>
+                                <div className="flex gap-2 pt-4 border-t border-slate-100">
+                                    <button onClick={() => openStaffModal(staff)} className="flex-1 py-2 text-xs font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors flex items-center justify-center gap-2"><Pencil size={12}/> Edit</button>
+                                    <button onClick={() => handleDeleteStaff(staff.id)} className="flex-1 py-2 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors flex items-center justify-center gap-2"><Trash2 size={12}/> Remove</button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'logs' && (
+                <div className="space-y-6 animate-fade-in">
+                    <div className="flex justify-between items-start border-b border-slate-100 pb-4">
+                        <div>
+                            <h2 className="text-xl font-bold text-slate-900">System Access Logs</h2>
+                            <p className="text-sm text-slate-500">Audit trail of all portal activities.</p>
+                        </div>
+                        <div className="bg-slate-100 px-3 py-1 rounded-lg text-xs font-mono text-slate-600">Total Records: {accessLogs.length}</div>
+                    </div>
+                    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                        <table className="min-w-full divide-y divide-slate-200">
+                            <thead className="bg-slate-50">
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Timestamp</th>
+                                    <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">User</th>
+                                    <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Action</th>
+                                    <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Details</th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-slate-200">
+                                {accessLogs.slice(0, 50).map((log) => (
+                                    <tr key={log.id} className="hover:bg-slate-50">
+                                        <td className="px-6 py-3 whitespace-nowrap text-xs font-mono text-slate-500">{new Date(log.timestamp).toLocaleString()}</td>
+                                        <td className="px-6 py-3 whitespace-nowrap">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-600">{log.userName.charAt(0)}</div>
+                                                <span className="text-xs font-medium text-slate-700">{log.userName}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-3 whitespace-nowrap">
+                                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${log.action === 'Login' ? 'bg-green-50 text-green-700' : log.action.includes('Delete') ? 'bg-red-50 text-red-700' : 'bg-blue-50 text-blue-700'}`}>{log.action}</span>
+                                        </td>
+                                        <td className="px-6 py-3 text-xs text-slate-600 truncate max-w-xs" title={log.details}>{log.details}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             )}
 
@@ -555,9 +666,8 @@ const Settings: React.FC<SettingsProps> = ({
                             </div>
                         </div>
 
-                        {/* Controls Panel (Existing content here...) */}
+                        {/* Controls Panel */}
                         <div className="lg:col-span-4 space-y-6">
-                            {/* ... (Existing control panel code - no changes required for this request logic, just pass through) ... */}
                             <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 sticky top-6">
                                 <h3 className="text-sm font-black text-slate-800 mb-6 flex items-center gap-2">
                                     <SettingsIcon size={18} className="text-teal-600" /> 
@@ -643,7 +753,6 @@ const Settings: React.FC<SettingsProps> = ({
                                         <Layers size={14} /> Template Layers
                                     </h4>
                                     <div className="space-y-1 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                                        {/* Use Object.keys of the merged configuration */}
                                         {Object.keys(localSystemConfig.garagePermitTemplate.fieldPositions).map(field => (
                                             <div 
                                                 key={field} 
@@ -677,13 +786,123 @@ const Settings: React.FC<SettingsProps> = ({
                     </div>
                 </div>
             )}
-            
-            {/* Other tabs omitted as they are unchanged */}
-            {(activeTab === 'general' || activeTab === 'staff' || activeTab === 'logs' || activeTab === 'data') && (
-               <div className="text-center py-10 text-slate-400 italic">
-                   {/* Fallback for other tabs if not explicitly rendered above (though they should be in full implementation) */}
-                   {/* In a real scenario, we'd include the full content of other tabs here or use separate components to avoid huge file size */}
-               </div>
+
+            {activeTab === 'data' && (
+                <div className="space-y-8 animate-fade-in">
+                    <div className="flex justify-between items-start border-b border-slate-100 pb-4">
+                        <div>
+                            <h2 className="text-xl font-bold text-slate-900">Database & Storage</h2>
+                            <p className="text-sm text-slate-500">Manage backups and cloud connectivity.</p>
+                        </div>
+                        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${isCloudActive ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-amber-50 border-amber-200 text-amber-700'}`}>
+                            {isCloudActive ? <Cloud size={16}/> : <CloudOff size={16}/>}
+                            <span className="text-xs font-bold uppercase">{isCloudActive ? 'Cloud Active' : 'Local Mode'}</span>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-6">
+                            <h3 className="font-bold text-slate-800 flex items-center gap-2"><Database size={18} className="text-teal-600"/> Local Backup</h3>
+                            <p className="text-sm text-slate-500">Download a full JSON snapshot of the current system state or restore from a previous file.</p>
+                            
+                            <div className="flex flex-col gap-3">
+                                <button onClick={handleExportDatabase} className="flex items-center justify-center gap-2 py-3 bg-slate-100 text-slate-700 font-bold text-sm rounded-xl hover:bg-slate-200 transition-colors">
+                                    <Download size={16}/> Export Full Backup
+                                </button>
+                                <div className="relative">
+                                    <button onClick={() => importDatabaseRef.current?.click()} className="w-full flex items-center justify-center gap-2 py-3 bg-white border-2 border-dashed border-slate-300 text-slate-600 font-bold text-sm rounded-xl hover:border-teal-500 hover:text-teal-600 transition-colors">
+                                        <Upload size={16}/> Restore from Backup
+                                    </button>
+                                    <input type="file" ref={importDatabaseRef} onChange={handleImportDatabase} className="hidden" accept=".json" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-6">
+                            <h3 className="font-bold text-slate-800 flex items-center gap-2"><PlugZap size={18} className="text-purple-600"/> Cloud Connection</h3>
+                            <p className="text-sm text-slate-500">Test the connection to the Supabase backend. Requires .env configuration.</p>
+                            
+                            {connectionStatus && (
+                                <div className={`p-3 rounded-lg text-xs font-mono border ${connectionStatus.success ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
+                                    {connectionStatus.message}
+                                </div>
+                            )}
+
+                            <div className="flex flex-col gap-3">
+                                <button onClick={handleTestConnection} disabled={testingConnection} className="flex items-center justify-center gap-2 py-3 bg-purple-50 text-purple-700 font-bold text-sm rounded-xl hover:bg-purple-100 transition-colors disabled:opacity-50">
+                                    {testingConnection ? <Loader2 className="animate-spin" size={16}/> : <Activity size={16}/>}
+                                    {testingConnection ? 'Testing...' : 'Test Connection'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="p-6 rounded-2xl bg-red-50 border border-red-100 shadow-sm">
+                        <h3 className="font-bold text-red-800 flex items-center gap-2 mb-2"><ShieldAlert size={18}/> Danger Zone</h3>
+                        <p className="text-sm text-red-600 mb-4">Irreversible actions. Proceed with caution.</p>
+                        <button onClick={handleClearDatabase} className="px-6 py-2.5 bg-white border border-red-200 text-red-600 font-bold text-sm rounded-xl hover:bg-red-600 hover:text-white transition-colors">
+                            Factory Reset / Clear All Data
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {isStaffModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full">
+                        <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+                            <h3 className="font-bold text-lg text-slate-800">{editingStaffId ? 'Edit Staff Profile' : 'Register New Staff'}</h3>
+                            <button onClick={() => setIsStaffModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X size={20}/></button>
+                        </div>
+                        <form onSubmit={handleSaveStaff} className="p-6 space-y-4">
+                            <div className="flex justify-center mb-4">
+                                <div className="relative group cursor-pointer" onClick={() => staffPhotoInputRef.current?.click()}>
+                                    <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden border-2 border-dashed border-slate-300 hover:border-teal-500 transition-colors">
+                                        {newStaff.avatar ? <img src={newStaff.avatar} className="w-full h-full object-cover"/> : <Camera size={24} className="text-slate-400"/>}
+                                    </div>
+                                    <input type="file" ref={staffPhotoInputRef} onChange={handleStaffPhotoChange} className="hidden" accept="image/*" />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Full Name</label>
+                                    <input required type="text" className="w-full border border-slate-300 rounded px-3 py-2 text-sm" value={newStaff.name} onChange={e => setNewStaff({...newStaff, name: e.target.value})} />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Role</label>
+                                    <select className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" value={newStaff.role} onChange={e => setNewStaff({...newStaff, role: e.target.value as UserRole})}>
+                                        <option value="Staff">Staff</option>
+                                        <option value="Senior Management">Senior Management</option>
+                                        <option value="Executive">Executive</option>
+                                        <option value="Admin">Admin</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Email / Login ID</label>
+                                <input required type="email" className="w-full border border-slate-300 rounded px-3 py-2 text-sm" value={newStaff.email} onChange={e => setNewStaff({...newStaff, email: e.target.value})} />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Designation</label>
+                                <input type="text" className="w-full border border-slate-300 rounded px-3 py-2 text-sm" value={newStaff.designation} onChange={e => setNewStaff({...newStaff, designation: e.target.value})} />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Staff ID (RC)</label>
+                                    <input type="text" className="w-full border border-slate-300 rounded px-3 py-2 text-sm" value={newStaff.rcNo} onChange={e => setNewStaff({...newStaff, rcNo: e.target.value})} />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Password</label>
+                                    <input type="password" placeholder="Leave blank to keep current" className="w-full border border-slate-300 rounded px-3 py-2 text-sm" value={newStaff.password} onChange={e => setNewStaff({...newStaff, password: e.target.value})} />
+                                </div>
+                            </div>
+                            <div className="pt-4 flex justify-end gap-2">
+                                <button type="button" onClick={() => setIsStaffModalOpen(false)} className="px-4 py-2 text-sm font-bold text-slate-600 bg-slate-100 rounded hover:bg-slate-200">Cancel</button>
+                                <button type="submit" className="px-6 py-2 text-sm font-bold text-white bg-teal-600 rounded hover:bg-teal-700">Save Staff</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             )}
         </div>
     </div>
