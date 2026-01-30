@@ -4,10 +4,19 @@
  * Handles cloud persistence for the Council Portal.
  */
 
-const API_URL = (process.env as any).MONGODB_DATA_API_URL;
-const API_KEY = (process.env as any).MONGODB_DATA_API_KEY;
-const CLUSTER = (process.env as any).MONGODB_CLUSTER || 'Cluster0';
-const DB_NAME = (process.env as any).MONGODB_DATABASE || 'CivicPulse';
+// Safely access process.env properties
+const getEnv = (key: string) => {
+  try {
+    return (process.env as any)[key] || '';
+  } catch (e) {
+    return '';
+  }
+};
+
+const API_URL = getEnv('MONGODB_DATA_API_URL');
+const API_KEY = getEnv('MONGODB_DATA_API_KEY');
+const CLUSTER = getEnv('MONGODB_CLUSTER') || 'Cluster0';
+const DB_NAME = getEnv('MONGODB_DATABASE') || 'CivicPulse';
 const COLLECTION = 'portal_state';
 
 interface MongoResponse {
@@ -26,9 +35,12 @@ const headers = {
 
 /**
  * Checks if the MongoDB configuration is available.
+ * Note: Browser apps cannot use 'mongodb+srv://' connection strings directly.
+ * They must use the MongoDB Atlas Data API (REST) or a backend server.
  */
 export const isMongoConfigured = (): boolean => {
-  return !!(API_URL && API_KEY);
+  // Ensure we have a valid HTTP URL, not a connection string
+  return !!(API_URL && API_KEY && API_URL.startsWith('http'));
 };
 
 /**

@@ -2,9 +2,18 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { CitizenRequest, Asset } from "../types";
 
+// Safely access API KEY
+const getApiKey = () => {
+  try {
+    return (process.env as any).API_KEY;
+  } catch (e) {
+    return undefined;
+  }
+};
+
 // Always use const ai = new GoogleGenAI({apiKey: process.env.API_KEY});
 // The API key must be obtained exclusively from the environment variable process.env.API_KEY.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const ai = new GoogleGenAI({ apiKey: getApiKey() });
 
 /**
  * Analyzes the priority of a citizen service request using Gemini.

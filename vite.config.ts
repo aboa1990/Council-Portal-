@@ -9,14 +9,13 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     define: {
-      'process.env': JSON.stringify({
-        NODE_ENV: mode,
-        API_KEY: env.API_KEY || '',
-        MONGODB_DATA_API_URL: env.MONGODB_DATA_API_URL || '',
-        MONGODB_DATA_API_KEY: env.MONGODB_DATA_API_KEY || '',
-        MONGODB_CLUSTER: env.MONGODB_CLUSTER || '',
-        MONGODB_DATABASE: env.MONGODB_DATABASE || ''
-      }), 
+      // Define variables individually to preserve the process.env object structure
+      'process.env.NODE_ENV': JSON.stringify(mode),
+      'process.env.API_KEY': JSON.stringify(env.API_KEY || ''),
+      'process.env.MONGODB_DATA_API_URL': JSON.stringify(env.MONGODB_DATA_API_URL || ''),
+      'process.env.MONGODB_DATA_API_KEY': JSON.stringify(env.MONGODB_DATA_API_KEY || ''),
+      'process.env.MONGODB_CLUSTER': JSON.stringify(env.MONGODB_CLUSTER || ''),
+      'process.env.MONGODB_DATABASE': JSON.stringify(env.MONGODB_DATABASE || '')
     },
     build: {
       outDir: 'dist',
