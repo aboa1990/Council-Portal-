@@ -10,7 +10,12 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     define: {
       'process.env': JSON.stringify({
-        API_KEY: env.API_KEY || ''
+        NODE_ENV: mode,
+        API_KEY: env.API_KEY || '',
+        MONGODB_DATA_API_URL: env.MONGODB_DATA_API_URL || '',
+        MONGODB_DATA_API_KEY: env.MONGODB_DATA_API_KEY || '',
+        MONGODB_CLUSTER: env.MONGODB_CLUSTER || '',
+        MONGODB_DATABASE: env.MONGODB_DATABASE || ''
       }), 
     },
     build: {

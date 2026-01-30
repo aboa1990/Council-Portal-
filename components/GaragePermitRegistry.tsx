@@ -7,7 +7,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 interface GaragePermitRegistryProps {
     currentUser: User;
     permits: GaragePermit[];
-    onAddPermit: (permit) => void;
+    onAddPermit: (permit: GaragePermit) => void;
     onUpdatePermit: (permit: GaragePermit) => void;
     onDeletePermit?: (permitId: string) => void;
     systemConfig: SystemConfig;
@@ -366,7 +366,7 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                                     />
                                 )}
                                 
-                                {Object.entries(systemConfig.garagePermitTemplate.fieldPositions).map(([key, pos]) => (
+                                {Object.entries(systemConfig.garagePermitTemplate.fieldPositions).map(([key, pos]: [string, TemplateFieldPos]) => (
                                     pos.visible && (
                                         <div 
                                             key={key}
