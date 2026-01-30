@@ -8,10 +8,11 @@ import {
   UserPlus, Search, Phone, MapPin, BadgeCheck, Fingerprint, Users, Pencil, 
   Hash, ShieldAlert, ShieldCheck, CheckCircle2, User as UserIcon, Database, 
   Download, RefreshCw, FileJson, Cloud, CloudOff, PlugZap, PlayCircle, 
-  Loader2, Building2, XCircle 
+  Loader2, Building2, XCircle, AlignLeft, AlignCenter, AlignRight 
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { isSupabaseConfigured, testConnection } from '../services/supabaseService';
+import { DEFAULT_FIELD_POSITIONS } from '../constants';
 
 interface SettingsProps {
   currentUser: User;
@@ -91,13 +92,24 @@ const Settings: React.FC<SettingsProps> = ({
       footer: '',
       declaration: '',
       useCustomTemplate: false,
-      fieldPositions: {}
+      fieldPositions: DEFAULT_FIELD_POSITIONS
     }
   });
   const [generalSuccess, setGeneralSuccess] = useState(false);
 
+  // Restore missing fields from constants if saved config is stale
   useEffect(() => {
-    if (systemConfig) setLocalSystemConfig(systemConfig);
+    if (systemConfig) {
+        // Merge missing fields from default to ensure all layers are present
+        const mergedFields = { ...DEFAULT_FIELD_POSITIONS, ...systemConfig.garagePermitTemplate.fieldPositions };
+        setLocalSystemConfig({
+            ...systemConfig,
+            garagePermitTemplate: {
+                ...systemConfig.garagePermitTemplate,
+                fieldPositions: mergedFields
+            }
+        });
+    }
   }, [systemConfig]);
 
   const [selectedField, setSelectedField] = useState<string | null>(null);
@@ -714,7 +726,10 @@ const Settings: React.FC<SettingsProps> = ({
                                                 left: `${pos.left}%`, 
                                                 fontSize: `${pos.fontSize}px`,
                                                 fontWeight: pos.fontWeight || 'normal',
-                                                color: selectedField === key ? '#0d9488' : '#334155'
+                                                textAlign: pos.textAlign || 'left',
+                                                color: selectedField === key ? '#0d9488' : '#334155',
+                                                width: 'auto',
+                                                minWidth: '100px'
                                             }}
                                         >
                                             <span className="text-[8px] absolute -top-4 left-0 bg-slate-800 text-white px-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">{key}</span>
@@ -785,6 +800,15 @@ const Settings: React.FC<SettingsProps> = ({
                                             </div>
                                         </div>
 
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Text Alignment</label>
+                                            <div className="flex bg-white rounded-lg border border-slate-300 overflow-hidden">
+                                                <button onClick={() => updateField(selectedField, { textAlign: 'left' })} className={`flex-1 py-2 flex justify-center ${localSystemConfig.garagePermitTemplate.fieldPositions[selectedField].textAlign === 'left' || !localSystemConfig.garagePermitTemplate.fieldPositions[selectedField].textAlign ? 'bg-slate-200 text-slate-900' : 'hover:bg-slate-50 text-slate-500'}`}><AlignLeft size={16}/></button>
+                                                <button onClick={() => updateField(selectedField, { textAlign: 'center' })} className={`flex-1 py-2 flex justify-center border-x border-slate-300 ${localSystemConfig.garagePermitTemplate.fieldPositions[selectedField].textAlign === 'center' ? 'bg-slate-200 text-slate-900' : 'hover:bg-slate-50 text-slate-500'}`}><AlignCenter size={16}/></button>
+                                                <button onClick={() => updateField(selectedField, { textAlign: 'right' })} className={`flex-1 py-2 flex justify-center ${localSystemConfig.garagePermitTemplate.fieldPositions[selectedField].textAlign === 'right' ? 'bg-slate-200 text-slate-900' : 'hover:bg-slate-50 text-slate-500'}`}><AlignRight size={16}/></button>
+                                            </div>
+                                        </div>
+
                                         <button 
                                             onClick={() => updateField(selectedField, { visible: false })}
                                             className="w-full py-2.5 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl border border-red-100 flex items-center justify-center gap-2 transition-colors"
@@ -828,7 +852,7 @@ const Settings: React.FC<SettingsProps> = ({
                                 <h4 className="text-xs font-black uppercase tracking-widest mb-2 flex items-center gap-2"><Info size={14}/> Usage Instructions</h4>
                                 <ul className="text-[10px] space-y-2 opacity-90 leading-relaxed font-medium">
                                     <li className="flex items-start gap-2"><Check size={10} className="mt-0.5 text-emerald-400"/> Position fields relative to the corners of your scanned paper.</li>
-                                    <li className="flex items-start gap-2"><Check size={10} className="mt-0.5 text-emerald-400"/> Use the "Visible" toggle to hide fields that are already pre-printed on your stationary.</li>
+                                    <li className="flex items-start gap-2"><Check size={10} className="mt-0.5 text-emerald-400"/> Use "Text Alignment" for Right-to-Left (Thaana) support.</li>
                                     <li className="flex items-start gap-2"><Check size={10} className="mt-0.5 text-emerald-400"/> Coordinates are in percentages for responsiveness across devices.</li>
                                 </ul>
                             </div>
@@ -836,14 +860,14 @@ const Settings: React.FC<SettingsProps> = ({
                     </div>
                 </div>
             )}
-
+            
             {activeTab === 'data' && (
                 <div className="space-y-8 animate-fade-in">
                     <div>
                         <h2 className="text-xl font-bold text-slate-900">Infrastructure & Data Ops</h2>
                         <p className="text-sm text-slate-500">Manage your portal's data lifecycle and cloud synchronization settings.</p>
                     </div>
-
+                    {/* ... Data tab content remains as previously implemented ... */}
                     <div className={`p-6 rounded-2xl border-2 shadow-sm transition-all ${isCloudActive ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'}`}>
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                             <div className="flex items-center gap-5">

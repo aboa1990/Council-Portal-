@@ -1,5 +1,5 @@
 
-import { CitizenRequest, RequestPriority, RequestStatus, Asset, House, AssetCategory, AssetStatusConfig, GaragePermit, User } from './types';
+import { CitizenRequest, RequestPriority, RequestStatus, Asset, House, AssetCategory, AssetStatusConfig, GaragePermit, User, TemplateFieldPos } from './types';
 
 export const DEFAULT_ASSET_CATEGORIES: AssetCategory[] = [
   { id: 'cat_fac', name: 'Facilities', code: '01' },
@@ -87,3 +87,23 @@ export const MOCK_GARAGE_PERMITS: GaragePermit[] = [
     ]
   }
 ];
+
+export const DEFAULT_FIELD_POSITIONS: Record<string, TemplateFieldPos> = {
+  permitId: { top: 12, left: 75, fontSize: 14, visible: true, fontWeight: 'bold', textAlign: 'right' },
+  issueDate: { top: 16, left: 75, fontSize: 12, visible: true, textAlign: 'right' },
+  vehicleChassis: { top: 25, left: 15, fontSize: 12, visible: true, textAlign: 'right' },
+  vehicleReg: { top: 30, left: 15, fontSize: 12, visible: true, textAlign: 'right' },
+  vOwnerName: { top: 38, left: 15, fontSize: 13, visible: true, fontWeight: 'bold', textAlign: 'right' },
+  vOwnerAddress: { top: 42, left: 15, fontSize: 11, visible: true, textAlign: 'right' },
+  vOwnerId: { top: 46, left: 15, fontSize: 11, visible: true, textAlign: 'right' },
+  vOwnerPhone: { top: 46, left: 40, fontSize: 11, visible: true, textAlign: 'right' },
+  garageAddress: { top: 55, left: 15, fontSize: 12, visible: true, textAlign: 'right' },
+  garageSize: { top: 60, left: 15, fontSize: 11, visible: true, textAlign: 'right' },
+  houseReg: { top: 64, left: 15, fontSize: 11, visible: true, textAlign: 'right' },
+  gOwnerName: { top: 72, left: 15, fontSize: 13, visible: true, fontWeight: 'bold', textAlign: 'right' },
+  gOwnerAddress: { top: 76, left: 15, fontSize: 11, visible: true, textAlign: 'right' },
+  gOwnerPhone: { top: 80, left: 15, fontSize: 11, visible: true, textAlign: 'right' },
+  authorizedBy: { top: 90, left: 65, fontSize: 12, visible: true, fontWeight: 'bold', textAlign: 'right' },
+  checkedBy: { top: 90, left: 35, fontSize: 12, visible: true, textAlign: 'right' },
+  notes: { top: 85, left: 15, fontSize: 10, visible: true, textAlign: 'right' }
+};

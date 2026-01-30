@@ -1,7 +1,7 @@
 
-import React, { useState, useEffect } from 'react';
-import { GaragePermit, AccessLog, User, SystemConfig, TemplateFieldPos } from '../types';
-import { Search, Plus, X, Car, FileText, CheckCircle, AlertCircle, Printer, UserCheck, ShieldCheck, MapPin, Home, History, Ban, User as UserIcon, Calendar, Info, BadgeCheck, Hash, UserCircle, Pencil, Trash2, AlertTriangle, Notebook, XCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { GaragePermit, User, SystemConfig, TemplateFieldPos } from '../types';
+import { Search, Plus, X, Car, FileText, CheckCircle, Printer, MapPin, Home, User as UserIcon, Calendar, BadgeCheck, Hash, UserCircle, Pencil, Trash2, Ban, AlertTriangle } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface GaragePermitRegistryProps {
@@ -18,12 +18,12 @@ const OFFICE_CODE = "258";
 const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser, permits, onAddPermit, onUpdatePermit, onDeletePermit, systemConfig }) => {
     const { t, isRTL } = useLanguage();
     const [searchTerm, setSearchTerm] = useState('');
-    const [isAdding, setIsAdding] = useState(false);
-    const [editingPermitId, setEditingPermitId] = useState<string | null>(null);
-    const [selectedPermitForView, setSelectedPermitForView] = useState<GaragePermit | null>(null);
-    
-    // Initial State for Permit Form
-    const initialPermitState: Partial<GaragePermit> = {
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+    const [editingPermit, setEditingPermit] = useState<GaragePermit | null>(null);
+    const [viewingPermit, setViewingPermit] = useState<GaragePermit | null>(null);
+
+    const initialFormState: Partial<GaragePermit> = {
         permitId: '',
         issueDate: new Date().toISOString().split('T')[0],
         status: 'Issued',
@@ -40,582 +40,513 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
         garageOwnerAddress: '',
         garageOwnerId: '',
         garageOwnerContact: '',
-        checkedBy: '',
-        authorizedBy: '',
         notes: ''
     };
 
-    const [newPermit, setNewPermit] = useState<Partial<GaragePermit>>(initialPermitState);
-    const [ownerPermitCount, setOwnerPermitCount] = useState(0);
-    const [garageOwnerPermitCount, setGarageOwnerPermitCount] = useState(0);
+    const [formData, setFormData] = useState<Partial<GaragePermit>>(initialFormState);
 
-    // Calculate Permit ID based on selected issue date and sequence for that year
-    const calculateNextId = (dateStr: string) => {
-        const year = new Date(dateStr).getFullYear();
-        const yearPrefix = `${OFFICE_CODE}/${year}/`;
-        const yearPermits = permits.filter(p => p.permitId.startsWith(yearPrefix));
-        const count = yearPermits.length + 1;
-        return `${yearPrefix}${String(count).padStart(2, '0')}`;
+    const filteredPermits = permits.filter(p => 
+        p.permitId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.vehicleRegistryNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.vehicleOwnerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.garageOwnerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.vehicleChassisNumber.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const handleOpenAdd = () => {
+        setEditingPermit(null);
+        const year = new Date().getFullYear();
+        // Simple logic to generate next ID
+        const count = permits.filter(p => p.issueDate.startsWith(String(year))).length + 1;
+        const newId = `${OFFICE_CODE}/${year}/${String(count).padStart(2, '0')}`;
+        
+        setFormData({ ...initialFormState, permitId: newId });
+        setIsModalOpen(true);
     };
 
-    // Update ID when issue date changes (only if not editing)
-    useEffect(() => {
-        if (isAdding && newPermit.issueDate && !editingPermitId) {
-            setNewPermit(prev => ({ ...prev, permitId: calculateNextId(newPermit.issueDate!) }));
-        }
-    }, [newPermit.issueDate, isAdding, permits.length, editingPermitId]);
-
-    // Check permit counts for owners
-    useEffect(() => {
-        if (newPermit.vehicleOwnerId) {
-            const count = permits.filter(p => p.vehicleOwnerId === newPermit.vehicleOwnerId && p.status === 'Issued').length;
-            setOwnerPermitCount(count);
-        } else {
-            setOwnerPermitCount(0);
-        }
-
-        if (newPermit.garageOwnerId) {
-            const gCount = permits.filter(p => p.garageOwnerId === newPermit.garageOwnerId && p.status === 'Issued').length;
-            setGarageOwnerPermitCount(gCount);
-        } else {
-            setGarageOwnerPermitCount(0);
-        }
-    }, [newPermit.vehicleOwnerId, newPermit.garageOwnerId, permits]);
-
-    const handleAddClick = () => {
-        setEditingPermitId(null);
-        const initialDate = new Date().toISOString().split('T')[0];
-        setNewPermit({ ...initialPermitState, issueDate: initialDate, permitId: calculateNextId(initialDate) });
-        setIsAdding(true);
-    };
-
-    const handleEditClick = (permit: GaragePermit, e: React.MouseEvent) => {
-        e.stopPropagation();
-        setEditingPermitId(permit.permitId);
-        setNewPermit({ ...permit });
-        setIsAdding(true);
-    };
-
-    const handleVoidClick = (permitId: string, e: React.MouseEvent) => {
-        e.stopPropagation();
-        if (window.confirm("Are you sure you want to void this permit? This action will officially invalidate the record.")) {
-            const permit = permits.find(p => p.permitId === permitId);
-            if (permit) {
-                const log: AccessLog = { 
-                    id: `log-${Date.now()}`, 
-                    action: 'Voided', 
-                    userId: currentUser.id, 
-                    userName: currentUser.name, 
-                    timestamp: new Date().toISOString(), 
-                    details: `Permit status changed to Void by ${currentUser.name}.` 
-                };
-                const updatedPermit = { ...permit, status: 'Void' as const, logs: [...(permit.logs || []), log] };
-                onUpdatePermit(updatedPermit);
-                
-                if (selectedPermitForView?.permitId === permitId) {
-                    setSelectedPermitForView(updatedPermit);
-                }
-            }
-        }
-    };
-
-    const handleDeleteClick = (permitId: string, e: React.MouseEvent) => {
-        e.stopPropagation();
-        if (window.confirm("Are you sure you want to PERMANENTLY delete this permit? This action cannot be undone.")) {
-            if (onDeletePermit) {
-                onDeletePermit(permitId);
-                if (selectedPermitForView?.permitId === permitId) {
-                    setSelectedPermitForView(null);
-                }
-            }
-        }
+    const handleOpenEdit = (permit: GaragePermit) => {
+        setEditingPermit(permit);
+        setFormData({ ...permit });
+        setIsModalOpen(true);
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         
-        if (editingPermitId) {
-            const log: AccessLog = {
-                id: `log-${Date.now()}`,
-                action: 'Updated',
-                userId: currentUser.id,
-                userName: currentUser.name,
-                timestamp: new Date().toISOString(),
-                details: `Permit updated by staff: ${currentUser.name}`
-            };
-            const updatedPermit = { ...newPermit, logs: [...(newPermit.logs || []), log] } as GaragePermit;
-            onUpdatePermit(updatedPermit);
+        if (editingPermit) {
+             const updatedPermit: GaragePermit = {
+                 ...editingPermit,
+                 ...formData as GaragePermit,
+                 logs: [...(editingPermit.logs || []), {
+                     id: `log-${Date.now()}`,
+                     action: 'Updated',
+                     userId: currentUser.id,
+                     userName: currentUser.name,
+                     timestamp: new Date().toISOString(),
+                     details: 'Permit details updated'
+                 }]
+             };
+             onUpdatePermit(updatedPermit);
         } else {
-            const finalId = calculateNextId(newPermit.issueDate!);
-            const log: AccessLog = {
-                id: `log-${Date.now()}`,
-                action: 'Created',
-                userId: currentUser.id,
-                userName: currentUser.name,
-                timestamp: new Date().toISOString(),
-                details: `Permit issued by staff: ${currentUser.name}.`
+            const newPermit: GaragePermit = {
+                ...formData as GaragePermit,
+                checkedBy: currentUser.name, 
+                authorizedBy: '', 
+                logs: [{
+                     id: `log-${Date.now()}`,
+                     action: 'Created',
+                     userId: currentUser.id,
+                     userName: currentUser.name,
+                     timestamp: new Date().toISOString(),
+                     details: 'Permit created'
+                }]
             };
-            const permitToAdd = { ...newPermit, permitId: finalId, status: 'Issued' as const, logs: [log] } as GaragePermit;
-            onAddPermit(permitToAdd);
+            onAddPermit(newPermit);
         }
-        setIsAdding(false);
+        setIsModalOpen(false);
     };
 
-    const filteredPermits = permits.filter(p => 
-        p.permitId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.vehicleRegistryNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.garageOwnerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.vehicleChassisNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.vehicleOwnerId.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
-    const DetailRow = ({ label, value, mono = false }: { label: string, value: string | number | undefined, mono?: boolean }) => (
-        <div className="flex flex-col py-2 border-b border-slate-50 last:border-0">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{label}</span>
-            <span className={`text-sm ${mono ? 'font-mono' : ''} text-slate-700`}>{value || '-'}</span>
-        </div>
-    );
-
-    const printPermit = () => {
-        window.print();
+    const handleDelete = (id: string) => {
+        if (window.confirm('Are you sure you want to delete this permit?')) {
+            onDeletePermit?.(id);
+        }
     };
 
-    // Helper to get printable value for a field key
-    const getFieldValue = (fieldKey: string, permit: GaragePermit | null) => {
-        if (!permit) return '';
-        switch(fieldKey) {
-            case 'permitId': return permit.permitId;
-            case 'issueDate': return permit.issueDate;
-            case 'vehicleChassis': return permit.vehicleChassisNumber;
-            case 'vehicleReg': return permit.vehicleRegistryNumber;
-            case 'vOwnerName': return permit.vehicleOwnerName;
-            case 'vOwnerAddress': return permit.vehicleOwnerAddress;
-            case 'vOwnerId': return permit.vehicleOwnerId;
-            case 'vOwnerPhone': return permit.vehicleOwnerContact;
-            case 'garageAddress': return permit.garageAddress;
-            case 'garageSize': return `${permit.garageSizeSqft} Sqft`;
-            case 'houseReg': return permit.houseRegistryNumber;
-            case 'gOwnerName': return permit.garageOwnerName;
-            case 'gOwnerAddress': return permit.garageOwnerAddress;
-            case 'gOwnerPhone': return permit.garageOwnerContact;
-            case 'authorizedBy': return permit.authorizedBy;
-            case 'checkedBy': return permit.checkedBy;
-            case 'notes': return permit.notes;
-            default: return '';
+    const handlePrint = (permit: GaragePermit) => {
+        setViewingPermit(permit);
+        setIsPrintModalOpen(true);
+    };
+
+    const handleVoid = (permit: GaragePermit) => {
+        if (window.confirm('Are you sure you want to void this permit?')) {
+             onUpdatePermit({ ...permit, status: 'Void' });
         }
+    };
+
+    // Helper for printing fields
+    const getFieldStyle = (pos: TemplateFieldPos) => ({
+        top: `${pos.top}%`,
+        left: `${pos.left}%`,
+        fontSize: `${pos.fontSize}px`,
+        fontWeight: pos.fontWeight || 'normal',
+        textAlign: pos.textAlign || 'left',
+        position: 'absolute' as 'absolute',
+        transform: 'translateY(-50%)'
+    });
+
+    const renderPrintField = (key: string, value: string) => {
+        const pos = systemConfig.garagePermitTemplate.fieldPositions[key];
+        if (!pos || !pos.visible) return null;
+        return (
+            <div style={getFieldStyle(pos)} className="whitespace-nowrap">
+                {value}
+            </div>
+        );
     };
 
     return (
         <div className="space-y-6 animate-fade-in pb-10">
-            <div className={`flex flex-col md:flex-row justify-between items-start md:items-center gap-4 ${isRTL ? 'text-right' : 'text-left'} print:hidden`}>
+             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h2 className="text-xl font-bold text-slate-900">{t('garage_title')}</h2>
                     <p className="text-sm text-slate-500">{t('garage_subtitle')}</p>
                 </div>
-                <div className="flex gap-2">
-                    <button onClick={handleAddClick} className="bg-teal-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-teal-700 flex items-center gap-2 shadow-sm">
-                        <Plus size={16} /> {t('new_permit')}
-                    </button>
-                </div>
+                <button 
+                    onClick={handleOpenAdd}
+                    className="bg-teal-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-teal-700 transition-colors flex items-center gap-2 shadow-sm"
+                >
+                    <Plus size={16} />
+                    {t('new_permit')}
+                </button>
             </div>
 
-            <div className="relative print:hidden">
+            {/* Filter */}
+            <div className="relative">
                 <div className={`absolute inset-y-0 ${isRTL ? 'right-0 pr-3' : 'left-0 pl-3'} flex items-center pointer-events-none`}>
                     <Search className="h-5 w-5 text-slate-400" />
                 </div>
-                <input type="text" placeholder={t('search_garage')} className={`block w-full ${isRTL ? 'pr-10 pl-3 text-right' : 'pl-10 pr-3 text-left'} py-3 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-teal-500 outline-none shadow-sm`} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                <input 
+                    type="text" 
+                    placeholder={t('search_garage')} 
+                    className={`block w-full ${isRTL ? 'pr-10 pl-3' : 'pl-10 pr-3'} py-3 border border-slate-200 rounded-lg leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 sm:text-sm shadow-sm`}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
             </div>
 
-            <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden print:hidden">
+            {/* Table */}
+             <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-slate-200" dir={isRTL ? 'rtl' : 'ltr'}>
+                    <table className="min-w-full divide-y divide-slate-200">
                         <thead className="bg-slate-50">
                             <tr>
-                                <th className="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">{t('permit_id')}</th>
-                                <th className="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Vehicle Owner</th>
-                                <th className="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Vehicle Details</th>
-                                <th className="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Garage Location</th>
-                                <th className="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">{t('th_status')}</th>
-                                <th className="px-6 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
+                                <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">{t('permit_id')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">{t('vehicle_details')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">{t('owner_details')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">{t('garage_details')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">{t('status')}</th>
+                                <th className="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">{t('actions_label')}</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-slate-200">
                             {filteredPermits.map((permit) => (
-                                <tr key={permit.permitId} onClick={() => setSelectedPermitForView(permit)} className="hover:bg-teal-50/30 cursor-pointer transition-colors group">
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-mono font-bold text-slate-900">{permit.permitId}</td>
+                                <tr key={permit.permitId} className="hover:bg-slate-50 transition-colors">
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="text-sm font-medium text-slate-900">{permit.vehicleOwnerName}</div>
-                                        <div className="text-xs text-slate-500">{permit.vehicleOwnerAddress}</div>
+                                        <div className="flex items-center gap-3">
+                                            <div className="bg-indigo-50 p-2 rounded-lg text-indigo-600">
+                                                <FileText size={20} />
+                                            </div>
+                                            <div>
+                                                <div className="text-sm font-bold text-slate-900 font-mono">{permit.permitId}</div>
+                                                <div className="text-xs text-slate-500">{new Date(permit.issueDate).toLocaleDateString()}</div>
+                                            </div>
+                                        </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="text-sm font-bold text-slate-800">{permit.vehicleRegistryNumber}</div>
-                                        <div className="text-xs text-slate-500 font-mono">CH: {permit.vehicleChassisNumber}</div>
+                                        <div className="flex flex-col">
+                                            <div className="flex items-center gap-2 text-sm font-bold text-slate-700">
+                                                <Car size={14} className="text-slate-400"/> {permit.vehicleRegistryNumber}
+                                            </div>
+                                            <div className="text-xs text-slate-500 font-mono">Chassis: {permit.vehicleChassisNumber}</div>
+                                        </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="text-sm text-slate-700">{permit.garageAddress}</div>
-                                        <div className="text-xs text-slate-500 font-medium">{permit.garageSizeSqft} Sqft</div>
+                                        <div className="flex flex-col">
+                                            <div className="flex items-center gap-2 text-sm text-slate-900">
+                                                <UserIcon size={14} className="text-slate-400"/> {permit.vehicleOwnerName}
+                                            </div>
+                                            <div className="text-xs text-slate-500">{permit.vehicleOwnerContact}</div>
+                                        </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className={`px-2 py-1 rounded-full text-xs font-bold border ${permit.status === 'Issued' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-red-100 text-red-800 border-red-200'}`}>
-                                            {permit.status}
-                                        </span>
+                                        <div className="flex flex-col">
+                                             <div className="flex items-center gap-2 text-sm text-slate-700">
+                                                <Home size={14} className="text-slate-400"/> {permit.houseRegistryNumber}
+                                            </div>
+                                            <div className="text-xs text-slate-500">{permit.garageAddress}</div>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        {permit.status === 'Issued' ? (
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                                <CheckCircle size={12} className="mr-1"/> Issued
+                                            </span>
+                                        ) : (
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+                                                <Ban size={12} className="mr-1"/> Void
+                                            </span>
+                                        )}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right">
-                                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button onClick={(e) => handleEditClick(permit, e)} className="p-1.5 text-slate-400 hover:text-teal-600 transition-colors" title="Edit Record"><Pencil size={18} /></button>
-                                            {permit.status === 'Issued' && (
-                                                <button onClick={(e) => handleVoidClick(permit.permitId, e)} className="p-1.5 text-slate-400 hover:text-orange-600 transition-colors" title={t('void_permit')}><Ban size={18} /></button>
+                                        <div className="flex items-center justify-end gap-2">
+                                            <button onClick={() => handlePrint(permit)} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors" title="Print Permit">
+                                                <Printer size={16} />
+                                            </button>
+                                            <button onClick={() => handleOpenEdit(permit)} className="p-1.5 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded transition-colors" title="Edit Permit">
+                                                <Pencil size={16} />
+                                            </button>
+                                            {permit.status !== 'Void' && (
+                                                <button onClick={() => handleVoid(permit)} className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors" title="Void Permit">
+                                                    <Ban size={16} />
+                                                </button>
                                             )}
-                                            {currentUser.role === 'Admin' && (
-                                                <button onClick={(e) => handleDeleteClick(permit.permitId, e)} className="p-1.5 text-slate-400 hover:text-red-600 transition-colors" title="Delete Record"><Trash2 size={18} /></button>
+                                            {onDeletePermit && (
+                                                <button onClick={() => handleDelete(permit.permitId)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Delete Permit">
+                                                    <Trash2 size={16} />
+                                                </button>
                                             )}
-                                            <button className="p-1.5 text-slate-400 hover:text-blue-600 transition-colors"><FileText size={18} /></button>
                                         </div>
                                     </td>
                                 </tr>
                             ))}
+                            {filteredPermits.length === 0 && (
+                                <tr>
+                                    <td colSpan={6} className="px-6 py-12 text-center text-slate-500 italic">No permits found.</td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                 </div>
             </div>
 
-            {selectedPermitForView && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto print:p-0 print:bg-white print:static print:overflow-visible">
-                    <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col my-4 print:shadow-none print:m-0 print:max-h-none print:max-w-none print:w-[210mm] print:h-[297mm]">
-                        {/* Detail Modal Header */}
-                        <div className={`p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-xl sticky top-0 z-10 print:hidden ${isRTL ? 'flex-row-reverse' : ''}`}>
-                            <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse text-right' : ''}`}>
-                                <div className={`p-2 rounded-lg ${selectedPermitForView.status === 'Issued' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
-                                    <ShieldCheck size={24} />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-lg text-slate-800">Permit #{selectedPermitForView.permitId}</h3>
-                                    <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Official View</p>
-                                </div>
-                            </div>
-                            <button onClick={() => setSelectedPermitForView(null)} className="text-slate-400 hover:text-slate-600 p-1.5"><X size={24}/></button>
+            {/* Add/Edit Modal */}
+            {isModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl my-8">
+                         <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-xl">
+                            <h3 className="font-bold text-lg text-slate-800">{editingPermit ? 'Update Permit' : t('new_permit')}</h3>
+                            <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X size={20}/></button>
                         </div>
-
-                        {/* Screen Detail View Content */}
-                        <div className="flex-1 overflow-y-auto p-6 space-y-8 print:hidden bg-slate-50">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <section className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                                    <h4 className="text-xs font-black text-teal-700 uppercase tracking-widest border-b border-teal-50 pb-2 mb-3 flex items-center gap-2">
-                                        <Car size={14} /> Vehicle Information
-                                    </h4>
-                                    <DetailRow label="Chassis Number" value={selectedPermitForView.vehicleChassisNumber} mono />
-                                    <DetailRow label="Registry Number" value={selectedPermitForView.vehicleRegistryNumber} mono />
-                                    <DetailRow label="Owner Name" value={selectedPermitForView.vehicleOwnerName} />
-                                    <DetailRow label="Owner Address" value={selectedPermitForView.vehicleOwnerAddress} />
-                                    <DetailRow label="Owner ID / Reg" value={selectedPermitForView.vehicleOwnerId} />
-                                    <DetailRow label="Owner Contact" value={selectedPermitForView.vehicleOwnerContact} />
-                                </section>
-                                <section className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                                    <h4 className="text-xs font-black text-teal-700 uppercase tracking-widest border-b border-teal-50 pb-2 mb-3 flex items-center gap-2">
-                                        <Home size={14} /> Garage Information
-                                    </h4>
-                                    <DetailRow label="Garage Address" value={selectedPermitForView.garageAddress} />
-                                    <DetailRow label="Garage Size (Sqft)" value={`${selectedPermitForView.garageSizeSqft} Sqft`} />
-                                    <DetailRow label="House Registry No" value={selectedPermitForView.houseRegistryNumber} mono />
-                                    <DetailRow label="Garage Owner Name" value={selectedPermitForView.garageOwnerName} />
-                                    <DetailRow label="Garage Owner Address" value={selectedPermitForView.garageOwnerAddress} />
-                                    <DetailRow label="Garage Owner ID" value={selectedPermitForView.garageOwnerId} />
-                                    <DetailRow label="Garage Owner Contact" value={selectedPermitForView.garageOwnerContact} />
-                                    <div className="mt-2 bg-blue-50 p-2 rounded text-xs font-bold text-blue-700 flex items-center gap-2">
-                                        <BadgeCheck size={14} /> Active Permits for this Garage Owner: {permits.filter(p => p.garageOwnerId === selectedPermitForView?.garageOwnerId && p.status === 'Issued').length}
-                                    </div>
-                                </section>
-
-                                {selectedPermitForView.notes && (
-                                    <section className="md:col-span-2 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                                        <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest border-b border-slate-50 pb-2 mb-3 flex items-center gap-2">
-                                            <Notebook size={14} /> Extra Notes
-                                        </h4>
-                                        <p className="text-sm text-slate-700 whitespace-pre-wrap">{selectedPermitForView.notes}</p>
-                                    </section>
-                                )}
-
-                                <section className="md:col-span-2 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                                    <h4 className="text-xs font-black text-emerald-700 uppercase tracking-widest border-b border-emerald-50 pb-2 mb-3 flex items-center gap-2">
-                                        <History size={14} /> Permit Access Log
-                                    </h4>
-                                    <div className="space-y-3">
-                                        {selectedPermitForView.logs && selectedPermitForView.logs.map(log => (
-                                            <div key={log.id} className="text-xs flex justify-between items-center border-b border-slate-50 pb-2 last:border-0">
-                                                <div className="flex gap-4">
-                                                    <span className="font-mono text-slate-400">{new Date(log.timestamp).toLocaleString()}</span>
-                                                    <span className={`font-bold ${log.action === 'Created' ? 'text-emerald-600' : 'text-blue-600'}`}>{log.action}</span>
-                                                    <span className="text-slate-600">{log.details}</span>
-                                                </div>
-                                                <span className="font-medium text-slate-500">{log.userName}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </section>
-                            </div>
-                        </div>
-
-                        {/* OFFICIAL PRINTABLE PERMIT CARD (Rendered only during print via ID targeting) */}
-                        <div id="official-permit-print-area" className="hidden print:block fixed inset-0 z-[9999] bg-white">
-                            <div className="relative mx-auto bg-white overflow-hidden" style={{ width: '210mm', height: '297mm' }}>
-                                {systemConfig.garagePermitTemplate.backgroundImage ? (
-                                    <img 
-                                        src={systemConfig.garagePermitTemplate.backgroundImage} 
-                                        className="absolute inset-0 w-full h-full object-cover" 
-                                        alt="Official Template"
-                                        style={{ printColorAdjust: 'exact', WebkitPrintColorAdjust: 'exact' }}
-                                    />
-                                ) : (
-                                    <div className="absolute inset-0 border-8 border-slate-900 m-8 flex items-center justify-center">
-                                        <div className="text-center opacity-10 rotate-[-45deg] scale-[2]">
-                                            <h1 className="text-6xl font-black">{systemConfig.councilName}</h1>
-                                            <p className="text-2xl">OFFICIAL PERMIT DRAFT</p>
-                                        </div>
-                                    </div>
-                                )}
-                                
-                                {Object.entries(systemConfig.garagePermitTemplate.fieldPositions).map(([key, pos]: [string, TemplateFieldPos]) => (
-                                    pos.visible && (
-                                        <div 
-                                            key={key}
-                                            className="absolute"
-                                            style={{ 
-                                                top: `${pos.top}%`, 
-                                                left: `${pos.left}%`, 
-                                                fontSize: `${pos.fontSize}pt`,
-                                                fontWeight: pos.fontWeight || 'normal',
-                                                whiteSpace: 'pre-wrap',
-                                                maxWidth: '50%'
-                                            }}
-                                        >
-                                            {getFieldValue(key, selectedPermitForView)}
-                                        </div>
-                                    )
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Modal Footer Controls */}
-                        <div className="p-4 border-t border-slate-100 bg-white sticky bottom-0 flex justify-end gap-2 print:hidden">
-                            {selectedPermitForView.status === 'Issued' && (
-                                <button onClick={(e) => handleVoidClick(selectedPermitForView.permitId, e)} className="px-6 py-2 rounded-lg text-sm font-bold text-orange-600 hover:bg-orange-50 transition-colors flex items-center gap-2">
-                                    <Ban size={16} /> {t('void_permit')}
-                                </button>
-                            )}
-                            {currentUser.role === 'Admin' && (
-                                <button onClick={(e) => handleDeleteClick(selectedPermitForView.permitId, e)} className="px-6 py-2 rounded-lg text-sm font-bold text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2">
-                                    <Trash2 size={16} /> Delete Record
-                                </button>
-                            )}
-                            <button onClick={printPermit} className="bg-teal-600 text-white px-6 py-2 rounded-lg text-sm font-bold hover:bg-teal-700 transition-all flex items-center gap-2 shadow-lg shadow-teal-600/20">
-                                <Printer size={16} /> Print Official Permit
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {isAdding && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto print:hidden">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full border border-slate-200 animate-in zoom-in-95 duration-200">
-                        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-2xl">
-                            <div>
-                                <h3 className="font-black text-lg text-slate-800 uppercase tracking-tight">{editingPermitId ? 'Edit Garage Permit' : 'Issue New Garage Permit'}</h3>
-                                <p className="text-xs text-slate-500">Official Portal Access</p>
-                            </div>
-                            <button onClick={() => setIsAdding(false)} className="text-slate-400 hover:text-slate-600 p-2"><X size={20}/></button>
-                        </div>
-                        
-                        <form onSubmit={handleSubmit} className="p-8 space-y-8 max-h-[75vh] overflow-y-auto bg-white">
+                        <form onSubmit={handleSubmit} className="p-6 space-y-6">
                             
-                            <div className="bg-teal-50/50 p-4 rounded-xl border border-teal-100 grid grid-cols-1 md:grid-cols-4 gap-4">
-                                <div>
-                                    <label className="block text-[10px] font-black text-teal-700 uppercase mb-1">Issue Date</label>
-                                    <input required type="date" className="w-full border border-teal-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none" 
-                                        value={newPermit.issueDate} onChange={e => setNewPermit({...newPermit, issueDate: e.target.value})} />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="col-span-1">
+                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('permit_id')}</label>
+                                    <input type="text" className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-slate-100 font-mono font-bold text-slate-700" value={formData.permitId} readOnly />
                                 </div>
-                                <div>
-                                    <label className="block text-[10px] font-black text-teal-700 uppercase mb-1">Permit Number (Auto)</label>
-                                    <input readOnly type="text" className="w-full border border-teal-200 rounded-lg px-3 py-2 text-sm bg-teal-100 text-teal-900 font-mono font-bold outline-none" 
-                                        value={newPermit.permitId} />
-                                </div>
-                                <div>
-                                    <label className="block text-[10px] font-black text-teal-700 uppercase mb-1">{t('garage_checked_by')}</label>
-                                    <input required type="text" className="w-full border border-teal-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none" 
-                                        placeholder="Staff Name"
-                                        value={newPermit.checkedBy} onChange={e => setNewPermit({...newPermit, checkedBy: e.target.value})} />
-                                </div>
-                                <div>
-                                    <label className="block text-[10px] font-black text-teal-700 uppercase mb-1">{t('authorized_by_label')}</label>
-                                    <input required type="text" className="w-full border border-teal-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none" 
-                                        placeholder="Authorizer"
-                                        value={newPermit.authorizedBy} onChange={e => setNewPermit({...newPermit, authorizedBy: e.target.value})} />
+                                <div className="col-span-1">
+                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('issue_date')}</label>
+                                    <input type="date" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:ring-1 focus:ring-teal-500 outline-none" 
+                                        value={formData.issueDate} onChange={e => setFormData({...formData, issueDate: e.target.value})} />
                                 </div>
                             </div>
 
-                            <div className="space-y-4">
-                                <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest border-l-4 border-teal-600 pl-3 flex items-center gap-2">
-                                    <Car size={16} /> Vehicle Details
+                            {/* Section: Vehicle Info */}
+                            <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
+                                <h4 className="text-sm font-bold text-slate-700 flex items-center gap-2 mb-4 border-b border-slate-200 pb-2">
+                                    <Car size={16} className="text-teal-600"/> {t('vehicle_details')}
                                 </h4>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-[10px] font-black text-slate-500 uppercase mb-1">Vehicle Chassis Number</label>
-                                        <input required type="text" className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none" 
-                                            value={newPermit.vehicleChassisNumber} onChange={e => setNewPermit({...newPermit, vehicleChassisNumber: e.target.value})} />
+                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('registry_no')}</label>
+                                        <input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:ring-1 focus:ring-teal-500 outline-none uppercase font-mono" 
+                                            placeholder="e.g. C-1020"
+                                            value={formData.vehicleRegistryNumber} onChange={e => setFormData({...formData, vehicleRegistryNumber: e.target.value})} />
                                     </div>
                                     <div>
-                                        <label className="block text-[10px] font-black text-slate-500 uppercase mb-1">Vehicle Registry Number</label>
-                                        <input required type="text" className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none" 
-                                            value={newPermit.vehicleRegistryNumber} onChange={e => setNewPermit({...newPermit, vehicleRegistryNumber: e.target.value})} />
+                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('chassis_no')}</label>
+                                        <input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:ring-1 focus:ring-teal-500 outline-none uppercase font-mono" 
+                                            value={formData.vehicleChassisNumber} onChange={e => setFormData({...formData, vehicleChassisNumber: e.target.value})} />
                                     </div>
-                                </div>
-                            </div>
-
-                            {/* Garage Property Details - ADDED SECTION */}
-                            <div className="space-y-4 pt-4 border-t border-slate-100">
-                                <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest border-l-4 border-teal-600 pl-3 flex items-center gap-2">
-                                    <Home size={16} /> Garage Property Information
-                                </h4>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    <div className="md:col-span-1">
-                                        <label className="block text-[10px] font-black text-slate-500 uppercase mb-1">House Registry No.</label>
-                                        <input required type="text" className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none" 
-                                            placeholder="e.g. H-44"
-                                            value={newPermit.houseRegistryNumber} onChange={e => setNewPermit({...newPermit, houseRegistryNumber: e.target.value})} />
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('owner_name')}</label>
+                                        <input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:ring-1 focus:ring-teal-500 outline-none" 
+                                            value={formData.vehicleOwnerName} onChange={e => setFormData({...formData, vehicleOwnerName: e.target.value})} />
                                     </div>
-                                    <div className="md:col-span-1">
-                                        <label className="block text-[10px] font-black text-slate-500 uppercase mb-1">Garage Size (Sqft)</label>
-                                        <input required type="number" className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none" 
-                                            value={newPermit.garageSizeSqft} onChange={e => setNewPermit({...newPermit, garageSizeSqft: Number(e.target.value)})} />
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('owner_id')}</label>
+                                        <input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:ring-1 focus:ring-teal-500 outline-none" 
+                                            value={formData.vehicleOwnerId} onChange={e => setFormData({...formData, vehicleOwnerId: e.target.value})} />
                                     </div>
-                                    <div className="md:col-span-1">
-                                        <label className="block text-[10px] font-black text-slate-500 uppercase mb-1">Garage Address</label>
-                                        <input required type="text" className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none" 
-                                            placeholder="Street/Plot Name"
-                                            value={newPermit.garageAddress} onChange={e => setNewPermit({...newPermit, garageAddress: e.target.value})} />
+                                     <div className="col-span-2">
+                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('owner_address')}</label>
+                                        <input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:ring-1 focus:ring-teal-500 outline-none" 
+                                            value={formData.vehicleOwnerAddress} onChange={e => setFormData({...formData, vehicleOwnerAddress: e.target.value})} />
+                                    </div>
+                                     <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('contact_no')}</label>
+                                        <input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:ring-1 focus:ring-teal-500 outline-none" 
+                                            value={formData.vehicleOwnerContact} onChange={e => setFormData({...formData, vehicleOwnerContact: e.target.value})} />
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="space-y-4 pt-4 border-t border-slate-100">
-                                <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest border-l-4 border-teal-600 pl-3 flex items-center justify-between">
-                                    <div className="flex items-center gap-2"><UserCircle size={16} /> Vehicle Owner Section</div>
-                                    {newPermit.vehicleOwnerId && (
-                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${ownerPermitCount > 0 ? 'bg-amber-100 text-amber-700 border border-amber-200' : 'bg-emerald-100 text-emerald-700 border border-emerald-200'}`}>
-                                            Existing Vehicle Owner Permits: {ownerPermitCount}
-                                        </span>
-                                    )}
+                             {/* Section: Garage Info */}
+                            <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
+                                <h4 className="text-sm font-bold text-slate-700 flex items-center gap-2 mb-4 border-b border-slate-200 pb-2">
+                                    <Home size={16} className="text-teal-600"/> {t('garage_details')}
                                 </h4>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-[10px] font-black text-slate-500 uppercase mb-1">Full Name</label>
-                                        <input required type="text" className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none" 
-                                            value={newPermit.vehicleOwnerName} onChange={e => setNewPermit({...newPermit, vehicleOwnerName: e.target.value})} />
+                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('house_reg_no')}</label>
+                                        <input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:ring-1 focus:ring-teal-500 outline-none font-mono uppercase" 
+                                            value={formData.houseRegistryNumber} onChange={e => setFormData({...formData, houseRegistryNumber: e.target.value})} />
+                                    </div>
+                                     <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('garage_size')}</label>
+                                        <input type="number" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:ring-1 focus:ring-teal-500 outline-none" 
+                                            value={formData.garageSizeSqft} onChange={e => setFormData({...formData, garageSizeSqft: Number(e.target.value)})} />
+                                    </div>
+                                     <div className="col-span-2">
+                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('garage_address')}</label>
+                                        <input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:ring-1 focus:ring-teal-500 outline-none" 
+                                            value={formData.garageAddress} onChange={e => setFormData({...formData, garageAddress: e.target.value})} />
+                                    </div>
+                                    
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('owner_name')}</label>
+                                        <input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:ring-1 focus:ring-teal-500 outline-none" 
+                                            value={formData.garageOwnerName} onChange={e => setFormData({...formData, garageOwnerName: e.target.value})} />
                                     </div>
                                     <div>
-                                        <label className="block text-[10px] font-black text-slate-500 uppercase mb-1">Address (Atoll/Island)</label>
-                                        <input required type="text" className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none" 
-                                            value={newPermit.vehicleOwnerAddress} onChange={e => setNewPermit({...newPermit, vehicleOwnerAddress: e.target.value})} />
+                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('owner_id')}</label>
+                                        <input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:ring-1 focus:ring-teal-500 outline-none" 
+                                            value={formData.garageOwnerId} onChange={e => setFormData({...formData, garageOwnerId: e.target.value})} />
                                     </div>
-                                    <div>
-                                        <label className="block text-[10px] font-black text-slate-500 uppercase mb-1">ID Card / Registry Number</label>
-                                        <input required type="text" className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none" 
-                                            value={newPermit.vehicleOwnerId} onChange={e => setNewPermit({...newPermit, vehicleOwnerId: e.target.value})} />
+                                     <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('owner_address')}</label>
+                                        <input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:ring-1 focus:ring-teal-500 outline-none" 
+                                            value={formData.garageOwnerAddress} onChange={e => setFormData({...formData, garageOwnerAddress: e.target.value})} />
                                     </div>
-                                    <div>
-                                        <label className="block text-[10px] font-black text-slate-500 uppercase mb-1">Phone Number</label>
-                                        <input required type="text" className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none" 
-                                            value={newPermit.vehicleOwnerContact} onChange={e => setNewPermit({...newPermit, vehicleOwnerContact: e.target.value})} />
+                                     <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('contact_no')}</label>
+                                        <input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:ring-1 focus:ring-teal-500 outline-none" 
+                                            value={formData.garageOwnerContact} onChange={e => setFormData({...formData, garageOwnerContact: e.target.value})} />
                                     </div>
                                 </div>
                             </div>
-
-                            <div className="space-y-4 pt-4 border-t border-slate-100">
-                                <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest border-l-4 border-teal-600 pl-3 flex items-center justify-between">
-                                    <div className="flex items-center gap-2"><BadgeCheck size={16} /> Garage Owner Details</div>
-                                    {newPermit.garageOwnerId && (
-                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${garageOwnerPermitCount > 0 ? 'bg-amber-100 text-amber-700 border border-amber-200' : 'bg-emerald-100 text-emerald-700 border border-emerald-200'}`}>
-                                            Existing Garage Owner Permits: {garageOwnerPermitCount}
-                                        </span>
-                                    )}
-                                </h4>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div>
-                                        <label className="block text-[10px] font-black text-slate-500 uppercase mb-1">Owner Name</label>
-                                        <input required type="text" className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none" 
-                                            value={newPermit.garageOwnerName} onChange={e => setNewPermit({...newPermit, garageOwnerName: e.target.value})} />
-                                    </div>
-                                    <div>
-                                        <label className="block text-[10px] font-black text-slate-500 uppercase mb-1">Address</label>
-                                        <input required type="text" className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none" 
-                                            value={newPermit.garageOwnerAddress} onChange={e => setNewPermit({...newPermit, garageOwnerAddress: e.target.value})} />
-                                    </div>
-                                    <div>
-                                        <label className="block text-[10px] font-black text-slate-500 uppercase mb-1">ID Number</label>
-                                        <input required type="text" className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none" 
-                                            value={newPermit.garageOwnerId} onChange={e => setNewPermit({...newPermit, garageOwnerId: e.target.value})} />
-                                    </div>
-                                    <div>
-                                        <label className="block text-[10px] font-black text-slate-500 uppercase mb-1">Phone</label>
-                                        <input required type="text" className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none" 
-                                            value={newPermit.garageOwnerContact} onChange={e => setNewPermit({...newPermit, garageOwnerContact: e.target.value})} />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="space-y-4 pt-4 border-t border-slate-100">
-                                <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest border-l-4 border-teal-600 pl-3 flex items-center gap-2">
-                                    <Notebook size={16} /> {t('extra_notes')}
-                                </h4>
+                            
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('extra_notes')}</label>
                                 <textarea 
-                                    className="w-full border border-slate-300 rounded-xl px-3 py-3 text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none h-24 resize-none shadow-inner" 
-                                    placeholder="Add any additional notes or internal remarks here..."
-                                    value={newPermit.notes}
-                                    onChange={e => setNewPermit({...newPermit, notes: e.target.value})}
-                                />
+                                    className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:ring-1 focus:ring-teal-500 outline-none h-20 resize-none"
+                                    value={formData.notes || ''}
+                                    onChange={e => setFormData({...formData, notes: e.target.value})}
+                                ></textarea>
+                            </div>
+
+                            <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 rounded hover:bg-slate-200">{t('cancel')}</button>
+                                <button type="submit" className="px-6 py-2 text-sm font-bold text-white bg-teal-600 rounded hover:bg-teal-700 shadow-sm">{editingPermit ? 'Update Permit' : t('issue_permit_btn')}</button>
                             </div>
                         </form>
-
-                        <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 rounded-b-2xl">
-                            <button type="button" onClick={() => setIsAdding(false)} className="px-6 py-2.5 text-sm font-bold text-slate-600 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-colors">Cancel</button>
-                            <button onClick={handleSubmit} type="button" className="px-8 py-2.5 text-sm font-bold text-white bg-teal-600 rounded-xl hover:bg-teal-700 transition-all shadow-lg shadow-teal-600/20">
-                                {editingPermitId ? 'Update Record' : 'Issue Permit'}
-                            </button>
-                        </div>
                     </div>
                 </div>
             )}
-            <style>{`
-                @media print {
-                    /* Hide everything else */
-                    body * {
-                        visibility: hidden;
-                    }
-                    
-                    /* Show only our official ID and its children */
-                    #official-permit-print-area, #official-permit-print-area * {
-                        visibility: visible;
-                    }
 
-                    /* Force the print area to take up the whole page */
-                    #official-permit-print-area {
-                        position: fixed;
-                        left: 0;
-                        top: 0;
-                        width: 210mm;
-                        height: 297mm;
-                        margin: 0;
-                        padding: 0;
-                        z-index: 9999;
-                        background-color: white;
-                    }
+            {/* Print Preview Modal */}
+            {isPrintModalOpen && viewingPermit && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4">
+                     <div className="bg-white shadow-2xl w-[210mm] max-h-[90vh] flex flex-col overflow-hidden relative">
+                         <div className="p-4 bg-slate-800 text-white flex justify-between items-center print:hidden">
+                             <div className="flex items-center gap-4">
+                                <h3 className="font-bold">{t('print_official_permit')}</h3>
+                                <span className="text-xs bg-slate-700 px-2 py-1 rounded">{viewingPermit.permitId}</span>
+                             </div>
+                             <div className="flex gap-2">
+                                <button onClick={() => window.print()} className="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded text-sm font-bold flex items-center gap-2">
+                                    <Printer size={16} /> Print
+                                </button>
+                                <button onClick={() => setIsPrintModalOpen(false)} className="bg-slate-700 hover:bg-slate-600 text-white p-2 rounded">
+                                    <X size={20} />
+                                </button>
+                             </div>
+                         </div>
+                         
+                         <div className="flex-1 overflow-auto bg-slate-100 p-8 flex justify-center" id="print-area">
+                             <div className="bg-white w-[210mm] h-[297mm] shadow-lg relative print:shadow-none overflow-hidden print:w-full print:h-full">
+                                {systemConfig.garagePermitTemplate.useCustomTemplate && systemConfig.garagePermitTemplate.backgroundImage ? (
+                                    <>
+                                        {/* Background Image Layer */}
+                                        <img 
+                                            src={systemConfig.garagePermitTemplate.backgroundImage} 
+                                            className="absolute inset-0 w-full h-full object-cover z-0" 
+                                            alt="Permit Template"
+                                        />
+                                        
+                                        {/* Dynamic Data Overlay */}
+                                        <div className="absolute inset-0 z-10 text-slate-900">
+                                            {renderPrintField('permitId', viewingPermit.permitId)}
+                                            {renderPrintField('issueDate', new Date(viewingPermit.issueDate).toLocaleDateString())}
+                                            {renderPrintField('vehicleChassis', viewingPermit.vehicleChassisNumber)}
+                                            {renderPrintField('vehicleReg', viewingPermit.vehicleRegistryNumber)}
+                                            {renderPrintField('vOwnerName', viewingPermit.vehicleOwnerName)}
+                                            {renderPrintField('vOwnerAddress', viewingPermit.vehicleOwnerAddress)}
+                                            {renderPrintField('vOwnerId', viewingPermit.vehicleOwnerId)}
+                                            {renderPrintField('vOwnerPhone', viewingPermit.vehicleOwnerContact)}
+                                            {renderPrintField('garageAddress', viewingPermit.garageAddress)}
+                                            {renderPrintField('garageSize', String(viewingPermit.garageSizeSqft))}
+                                            {renderPrintField('houseReg', viewingPermit.houseRegistryNumber)}
+                                            {renderPrintField('gOwnerName', viewingPermit.garageOwnerName)}
+                                            {renderPrintField('gOwnerAddress', viewingPermit.garageOwnerAddress)}
+                                            {renderPrintField('gOwnerPhone', viewingPermit.garageOwnerContact)}
+                                            {renderPrintField('authorizedBy', viewingPermit.authorizedBy || '_________________')}
+                                            {renderPrintField('checkedBy', viewingPermit.checkedBy || '_________________')}
+                                            {renderPrintField('notes', viewingPermit.notes || '')}
+                                        </div>
+                                    </>
+                                ) : (
+                                    // Fallback Default Template
+                                    <div className="p-16 h-full flex flex-col text-slate-900">
+                                        <div className="text-center border-b-2 border-slate-900 pb-8 mb-8">
+                                            <h1 className="text-2xl font-black uppercase tracking-widest mb-2 whitespace-pre-wrap">{systemConfig.garagePermitTemplate.header || `${systemConfig.secretariatName} ${systemConfig.councilName}`}</h1>
+                                            <div className="mt-6 inline-block border-2 border-slate-900 px-8 py-3">
+                                                <h2 className="text-xl font-bold uppercase tracking-widest">{systemConfig.garagePermitTemplate.title}</h2>
+                                            </div>
+                                        </div>
 
-                    @page { 
-                        size: A4 portrait; 
-                        margin: 0; 
-                    }
-                }
-            `}</style>
+                                        <div className="flex justify-between items-end mb-8">
+                                            <div className="text-sm">
+                                                <p><span className="font-bold uppercase w-32 inline-block">Permit ID:</span> <span className="font-mono text-lg font-bold">{viewingPermit.permitId}</span></p>
+                                                <p><span className="font-bold uppercase w-32 inline-block">Issue Date:</span> {new Date(viewingPermit.issueDate).toLocaleDateString()}</p>
+                                            </div>
+                                            <div className="w-24 h-24 border-2 border-slate-900 flex items-center justify-center text-xs text-center p-2 font-bold uppercase text-slate-400">
+                                                Official Stamp
+                                            </div>
+                                        </div>
+
+                                        <div className="mb-8 text-sm leading-relaxed text-justify">
+                                            {systemConfig.garagePermitTemplate.declaration}
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-12 mb-8">
+                                            <div>
+                                                <h3 className="font-bold uppercase border-b border-slate-900 mb-4 pb-1">Vehicle Details</h3>
+                                                <div className="space-y-2 text-sm">
+                                                    <div className="flex justify-between border-b border-dotted border-slate-400 pb-1">
+                                                        <span>Registry No:</span> <span className="font-bold font-mono">{viewingPermit.vehicleRegistryNumber}</span>
+                                                    </div>
+                                                    <div className="flex justify-between border-b border-dotted border-slate-400 pb-1">
+                                                        <span>Chassis No:</span> <span className="font-mono">{viewingPermit.vehicleChassisNumber}</span>
+                                                    </div>
+                                                    <div className="flex justify-between border-b border-dotted border-slate-400 pb-1">
+                                                        <span>Owner:</span> <span className="font-bold">{viewingPermit.vehicleOwnerName}</span>
+                                                    </div>
+                                                    <div className="flex justify-between border-b border-dotted border-slate-400 pb-1">
+                                                        <span>ID Card:</span> <span>{viewingPermit.vehicleOwnerId}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <h3 className="font-bold uppercase border-b border-slate-900 mb-4 pb-1">Garage Details</h3>
+                                                <div className="space-y-2 text-sm">
+                                                     <div className="flex justify-between border-b border-dotted border-slate-400 pb-1">
+                                                        <span>House Reg:</span> <span className="font-bold font-mono">{viewingPermit.houseRegistryNumber}</span>
+                                                    </div>
+                                                    <div className="flex justify-between border-b border-dotted border-slate-400 pb-1">
+                                                        <span>Address:</span> <span>{viewingPermit.garageAddress}</span>
+                                                    </div>
+                                                    <div className="flex justify-between border-b border-dotted border-slate-400 pb-1">
+                                                        <span>Owner:</span> <span className="font-bold">{viewingPermit.garageOwnerName}</span>
+                                                    </div>
+                                                    <div className="flex justify-between border-b border-dotted border-slate-400 pb-1">
+                                                        <span>Size:</span> <span>{viewingPermit.garageSizeSqft} Sqft</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-auto pt-8 border-t-2 border-slate-900">
+                                            <div className="grid grid-cols-2 gap-20">
+                                                <div>
+                                                    <p className="text-xs font-bold uppercase mb-8">Checked By:</p>
+                                                    <p className="border-b border-slate-900 font-bold">{viewingPermit.checkedBy}</p>
+                                                    <p className="text-[10px] mt-1 uppercase">Name & Signature</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-bold uppercase mb-8">Authorized By:</p>
+                                                    <p className="border-b border-slate-900 font-bold">{viewingPermit.authorizedBy}</p>
+                                                    <p className="text-[10px] mt-1 uppercase">Executive Secretary / President</p>
+                                                </div>
+                                            </div>
+                                            <div className="text-center text-[10px] text-slate-500 mt-8">
+                                                {systemConfig.garagePermitTemplate.footer}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                             </div>
+                         </div>
+                         <style>{`
+                            @media print {
+                                body * { visibility: hidden; }
+                                #print-area, #print-area * { visibility: visible; }
+                                #print-area { 
+                                    position: absolute; 
+                                    left: 0; 
+                                    top: 0; 
+                                    width: 100%; 
+                                    height: 100%; 
+                                    margin: 0; 
+                                    padding: 0;
+                                    background: white;
+                                }
+                                @page { size: A4; margin: 0; }
+                            }
+                        `}</style>
+                     </div>
+                </div>
+            )}
         </div>
     );
 };

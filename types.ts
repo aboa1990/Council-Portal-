@@ -137,6 +137,7 @@ export interface TemplateFieldPos {
   fontSize: number;
   visible: boolean;
   fontWeight?: string;
+  textAlign?: 'left' | 'right' | 'center';
 }
 
 export interface GaragePermitTemplate {

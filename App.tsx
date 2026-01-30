@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { ViewState, CitizenRequest, RequestStatus, Asset, User, UserRole, House, AssetCategory, AssetStatusConfig, SystemConfig, GaragePermit, TemplateFieldPos, AccessLog, RequisitionForm } from './types';
-import { MOCK_REQUESTS, MOCK_ASSETS, MOCK_HOUSES, DEFAULT_ASSET_CATEGORIES, DEFAULT_ASSET_STATUSES, MOCK_GARAGE_PERMITS, MOCK_STAFF } from './constants';
+import { MOCK_REQUESTS, MOCK_ASSETS, MOCK_HOUSES, DEFAULT_ASSET_CATEGORIES, DEFAULT_ASSET_STATUSES, MOCK_GARAGE_PERMITS, MOCK_STAFF, DEFAULT_FIELD_POSITIONS } from './constants';
 import Sidebar from './components/Sidebar';
 import DashboardStats from './components/DashboardStats';
 import RequestList from './components/RequestList';
@@ -28,26 +28,6 @@ const STORAGE_KEYS = {
   CONFIG: 'civicpulse_config',
   LOGS: 'civicpulse_logs',
   USER: 'civicpulse_current_user'
-};
-
-const DEFAULT_FIELD_POSITIONS: Record<string, TemplateFieldPos> = {
-  permitId: { top: 12, left: 75, fontSize: 14, visible: true, fontWeight: 'bold' },
-  issueDate: { top: 16, left: 75, fontSize: 12, visible: true },
-  vehicleChassis: { top: 25, left: 15, fontSize: 12, visible: true },
-  vehicleReg: { top: 30, left: 15, fontSize: 12, visible: true },
-  vOwnerName: { top: 38, left: 15, fontSize: 13, visible: true, fontWeight: 'bold' },
-  vOwnerAddress: { top: 42, left: 15, fontSize: 11, visible: true },
-  vOwnerId: { top: 46, left: 15, fontSize: 11, visible: true },
-  vOwnerPhone: { top: 46, left: 40, fontSize: 11, visible: true },
-  garageAddress: { top: 55, left: 15, fontSize: 12, visible: true },
-  garageSize: { top: 60, left: 15, fontSize: 11, visible: true },
-  houseReg: { top: 64, left: 15, fontSize: 11, visible: true },
-  gOwnerName: { top: 72, left: 15, fontSize: 13, visible: true, fontWeight: 'bold' },
-  gOwnerAddress: { top: 76, left: 15, fontSize: 11, visible: true },
-  gOwnerPhone: { top: 80, left: 15, fontSize: 11, visible: true },
-  authorizedBy: { top: 90, left: 65, fontSize: 12, visible: true, fontWeight: 'bold' },
-  checkedBy: { top: 90, left: 35, fontSize: 12, visible: true },
-  notes: { top: 85, left: 15, fontSize: 10, visible: true }
 };
 
 const AppContent: React.FC = () => {
