@@ -15,7 +15,7 @@ import Login from './components/Login';
 import Settings from './components/Settings';
 import { Menu, Cloud, CloudOff, RefreshCw } from 'lucide-react';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
-import { fetchPortalState, savePortalState, isMongoConfigured } from './services/mongoService';
+import { fetchPortalState, savePortalState, isSupabaseConfigured } from './services/supabaseService';
 
 const STORAGE_KEYS = {
   REQUESTS: 'civicpulse_requests',
@@ -91,17 +91,16 @@ const AppContent: React.FC = () => {
   }));
 
   // DB Sync States
-  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'error' | 'local'>(isMongoConfigured() ? 'idle' : 'local');
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'error' | 'local'>(isSupabaseConfigured() ? 'idle' : 'local');
   const isInitialLoad = useRef(true);
 
   // Language and UI state
-  // FIX: Extract language tools and define mobile menu state
   const { t, isRTL } = useLanguage();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Background Sync from MongoDB on mount
+  // Background Sync from Supabase on mount
   useEffect(() => {
-    if (isMongoConfigured()) {
+    if (isSupabaseConfigured()) {
       const syncFromCloud = async () => {
         setSyncStatus('syncing');
         const cloudData = await fetchPortalState(systemConfig.councilName);
@@ -115,7 +114,8 @@ const AppContent: React.FC = () => {
           if (cloudData.accessLogs) setAccessLogs(cloudData.accessLogs);
           setSyncStatus('synced');
         } else {
-          setSyncStatus('error');
+          // If no data exists in cloud yet, we remain in local but idle state (ready to push)
+          setSyncStatus('idle');
         }
         isInitialLoad.current = false;
       };
@@ -123,7 +123,7 @@ const AppContent: React.FC = () => {
     }
   }, []);
 
-  // Sync state to localStorage AND MongoDB
+  // Sync state to localStorage AND Supabase
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.REQUESTS, JSON.stringify(requests));
     localStorage.setItem(STORAGE_KEYS.ASSETS, JSON.stringify(assets));
@@ -135,7 +135,7 @@ const AppContent: React.FC = () => {
     localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(currentUser));
 
     // Cloud Sync Debounce/Throttle logic simplified for prompt
-    if (!isInitialLoad.current && isMongoConfigured()) {
+    if (!isInitialLoad.current && isSupabaseConfigured()) {
       const syncToCloud = async () => {
         setSyncStatus('syncing');
         const success = await savePortalState(systemConfig.councilName, {

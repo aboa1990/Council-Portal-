@@ -12,10 +12,8 @@ export default defineConfig(({ mode }) => {
       // Define variables individually to preserve the process.env object structure
       'process.env.NODE_ENV': JSON.stringify(mode),
       'process.env.API_KEY': JSON.stringify(env.API_KEY || ''),
-      'process.env.MONGODB_DATA_API_URL': JSON.stringify(env.MONGODB_DATA_API_URL || ''),
-      'process.env.MONGODB_DATA_API_KEY': JSON.stringify(env.MONGODB_DATA_API_KEY || ''),
-      'process.env.MONGODB_CLUSTER': JSON.stringify(env.MONGODB_CLUSTER || ''),
-      'process.env.MONGODB_DATABASE': JSON.stringify(env.MONGODB_DATABASE || '')
+      'process.env.VITE_SUPABASE_URL': JSON.stringify(env.VITE_SUPABASE_URL || ''),
+      'process.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(env.VITE_SUPABASE_ANON_KEY || '')
     },
     build: {
       outDir: 'dist',
