@@ -23,7 +23,7 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
     const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
     const [editingPermit, setEditingPermit] = useState<GaragePermit | null>(null);
     const [viewingPermit, setViewingPermit] = useState<GaragePermit | null>(null);
-    const [previewScale, setPreviewScale] = useState(0.6); // Default scale for better visibility
+    const [previewScale, setPreviewScale] = useState(1.0); // Default to 100% for clear visibility
 
     // Merge system config with defaults to ensure all layers are visible even if config is old
     const effectiveFieldPositions = {
@@ -122,7 +122,7 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
 
     const handlePrint = (permit: GaragePermit) => {
         setViewingPermit(permit);
-        setPreviewScale(0.6); // Reset scale on open
+        setPreviewScale(1.0); // Reset to 100% on open
         setIsPrintModalOpen(true);
     };
 
@@ -281,10 +281,10 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                 </div>
             </div>
 
-            {/* Add/Edit Modal */}
+            {/* Add/Edit Modal (Updated Width) */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl my-8">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl my-8">
                          <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-xl">
                             <h3 className="font-bold text-lg text-slate-800">{editingPermit ? 'Update Permit' : t('new_permit')}</h3>
                             <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X size={20}/></button>
@@ -308,7 +308,7 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                                 <h4 className="text-sm font-bold text-slate-700 flex items-center gap-2 mb-4 border-b border-slate-200 pb-2">
                                     <Car size={16} className="text-teal-600"/> {t('vehicle_details')}
                                 </h4>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                     <div>
                                         <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('registry_no')}</label>
                                         <input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:ring-1 focus:ring-teal-500 outline-none uppercase font-mono" 
@@ -330,7 +330,7 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                                         <input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:ring-1 focus:ring-teal-500 outline-none" 
                                             value={formData.vehicleOwnerId} onChange={e => setFormData({...formData, vehicleOwnerId: e.target.value})} />
                                     </div>
-                                     <div className="col-span-2">
+                                     <div className="lg:col-span-2">
                                         <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('owner_address')}</label>
                                         <input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:ring-1 focus:ring-teal-500 outline-none" 
                                             value={formData.vehicleOwnerAddress} onChange={e => setFormData({...formData, vehicleOwnerAddress: e.target.value})} />
@@ -348,7 +348,7 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                                 <h4 className="text-sm font-bold text-slate-700 flex items-center gap-2 mb-4 border-b border-slate-200 pb-2">
                                     <Home size={16} className="text-teal-600"/> {t('garage_details')}
                                 </h4>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                     <div>
                                         <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('house_reg_no')}</label>
                                         <input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:ring-1 focus:ring-teal-500 outline-none font-mono uppercase" 
@@ -359,7 +359,7 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                                         <input type="number" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:ring-1 focus:ring-teal-500 outline-none" 
                                             value={formData.garageSizeSqft} onChange={e => setFormData({...formData, garageSizeSqft: Number(e.target.value)})} />
                                     </div>
-                                     <div className="col-span-2">
+                                     <div className="lg:col-span-2">
                                         <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('garage_address')}</label>
                                         <input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:ring-1 focus:ring-teal-500 outline-none" 
                                             value={formData.garageAddress} onChange={e => setFormData({...formData, garageAddress: e.target.value})} />
