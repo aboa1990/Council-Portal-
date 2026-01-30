@@ -355,14 +355,15 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                             </div>
                         </div>
 
-                        {/* OFFICIAL PRINTABLE PERMIT CARD (Rendered only during print) */}
-                        <div className="hidden print:block relative w-full h-full bg-white overflow-hidden">
+                        {/* OFFICIAL PRINTABLE PERMIT CARD (Rendered only during print via ID targeting) */}
+                        <div id="official-permit-print-area" className="hidden print:block relative w-full h-full bg-white overflow-hidden">
                             <div className="relative mx-auto bg-white" style={{ width: '210mm', height: '297mm' }}>
                                 {systemConfig.garagePermitTemplate.backgroundImage ? (
                                     <img 
                                         src={systemConfig.garagePermitTemplate.backgroundImage} 
                                         className="absolute inset-0 w-full h-full object-cover" 
                                         alt="Official Template"
+                                        style={{ printColorAdjust: 'exact', WebkitPrintColorAdjust: 'exact' }}
                                     />
                                 ) : (
                                     <div className="absolute inset-0 border-8 border-slate-900 m-8 flex items-center justify-center">
@@ -586,39 +587,27 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
             )}
             <style>{`
                 @media print {
-                    /* Hide everything by default */
-                    body > #root > :not(.print-container) { 
-                        display: none !important; 
+                    /* Hide everything else */
+                    body * {
+                        visibility: hidden;
                     }
                     
-                    /* If using fixed/absolute positioning for layouts, ensure parent containers allow full page print */
-                    #root {
-                        display: block !important;
-                        position: static !important;
-                        padding: 0 !important;
-                        margin: 0 !important;
+                    /* Show only our official ID and its children */
+                    #official-permit-print-area, #official-permit-print-area * {
+                        visibility: visible;
                     }
 
-                    /* Specifically hide the main sidebar and headers from the layout */
-                    header, nav, aside, .print\\:hidden {
-                        display: none !important;
-                    }
-
-                    /* Override the detail modal's fixed positioning to allow it to be the main print object */
-                    .fixed.inset-0 {
-                        position: static !important;
-                        display: block !important;
-                        background: white !important;
-                    }
-
-                    /* Only show the official card container */
-                    .bg-white.rounded-xl.shadow-2xl {
-                        box-shadow: none !important;
-                        border: none !important;
-                        max-width: none !important;
-                        width: 100% !important;
-                        max-height: none !important;
-                        display: block !important;
+                    /* Force the print area to take up the whole page */
+                    #official-permit-print-area {
+                        position: fixed;
+                        left: 0;
+                        top: 0;
+                        width: 100vw;
+                        height: 100vh;
+                        margin: 0;
+                        padding: 0;
+                        z-index: 9999;
+                        background-color: white;
                     }
 
                     @page { 
