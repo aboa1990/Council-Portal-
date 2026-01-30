@@ -356,8 +356,8 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                         </div>
 
                         {/* OFFICIAL PRINTABLE PERMIT CARD (Rendered only during print via ID targeting) */}
-                        <div id="official-permit-print-area" className="hidden print:block relative w-full h-full bg-white overflow-hidden">
-                            <div className="relative mx-auto bg-white" style={{ width: '210mm', height: '297mm' }}>
+                        <div id="official-permit-print-area" className="hidden print:block fixed inset-0 z-[9999] bg-white">
+                            <div className="relative mx-auto bg-white overflow-hidden" style={{ width: '210mm', height: '297mm' }}>
                                 {systemConfig.garagePermitTemplate.backgroundImage ? (
                                     <img 
                                         src={systemConfig.garagePermitTemplate.backgroundImage} 
@@ -602,8 +602,8 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                         position: fixed;
                         left: 0;
                         top: 0;
-                        width: 100vw;
-                        height: 100vh;
+                        width: 210mm;
+                        height: 297mm;
                         margin: 0;
                         padding: 0;
                         z-index: 9999;
@@ -611,8 +611,8 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                     }
 
                     @page { 
+                        size: A4 portrait; 
                         margin: 0; 
-                        size: A4; 
                     }
                 }
             `}</style>
