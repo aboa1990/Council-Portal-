@@ -102,7 +102,8 @@ export const DEFAULT_FIELD_POSITIONS: Record<string, TemplateFieldPos> = {
   houseReg: { top: 64, left: 15, fontSize: 11, visible: true, textAlign: 'right' },
   gOwnerName: { top: 72, left: 15, fontSize: 13, visible: true, fontWeight: 'bold', textAlign: 'right' },
   gOwnerAddress: { top: 76, left: 15, fontSize: 11, visible: true, textAlign: 'right' },
-  gOwnerPhone: { top: 80, left: 15, fontSize: 11, visible: true, textAlign: 'right' },
+  gOwnerId: { top: 80, left: 15, fontSize: 11, visible: true, textAlign: 'right' },
+  gOwnerPhone: { top: 80, left: 40, fontSize: 11, visible: true, textAlign: 'right' },
   authorizedBy: { top: 90, left: 65, fontSize: 12, visible: true, fontWeight: 'bold', textAlign: 'right' },
   checkedBy: { top: 90, left: 35, fontSize: 12, visible: true, textAlign: 'right' },
   notes: { top: 85, left: 15, fontSize: 10, visible: true, textAlign: 'right' }

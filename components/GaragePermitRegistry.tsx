@@ -452,6 +452,7 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                                             {renderPrintField('houseReg', viewingPermit.houseRegistryNumber)}
                                             {renderPrintField('gOwnerName', viewingPermit.garageOwnerName)}
                                             {renderPrintField('gOwnerAddress', viewingPermit.garageOwnerAddress)}
+                                            {renderPrintField('gOwnerId', viewingPermit.garageOwnerId)}
                                             {renderPrintField('gOwnerPhone', viewingPermit.garageOwnerContact)}
                                             {renderPrintField('authorizedBy', viewingPermit.authorizedBy || '')}
                                             {renderPrintField('checkedBy', viewingPermit.checkedBy || '')}
@@ -539,6 +540,10 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                                                     <div className="col-span-2 flex justify-between border-b border-dotted border-slate-300 pb-1">
                                                         <span className="text-sm font-bold text-slate-600">Facility Owner</span>
                                                         <span className="text-sm">{viewingPermit.garageOwnerName}</span>
+                                                    </div>
+                                                    <div className="col-span-2 flex justify-between border-b border-dotted border-slate-300 pb-1">
+                                                        <span className="text-sm font-bold text-slate-600">Owner ID / Contact</span>
+                                                        <span className="text-sm">{viewingPermit.garageOwnerId} / {viewingPermit.garageOwnerContact}</span>
                                                     </div>
                                                 </div>
                                             </div>
