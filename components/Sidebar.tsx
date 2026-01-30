@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { LayoutDashboard, FileText, BarChart3, Settings, Building2, LogOut, Box, Users, Home, Globe, Hexagon, Car, Database, Cloud, CloudOff, RefreshCw } from 'lucide-react';
+import { LayoutDashboard, FileText, BarChart3, Settings, Building2, LogOut, Box, Users, Home, Globe, Hexagon, Car, Database, Cloud, CloudOff, RefreshCw, ClipboardList } from 'lucide-react';
 import { ViewState, UserRole, SystemConfig } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -19,6 +19,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, userRole, 
   const allNavItems = [
     { id: 'dashboard', label: t('nav_dashboard'), icon: LayoutDashboard, roles: ['Admin', 'Executive', 'Senior Management', 'Staff'] },
     { id: 'requests', label: t('nav_requests'), icon: FileText, roles: ['Admin', 'Executive', 'Senior Management', 'Staff'] },
+    { id: 'hudha', label: t('nav_hudha'), icon: ClipboardList, roles: ['Admin', 'Executive', 'Senior Management', 'Staff'] },
     { id: 'houses', label: t('nav_houses'), icon: Home, roles: ['Admin', 'Executive', 'Senior Management', 'Staff'] },
     { id: 'assets', label: t('nav_assets'), icon: Box, roles: ['Admin', 'Executive', 'Senior Management'] },
     { id: 'garage', label: t('nav_garage'), icon: Car, roles: ['Admin', 'Executive', 'Senior Management', 'Staff'] },

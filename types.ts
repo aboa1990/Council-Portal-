@@ -153,4 +153,4 @@ export interface SystemConfig {
   garagePermitTemplate: GaragePermitTemplate;
 }
 
-export type ViewState = 'dashboard' | 'requests' | 'assets' | 'houses' | 'garage' | 'analytics' | 'settings';
+export type ViewState = 'dashboard' | 'requests' | 'assets' | 'houses' | 'garage' | 'analytics' | 'settings' | 'hudha';

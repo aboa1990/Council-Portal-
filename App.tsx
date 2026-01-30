@@ -10,6 +10,7 @@ import AssetRegistry from './components/AssetRegistry';
 import AssetDetail from './components/AssetDetail';
 import HouseRegistry from './components/HouseRegistry';
 import GaragePermitRegistry from './components/GaragePermitRegistry';
+import HudhaForms from './components/HudhaForms';
 import AIChat from './components/AIChat';
 import Login from './components/Login';
 import Settings from './components/Settings';
@@ -308,6 +309,8 @@ const AppContent: React.FC = () => {
                 onAddRequest={handleAddRequest}
             />
         );
+      case 'hudha':
+        return <HudhaForms systemConfig={systemConfig} currentUser={currentUser!} />;
       case 'houses':
         return (
             <HouseRegistry 
@@ -392,6 +395,7 @@ const AppContent: React.FC = () => {
                 <h2 className="font-bold text-lg mb-6 text-teal-800">{t('menu')}</h2>
                 <button onClick={() => { setCurrentView('dashboard'); setIsMobileMenuOpen(false); }} className="block w-full text-left py-3 border-b border-slate-100 text-slate-600">{t('nav_dashboard')}</button>
                 <button onClick={() => { setCurrentView('requests'); setIsMobileMenuOpen(false); }} className="block w-full text-left py-3 border-b border-slate-100 text-slate-600">{t('nav_requests')}</button>
+                <button onClick={() => { setCurrentView('hudha'); setIsMobileMenuOpen(false); }} className="block w-full text-left py-3 border-b border-slate-100 text-slate-600">{t('nav_hudha')}</button>
                 <button onClick={() => { setCurrentView('houses'); setIsMobileMenuOpen(false); }} className="block w-full text-left py-3 border-b border-slate-100 text-slate-600">{t('nav_houses')}</button>
                 <button onClick={() => { setCurrentView('assets'); setIsMobileMenuOpen(false); }} className="block w-full text-left py-3 border-b border-slate-100 text-slate-600">{t('nav_assets')}</button>
                  <button onClick={() => { setCurrentView('garage'); setIsMobileMenuOpen(false); }} className="block w-full text-left py-3 border-b border-slate-100 text-slate-600">{t('nav_garage')}</button>
@@ -479,7 +483,7 @@ const AppContent: React.FC = () => {
                      <div>
                         <div className="flex items-center gap-3">
                           <h2 className="text-2xl font-bold text-slate-900 capitalize tracking-tight">
-                              {selectedRequest ? 'Request Details' : selectedAsset ? 'Asset Details' : currentView === 'dashboard' ? systemConfig.councilName : currentView.replace('-', ' ')}
+                              {selectedRequest ? 'Request Details' : selectedAsset ? 'Asset Details' : currentView === 'dashboard' ? systemConfig.councilName : currentView === 'hudha' ? 'Hudha Forms' : currentView.replace('-', ' ')}
                           </h2>
                           {syncStatus === 'syncing' && <RefreshCw size={16} className="animate-spin text-teal-500" />}
                         </div>
