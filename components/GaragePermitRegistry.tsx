@@ -579,43 +579,66 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                             @media print {
                                 @page { size: A4 portrait; margin: 0; }
                                 html, body { 
-                                    height: auto; 
-                                    overflow: visible; 
                                     margin: 0; 
                                     padding: 0;
+                                    width: 100%;
+                                    height: 100%;
+                                    overflow: visible;
                                 }
                                 
-                                /* Hide everything initially */
-                                body * {
-                                    visibility: hidden;
+                                body > *:not(.modal-backdrop) {
+                                    display: none !important;
+                                }
+
+                                .modal-backdrop {
+                                    background: white !important;
+                                    position: absolute !important;
+                                    top: 0 !important;
+                                    left: 0 !important;
+                                    width: 100% !important;
+                                    height: 100% !important;
+                                    padding: 0 !important;
+                                    margin: 0 !important;
+                                    z-index: 99999 !important;
+                                    display: block !important;
+                                }
+
+                                .modal-content {
+                                    box-shadow: none !important;
+                                    border: none !important;
+                                    width: 100% !important;
+                                    height: 100% !important;
+                                    position: static !important;
+                                    overflow: visible !important;
+                                    background: white !important;
                                 }
 
                                 /* Only make the print area visible */
-                                #print-area, #print-area * {
-                                    visibility: visible !important;
-                                }
-
-                                /* Force the print area to absolute top-left coordinates relative to page */
-                                #print-area {
-                                    position: fixed !important;
+                                .print-preview-wrapper {
+                                    position: absolute !important;
                                     left: 0 !important;
                                     top: 0 !important;
                                     width: 210mm !important;
                                     height: 297mm !important;
                                     margin: 0 !important;
                                     padding: 0 !important;
-                                    z-index: 2147483647 !important; /* Max z-index */
-                                    background: white !important;
-                                    overflow: hidden !important;
-                                    box-shadow: none !important;
                                     transform: none !important;
+                                    display: block !important;
+                                    overflow: hidden !important;
+                                }
+
+                                #print-area {
+                                    width: 100% !important;
+                                    height: 100% !important;
+                                    box-shadow: none !important;
+                                    background: white !important;
+                                    /* Ensure it prints at exactly A4 size */
+                                    page-break-after: always;
                                 }
                                 
-                                /* Reset wrapper transforms that might mess up coordinates */
-                                .print-preview-wrapper {
-                                    transform: none !important;
-                                    position: static !important;
-                                    display: block !important;
+                                /* Hide UI elements */
+                                .print\\:hidden, button, .zoom-controls {
+                                    display: none !important;
                                 }
                             }
                         `}</style>
