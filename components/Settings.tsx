@@ -83,29 +83,38 @@ const Settings: React.FC<SettingsProps> = ({
   });
 
   // General Settings State
-  // Merge defaults ensures we have all keys from constants even if config is stale
-  const mergedFieldPositions = {
-      ...DEFAULT_FIELD_POSITIONS,
-      ...(systemConfig?.garagePermitTemplate?.fieldPositions || {})
-  };
+  // Initialize with merged defaults to ensure new fields (like gOwnerId) appear even if config is old
+  const [localSystemConfig, setLocalSystemConfig] = useState<SystemConfig>(() => {
+      const baseConfig = systemConfig || { 
+        councilName: '', 
+        secretariatName: '',
+        garagePermitTemplate: {
+          title: 'GARAGE UTILIZATION PERMIT',
+          header: '',
+          footer: '',
+          declaration: '',
+          useCustomTemplate: false,
+          fieldPositions: DEFAULT_FIELD_POSITIONS
+        }
+      };
 
-  const [localSystemConfig, setLocalSystemConfig] = useState<SystemConfig>(systemConfig || { 
-    councilName: '', 
-    secretariatName: '',
-    garagePermitTemplate: {
-      title: 'GARAGE UTILIZATION PERMIT',
-      header: '',
-      footer: '',
-      declaration: '',
-      useCustomTemplate: false,
-      fieldPositions: DEFAULT_FIELD_POSITIONS
-    }
+      // Deep merge fieldPositions with DEFAULT_FIELD_POSITIONS
+      return {
+          ...baseConfig,
+          garagePermitTemplate: {
+              ...baseConfig.garagePermitTemplate,
+              fieldPositions: {
+                  ...DEFAULT_FIELD_POSITIONS,
+                  ...(baseConfig.garagePermitTemplate?.fieldPositions || {})
+              }
+          }
+      };
   });
   
-  // Force update local state if props change (re-sync)
+  // Force update local state if props change (re-sync), keeping the merge logic
   useEffect(() => {
       if (systemConfig) {
-          setLocalSystemConfig({
+          setLocalSystemConfig(prev => ({
               ...systemConfig,
               garagePermitTemplate: {
                   ...systemConfig.garagePermitTemplate,
@@ -114,7 +123,7 @@ const Settings: React.FC<SettingsProps> = ({
                       ...systemConfig.garagePermitTemplate.fieldPositions
                   }
               }
-          });
+          }));
       }
   }, [systemConfig]);
 
@@ -140,13 +149,58 @@ const Settings: React.FC<SettingsProps> = ({
   const handleTemplateUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Optimization: Compress image before saving to prevent localStorage quota exceeded
       const reader = new FileReader();
-      reader.onload = (event) => setLocalSystemConfig(prev => ({
-        ...prev,
-        garagePermitTemplate: { ...prev.garagePermitTemplate, backgroundImage: event.target?.result as string, useCustomTemplate: true }
-      }));
+      reader.onload = (event) => {
+          const img = new Image();
+          img.onload = () => {
+              const canvas = document.createElement('canvas');
+              const ctx = canvas.getContext('2d');
+              
+              // Max dimensions for reasonable quality A4 background
+              const MAX_WIDTH = 1240; 
+              const MAX_HEIGHT = 1754; 
+              
+              let width = img.width;
+              let height = img.height;
+
+              if (width > height) {
+                  if (width > MAX_WIDTH) {
+                      height *= MAX_WIDTH / width;
+                      width = MAX_WIDTH;
+                  }
+              } else {
+                  if (height > MAX_HEIGHT) {
+                      width *= MAX_HEIGHT / height;
+                      height = MAX_HEIGHT;
+                  }
+              }
+
+              canvas.width = width;
+              canvas.height = height;
+              ctx?.drawImage(img, 0, 0, width, height);
+              
+              // Compress to JPEG 70%
+              const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+              
+              setLocalSystemConfig(prev => ({
+                ...prev,
+                garagePermitTemplate: { ...prev.garagePermitTemplate, backgroundImage: dataUrl, useCustomTemplate: true }
+              }));
+          };
+          img.src = event.target?.result as string;
+      };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleRemoveTemplate = () => {
+      if(window.confirm("Remove custom background template?")) {
+          setLocalSystemConfig(prev => ({
+            ...prev,
+            garagePermitTemplate: { ...prev.garagePermitTemplate, backgroundImage: undefined, useCustomTemplate: false }
+          }));
+      }
   };
 
   const updateField = (fieldName: string, updates: Partial<TemplateFieldPos>) => {
@@ -369,7 +423,7 @@ const Settings: React.FC<SettingsProps> = ({
         <div className="bg-white rounded-b-xl border-x border-b border-slate-200 p-8 shadow-sm">
             {activeTab === 'profile' && (
                 <div className="space-y-8">
-                    {/* ... Profile Content (Same as before) ... */}
+                    {/* ... Profile Content ... */}
                     <div className="flex justify-between items-start border-b border-slate-100 pb-4">
                         <div>
                             <h2 className="text-xl font-bold text-slate-900">{t('tab_profile')}</h2>
@@ -441,7 +495,6 @@ const Settings: React.FC<SettingsProps> = ({
             {/* Staff Tab */}
             {activeTab === 'staff' && (
                 <div className="space-y-6">
-                    {/* ... Staff Content (Same as before) ... */}
                     <div className="flex justify-between items-center border-b border-slate-100 pb-4">
                         <div>
                             <h2 className="text-xl font-bold text-slate-900">Staff Management</h2>
@@ -451,7 +504,7 @@ const Settings: React.FC<SettingsProps> = ({
                             <UserPlus size={18} /> Register Staff
                         </button>
                     </div>
-                    {/* ... (Rest of staff tab implementation stays the same, omitted for brevity as it was correct) ... */}
+                    
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                         <input 
@@ -682,6 +735,9 @@ const Settings: React.FC<SettingsProps> = ({
                                     <CheckCircle2 size={18} /> Template Saved
                                 </span>
                             )}
+                            <button onClick={handleRemoveTemplate} className="bg-white border border-red-200 text-red-600 px-3 py-2.5 rounded-xl text-sm font-bold hover:bg-red-50 flex items-center gap-2 transition-all">
+                                <Trash2 size={16} /> Reset
+                            </button>
                             <button onClick={() => templateInputRef.current?.click()} className="bg-white border border-teal-600 text-teal-700 px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-teal-50 flex items-center gap-2 transition-all">
                                 <Upload size={16} /> Upload Background
                             </button>
@@ -697,7 +753,7 @@ const Settings: React.FC<SettingsProps> = ({
                         <div className="lg:col-span-8 bg-slate-100 rounded-2xl p-6 border border-slate-200 flex items-center justify-center relative min-h-[800px] overflow-hidden">
                             <div className="bg-white shadow-2xl relative w-[500px] h-[707px] origin-center scale-[0.9] lg:scale-100 overflow-hidden" id="permit-designer-canvas">
                                 {localSystemConfig.garagePermitTemplate.backgroundImage ? (
-                                    <img src={localSystemConfig.garagePermitTemplate.backgroundImage} className="absolute inset-0 w-full h-full object-cover pointer-events-none" alt="Template" />
+                                    <img src={localSystemConfig.garagePermitTemplate.backgroundImage} className="absolute inset-0 w-full h-full object-fill pointer-events-none" alt="Template" />
                                 ) : (
                                     <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-300 gap-4 bg-slate-50 border-2 border-dashed border-slate-200 m-4 rounded-xl">
                                         <Layout size={64} strokeWidth={1} />
