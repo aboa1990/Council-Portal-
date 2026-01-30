@@ -358,12 +358,19 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                         {/* OFFICIAL PRINTABLE PERMIT CARD (Rendered only during print) */}
                         <div className="hidden print:block relative w-full h-full bg-white overflow-hidden">
                             <div className="relative mx-auto bg-white" style={{ width: '210mm', height: '297mm' }}>
-                                {systemConfig.garagePermitTemplate.backgroundImage && (
+                                {systemConfig.garagePermitTemplate.backgroundImage ? (
                                     <img 
                                         src={systemConfig.garagePermitTemplate.backgroundImage} 
                                         className="absolute inset-0 w-full h-full object-cover" 
                                         alt="Official Template"
                                     />
+                                ) : (
+                                    <div className="absolute inset-0 border-8 border-slate-900 m-8 flex items-center justify-center">
+                                        <div className="text-center opacity-10 rotate-[-45deg] scale-[2]">
+                                            <h1 className="text-6xl font-black">{systemConfig.councilName}</h1>
+                                            <p className="text-2xl">OFFICIAL PERMIT DRAFT</p>
+                                        </div>
+                                    </div>
                                 )}
                                 
                                 {Object.entries(systemConfig.garagePermitTemplate.fieldPositions).map(([key, pos]: [string, TemplateFieldPos]) => (
@@ -399,7 +406,7 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                                     <Trash2 size={16} /> Delete Record
                                 </button>
                             )}
-                            <button onClick={printPermit} className="bg-teal-600 text-white px-6 py-2 rounded-lg text-sm font-bold hover:bg-teal-700 transition-colors flex items-center gap-2 shadow-lg shadow-teal-600/20">
+                            <button onClick={printPermit} className="bg-teal-600 text-white px-6 py-2 rounded-lg text-sm font-bold hover:bg-teal-700 transition-all flex items-center gap-2 shadow-lg shadow-teal-600/20">
                                 <Printer size={16} /> Print Official Permit
                             </button>
                         </div>
@@ -459,6 +466,32 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                                         <label className="block text-[10px] font-black text-slate-500 uppercase mb-1">Vehicle Registry Number</label>
                                         <input required type="text" className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none" 
                                             value={newPermit.vehicleRegistryNumber} onChange={e => setNewPermit({...newPermit, vehicleRegistryNumber: e.target.value})} />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Garage Property Details - ADDED SECTION */}
+                            <div className="space-y-4 pt-4 border-t border-slate-100">
+                                <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest border-l-4 border-teal-600 pl-3 flex items-center gap-2">
+                                    <Home size={16} /> Garage Property Information
+                                </h4>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <div className="md:col-span-1">
+                                        <label className="block text-[10px] font-black text-slate-500 uppercase mb-1">House Registry No.</label>
+                                        <input required type="text" className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none" 
+                                            placeholder="e.g. H-44"
+                                            value={newPermit.houseRegistryNumber} onChange={e => setNewPermit({...newPermit, houseRegistryNumber: e.target.value})} />
+                                    </div>
+                                    <div className="md:col-span-1">
+                                        <label className="block text-[10px] font-black text-slate-500 uppercase mb-1">Garage Size (Sqft)</label>
+                                        <input required type="number" className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none" 
+                                            value={newPermit.garageSizeSqft} onChange={e => setNewPermit({...newPermit, garageSizeSqft: Number(e.target.value)})} />
+                                    </div>
+                                    <div className="md:col-span-1">
+                                        <label className="block text-[10px] font-black text-slate-500 uppercase mb-1">Garage Address</label>
+                                        <input required type="text" className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none" 
+                                            placeholder="Street/Plot Name"
+                                            value={newPermit.garageAddress} onChange={e => setNewPermit({...newPermit, garageAddress: e.target.value})} />
                                     </div>
                                 </div>
                             </div>
