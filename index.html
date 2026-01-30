@@ -42,8 +42,20 @@
       ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
       @media print {
+        @page {
+            size: auto;
+            margin: 0mm;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
         .font-thaana { line-height: 1.6; }
         .print\:hidden { display: none !important; }
+        /* Hide scrollbars during print */
+        ::-webkit-scrollbar { display: none; }
       }
     </style>
   <script type="importmap">

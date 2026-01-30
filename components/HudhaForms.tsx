@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { ShoppingCart, FileText, Printer, Plus, Trash2, CheckCircle2, Eye, ChevronLeft, Calendar } from 'lucide-react';
 import { SystemConfig, User, RequisitionForm, RequisitionItem } from '../types';
@@ -309,7 +310,7 @@ const HudhaForms: React.FC<HudhaFormsProps> = ({ systemConfig, currentUser, requ
 
                 {/* DETAIL / PRINT VIEW */}
                 {viewMode === 'view' && selectedForm && (
-                    <div className="max-w-[210mm] mx-auto bg-white">
+                    <div className="max-w-[210mm] mx-auto bg-white" id="hudha-form-print-area">
                          <div className="flex justify-end mb-6 print:hidden">
                             <button 
                                 onClick={handlePrint}
@@ -427,9 +428,9 @@ const HudhaForms: React.FC<HudhaFormsProps> = ({ systemConfig, currentUser, requ
             </>
         )}
 
-        {/* AGU BALAA FORM (Simplified View for this specific update request) */}
+        {/* AGU BALAA FORM */}
         {activeForm === 'agu-balaa' && (
-             <div className="max-w-4xl mx-auto border border-slate-300 p-8 min-h-[1000px] relative print:border-none print:p-0">
+             <div className="max-w-4xl mx-auto border border-slate-300 p-8 min-h-[1000px] relative print:border-none print:p-0" id="agu-balaa-print-area">
                 <div className="text-center border-b-2 border-slate-800 pb-6 mb-6">
                     <h1 className="text-xl font-bold uppercase tracking-wide">{systemConfig.councilName}</h1>
                     <h2 className="text-lg font-medium text-slate-600">{systemConfig.secretariatName}</h2>
@@ -588,6 +589,37 @@ const HudhaForms: React.FC<HudhaFormsProps> = ({ systemConfig, currentUser, requ
                 </div>
              </div>
         )}
+        
+        {/* Print Styles for Requisition and Agu Balaa forms */}
+        <style>{`
+            @media print {
+                @page { size: A4 portrait; margin: 0; }
+                body { margin: 0; padding: 0; background: white; }
+                body > * { display: none !important; }
+                body * { visibility: hidden; }
+
+                /* Only show hudha form containers */
+                #hudha-form-print-area, #hudha-form-print-area *,
+                #agu-balaa-print-area, #agu-balaa-print-area * {
+                    visibility: visible;
+                }
+
+                #hudha-form-print-area,
+                #agu-balaa-print-area {
+                    position: fixed;
+                    left: 0;
+                    top: 0;
+                    width: 210mm !important;
+                    height: 297mm !important;
+                    margin: 0 !important;
+                    padding: 20mm !important; /* Proper padding for forms */
+                    z-index: 99999;
+                    background: white;
+                    display: block !important;
+                    box-sizing: border-box;
+                }
+            }
+        `}</style>
       </div>
     </div>
   );

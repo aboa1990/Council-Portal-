@@ -614,22 +614,31 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                          </div>
                          <style>{`
                             @media print {
-                                @page { size: A4; margin: 0; }
+                                @page { size: A4 portrait; margin: 0; }
+                                body { margin: 0; padding: 0; background: white; }
+                                body > * { display: none !important; }
+                                
+                                /* Keep visibility hidden for everything initially to ensure layout logic */
                                 body * { visibility: hidden; }
-                                #print-area, #print-area * { visibility: visible; }
-                                #print-area { 
-                                    position: fixed; 
-                                    left: 0; 
-                                    top: 0; 
-                                    width: 210mm !important; 
-                                    height: 297mm !important; 
-                                    margin: 0; 
-                                    padding: 0; 
-                                    z-index: 9999;
+
+                                /* Only show the print modal contents */
+                                #print-area, #print-area * { 
+                                    visibility: visible; 
+                                }
+                                
+                                #print-area {
+                                    position: fixed;
+                                    left: 0;
+                                    top: 0;
+                                    width: 210mm !important;
+                                    height: 297mm !important;
+                                    margin: 0 !important;
+                                    padding: 0 !important;
+                                    z-index: 99999;
                                     background: white;
+                                    box-shadow: none !important;
                                     transform: none !important;
-                                    print-color-adjust: exact;
-                                    -webkit-print-color-adjust: exact;
+                                    display: block !important;
                                 }
                             }
                         `}</style>
