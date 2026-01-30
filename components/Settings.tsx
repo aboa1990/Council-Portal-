@@ -1,8 +1,9 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { User, UserRole, AssetCategory, AssetStatusConfig, SystemConfig, TemplateFieldPos, AccessLog } from '../types';
-import { UserCircle, Upload, Save, Plus, Trash2, Shield, Mail, Check, Camera, X, Layers, Activity, Globe, Key, FileBadge, Briefcase, UserSquare2, FileText, Layout, Move, Settings as SettingsIcon, Eye, Type, Bold, Info, Lock, History, UserPlus, Search, Phone, MapPin, BadgeCheck, Fingerprint, Users, Pencil, Hash, ShieldAlert, ShieldCheck, CheckCircle2, User as UserIcon, Database, Download, RefreshCw, FileJson } from 'lucide-react';
+import { UserCircle, Upload, Save, Plus, Trash2, Shield, Mail, Check, Camera, X, Layers, Activity, Globe, Key, FileBadge, Briefcase, UserSquare2, FileText, Layout, Move, Settings as SettingsIcon, Eye, Type, Bold, Info, Lock, History, UserPlus, Search, Phone, MapPin, BadgeCheck, Fingerprint, Users, Pencil, Hash, ShieldAlert, ShieldCheck, CheckCircle2, User as UserIcon, Database, Download, RefreshCw, FileJson, Cloud, CloudOff, PlugZap, PlayCircle, Loader2 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { isSupabaseConfigured, testConnection } from '../services/supabaseService';
 
 interface SettingsProps {
   currentUser: User;
@@ -39,6 +40,10 @@ const Settings: React.FC<SettingsProps> = ({ currentUser, onUpdateUser, staffMem
   const templateInputRef = useRef<HTMLInputElement>(null);
   const importDatabaseRef = useRef<HTMLInputElement>(null);
   const [showSuccess, setShowSuccess] = useState(false);
+
+  // Connection Test State
+  const [testingConnection, setTestingConnection] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<{success: boolean, message: string} | null>(null);
 
   // Staff Management State
   const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
@@ -131,6 +136,16 @@ const Settings: React.FC<SettingsProps> = ({ currentUser, onUpdateUser, staffMem
           setGeneralSuccess(true);
           setTimeout(() => setGeneralSuccess(false), 3000);
       }
+  };
+
+  const handleTestConnection = async () => {
+      setTestingConnection(true);
+      const result = await testConnection();
+      setConnectionStatus(result);
+      setTestingConnection(false);
+      
+      // Clear message after 10s
+      setTimeout(() => setConnectionStatus(null), 10000);
   };
 
   const openStaffModal = (staff?: User) => {
@@ -229,11 +244,6 @@ const Settings: React.FC<SettingsProps> = ({ currentUser, onUpdateUser, staffMem
 
   const handleClearDatabase = () => {
       if (window.confirm("CRITICAL ACTION: This will delete ALL data in the portal (assets, houses, permits, etc) and reset to factory defaults. Are you absolutely sure?")) {
-          Object.values(localStorage).forEach(key => {
-              if (key && (key.startsWith('civicpulse_') || key.includes('requests') || key.includes('assets'))) {
-                  // This is a bit aggressive, safer to just clear our specific keys
-              }
-          });
           localStorage.removeItem('civicpulse_requests');
           localStorage.removeItem('civicpulse_assets');
           localStorage.removeItem('civicpulse_houses');
@@ -260,6 +270,8 @@ const Settings: React.FC<SettingsProps> = ({ currentUser, onUpdateUser, staffMem
       default: return 'bg-slate-100 text-slate-700 border-slate-200';
     }
   };
+
+  const isCloudActive = isSupabaseConfigured();
 
   return (
     <div className="animate-fade-in space-y-6 max-w-5xl mx-auto pb-20">
@@ -322,7 +334,45 @@ const Settings: React.FC<SettingsProps> = ({ currentUser, onUpdateUser, staffMem
           <div className="space-y-8">
             <div>
               <h2 className="text-xl font-bold text-slate-900">Data Management & Persistence</h2>
-              <p className="text-sm text-slate-500">Manage your portal's data lifecycle. Your data is currently stored securely in your browser's persistent storage.</p>
+              <p className="text-sm text-slate-500">Manage your portal's data lifecycle. Your data is synchronized between this browser and the Cloud (if configured).</p>
+            </div>
+
+            {/* Cloud Status Panel */}
+            <div className={`p-6 rounded-2xl border ${isCloudActive ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'}`}>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div className="flex items-center gap-4">
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${isCloudActive ? 'bg-emerald-200/50 text-emerald-700' : 'bg-amber-200/50 text-amber-700'}`}>
+                            {isCloudActive ? <Cloud size={24} /> : <CloudOff size={24} />}
+                        </div>
+                        <div>
+                            <h3 className={`font-bold ${isCloudActive ? 'text-emerald-900' : 'text-amber-900'}`}>
+                                {isCloudActive ? 'Cloud Sync Active' : 'Offline Mode (Local Only)'}
+                            </h3>
+                            <p className={`text-sm ${isCloudActive ? 'text-emerald-700' : 'text-amber-700'}`}>
+                                {isCloudActive 
+                                    ? 'Your data is securely synchronized with Supabase.' 
+                                    : 'Missing valid API Keys in .env file.'}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <button 
+                        onClick={handleTestConnection} 
+                        disabled={testingConnection}
+                        className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium hover:bg-slate-50 shadow-sm flex items-center gap-2 text-slate-700"
+                    >
+                        {testingConnection ? <Loader2 className="animate-spin" size={16} /> : <PlayCircle size={16} />}
+                        Test Connection
+                    </button>
+                </div>
+
+                {/* Connection Status Result */}
+                {connectionStatus && (
+                    <div className={`mt-4 p-3 rounded-lg text-sm font-medium flex items-center gap-2 animate-in fade-in slide-in-from-top-1 ${connectionStatus.success ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
+                        {connectionStatus.success ? <CheckCircle2 size={16}/> : <ShieldAlert size={16}/>}
+                        {connectionStatus.message}
+                    </div>
+                )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -575,285 +625,6 @@ const Settings: React.FC<SettingsProps> = ({ currentUser, onUpdateUser, staffMem
               </div>
             )}
           </div>
-        )}
-
-        {activeTab === 'logs' && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-xl font-bold text-slate-900">System Access Logs</h2>
-              <p className="text-sm text-slate-500">Security audit trail tracking all user logins and critical system actions.</p>
-            </div>
-            
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead className="bg-slate-50 border-b border-slate-100">
-                    <tr>
-                      <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Timestamp</th>
-                      <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Staff Member</th>
-                      <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Role</th>
-                      <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Action</th>
-                      <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Description</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {accessLogs.map(log => (
-                      <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="px-6 py-4 text-xs font-mono text-slate-500">{new Date(log.timestamp).toLocaleString()}</td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm font-bold text-slate-900">{log.userName}</div>
-                          <div className="text-[10px] text-slate-400">{log.userId}</div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${getRoleColor(log.role || 'Staff')}`}>
-                            {log.role}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`text-xs font-black uppercase tracking-tight ${log.action.includes('Login') || log.action.includes('Added') ? 'text-emerald-600' : 'text-blue-600'}`}>
-                            {log.action}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-slate-600">{log.details}</td>
-                      </tr>
-                    ))}
-                    {accessLogs.length === 0 && (
-                      <tr>
-                        <td colSpan={5} className="px-6 py-12 text-center text-slate-400 italic">No access logs recorded in the current session.</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'permit-template' && (
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8">
-                <div className="flex justify-between items-start mb-6">
-                    <div>
-                        <h2 className="text-xl font-bold text-slate-900">Custom Permit Template Designer</h2>
-                        <p className="text-sm text-slate-500">Upload your council's official document template and position data fields precisely.</p>
-                    </div>
-                    <div className="flex gap-2 items-center">
-                        {generalSuccess && <span className="text-emerald-600 text-xs font-bold animate-fade-in">Saved!</span>}
-                        <button 
-                            onClick={() => templateInputRef.current?.click()}
-                            className="bg-white border border-teal-600 text-teal-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-50 flex items-center gap-2"
-                        >
-                            <Upload size={16} /> Upload Background
-                        </button>
-                        <input type="file" ref={templateInputRef} onChange={handleTemplateUpload} className="hidden" accept="image/*" />
-                        
-                        <button 
-                            onClick={handleSaveGeneral}
-                            className="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 flex items-center gap-2 shadow-lg shadow-teal-700/20"
-                        >
-                            <Save size={16} /> Save Template
-                        </button>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                    {/* Visual Editor (Preview) */}
-                    <div className="lg:col-span-8 bg-slate-100 rounded-xl p-4 border border-slate-200 flex items-center justify-center relative min-h-[700px]">
-                        <div className="bg-white shadow-2xl relative w-[500px] h-[707px] origin-center scale-[0.9] lg:scale-100 overflow-hidden" id="template-preview-canvas">
-                            {localSystemConfig.garagePermitTemplate.backgroundImage ? (
-                                <img src={localSystemConfig.garagePermitTemplate.backgroundImage} className="absolute inset-0 w-full h-full object-cover" alt="Template" />
-                            ) : (
-                                <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-300 gap-4 bg-slate-50">
-                                    <Layout size={64} strokeWidth={1} />
-                                    <p className="text-sm">Upload a background image to start designing</p>
-                                </div>
-                            )}
-
-                            {/* Dynamic Fields Overlays */}
-                            {(Object.entries(localSystemConfig.garagePermitTemplate.fieldPositions) as [string, TemplateFieldPos][]).map(([key, pos]) => (
-                                pos.visible && (
-                                    <div 
-                                        key={key}
-                                        onClick={() => setSelectedField(key)}
-                                        className={`absolute cursor-pointer border px-1 select-none transition-all ${selectedField === key ? 'border-blue-500 bg-blue-50/50 ring-2 ring-blue-500/20 z-20 font-bold' : 'border-transparent hover:border-slate-300 z-10'}`}
-                                        style={{ 
-                                            top: `${pos.top}%`, 
-                                            left: `${pos.left}%`, 
-                                            fontSize: `${pos.fontSize}px`,
-                                            fontWeight: pos.fontWeight || 'normal'
-                                        }}
-                                    >
-                                        [{key.toUpperCase()}]
-                                    </div>
-                                )
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Field Controls */}
-                    <div className="lg:col-span-4 space-y-6">
-                        <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 overflow-y-auto max-h-[700px]">
-                            <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2 sticky top-0 bg-slate-50 py-2 z-10">
-                                <SettingsIcon size={16} /> 
-                                {selectedField ? `Editing: ${selectedField}` : 'Select a field to edit'}
-                            </h3>
-
-                            {selectedField ? (
-                                <div className="space-y-4">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="text-[10px] font-black uppercase text-slate-500">Top Position (%)</label>
-                                            <input 
-                                                type="number" 
-                                                className="w-full border border-slate-300 rounded px-3 py-1 text-sm bg-white"
-                                                value={localSystemConfig.garagePermitTemplate.fieldPositions[selectedField].top}
-                                                onChange={(e) => updateField(selectedField, { top: Number(e.target.value) })}
-                                            />
-                                            <input type="range" min="0" max="100" step="0.1" className="w-full mt-2" 
-                                                value={localSystemConfig.garagePermitTemplate.fieldPositions[selectedField].top}
-                                                onChange={(e) => updateField(selectedField, { top: Number(e.target.value) })}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="text-[10px] font-black uppercase text-slate-500">Left Position (%)</label>
-                                            <input 
-                                                type="number" 
-                                                className="w-full border border-slate-300 rounded px-3 py-1 text-sm bg-white"
-                                                value={localSystemConfig.garagePermitTemplate.fieldPositions[selectedField].left}
-                                                onChange={(e) => updateField(selectedField, { left: Number(e.target.value) })}
-                                            />
-                                            <input type="range" min="0" max="100" step="0.1" className="w-full mt-2" 
-                                                value={localSystemConfig.garagePermitTemplate.fieldPositions[selectedField].left}
-                                                onChange={(e) => updateField(selectedField, { left: Number(e.target.value) })}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="text-[10px] font-black uppercase text-slate-500">Font Size (px)</label>
-                                            <input 
-                                                type="number" 
-                                                className="w-full border border-slate-300 rounded px-3 py-1 text-sm bg-white"
-                                                value={localSystemConfig.garagePermitTemplate.fieldPositions[selectedField].fontSize}
-                                                onChange={(e) => updateField(selectedField, { fontSize: Number(e.target.value) })}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="text-[10px] font-black uppercase text-slate-500">Weight</label>
-                                            <button 
-                                                onClick={() => updateField(selectedField, { fontWeight: localSystemConfig.garagePermitTemplate.fieldPositions[selectedField].fontWeight === 'bold' ? 'normal' : 'bold' })}
-                                                className={`w-full flex items-center justify-center gap-2 py-1.5 border rounded text-xs font-bold transition-colors ${localSystemConfig.garagePermitTemplate.fieldPositions[selectedField].fontWeight === 'bold' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-300 text-slate-600'}`}
-                                            >
-                                                <Bold size={14} /> Bold
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <button 
-                                        onClick={() => updateField(selectedField, { visible: false })}
-                                        className="w-full py-2 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded border border-red-100 flex items-center justify-center gap-2"
-                                    >
-                                        <X size={14} /> Hide Field From Print
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="text-xs text-slate-400 italic text-center py-8">Click on a field label in the preview to adjust its position and size.</div>
-                            )}
-                            
-                            <div className="mt-8 border-t pt-6">
-                                <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2 sticky top-0 bg-slate-50 py-2 z-10">
-                                    <Eye size={16} /> 
-                                    Available Fields
-                                </h3>
-                                <div className="space-y-2">
-                                    {Object.keys(localSystemConfig.garagePermitTemplate.fieldPositions).map(field => (
-                                        <div key={field} className={`flex items-center justify-between p-2 rounded border cursor-pointer transition-colors ${selectedField === field ? 'bg-blue-50 border-blue-200' : 'bg-white border-slate-100 hover:bg-slate-50'}`} onClick={() => setSelectedField(field)}>
-                                            <span className="text-[10px] font-black text-slate-600 uppercase tracking-tight">{field}</span>
-                                            <button 
-                                                onClick={(e) => { e.stopPropagation(); updateField(field, { visible: !localSystemConfig.garagePermitTemplate.fieldPositions[field].visible }); }}
-                                                className={`p-1 rounded ${localSystemConfig.garagePermitTemplate.fieldPositions[field].visible ? 'text-teal-600 hover:bg-teal-50' : 'text-slate-300 hover:bg-slate-50'}`}
-                                            >
-                                                <Check size={16} />
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="p-4 bg-teal-50 rounded-lg border border-teal-100">
-                            <h4 className="text-xs font-bold text-teal-800 mb-2 flex items-center gap-2"><Info size={14}/> Designer Guide</h4>
-                            <p className="text-[11px] text-teal-700 leading-relaxed">
-                                1. Upload high-res JPG/PNG of your official paper.<br/>
-                                2. Click labels on the left to move them.<br/>
-                                3. Toggle the checkmark to hide/show fields.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        )}
-
-        {activeTab === 'profile' && (
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8">
-                <h2 className="text-xl font-bold text-slate-900 mb-6">{t('tab_profile')}</h2>
-                <form onSubmit={handleSaveProfile} className="space-y-8">
-                    <div className="flex flex-col md:flex-row gap-8 items-start">
-                        <div className="flex flex-col items-center gap-3">
-                            <div className="relative group">
-                                <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-slate-100 bg-slate-50 flex items-center justify-center">
-                                    {avatar ? (
-                                        <img src={avatar} alt="Avatar" className="w-full h-full object-cover" />
-                                    ) : (
-                                        <UserCircle size={64} className="text-slate-300" />
-                                    )}
-                                </div>
-                                <button type="button" onClick={() => fileInputRef.current?.click()} className="absolute bottom-0 right-0 bg-teal-600 text-white p-2 rounded-full shadow-lg hover:bg-teal-700 transition-colors"><Camera size={16} /></button>
-                                <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
-                            </div>
-                        </div>
-                        <div className="flex-1 w-full space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
-                                    <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-teal-500 outline-none bg-white" />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
-                                    <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-teal-500 outline-none bg-white" />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="pt-6 border-t border-slate-100 flex items-center gap-4">
-                        <button type="submit" className="bg-teal-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-teal-700 transition-colors flex items-center gap-2"><Save size={18} /> Save Changes</button>
-                        {showSuccess && <span className="text-emerald-600 flex items-center gap-1 text-sm"><Check size={16} /> Saved successfully</span>}
-                    </div>
-                </form>
-            </div>
-        )}
-
-        {activeTab === 'general' && (
-           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8">
-               <h2 className="text-xl font-bold text-slate-900 mb-2">{t('tab_general')}</h2>
-               <p className="text-sm text-slate-500 mb-6">{t('general_subtitle')}</p>
-               <form onSubmit={handleSaveGeneral} className="space-y-6">
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                       <div>
-                           <label className="block text-sm font-medium text-slate-700 mb-1">{t('council_name_label')}</label>
-                           <input type="text" value={localSystemConfig.councilName} onChange={e => setLocalSystemConfig({...localSystemConfig, councilName: e.target.value})} className="w-full border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-teal-500 outline-none bg-white" />
-                       </div>
-                       <div>
-                           <label className="block text-sm font-medium text-slate-700 mb-1">{t('secretariat_label')}</label>
-                           <input type="text" value={localSystemConfig.secretariatName} onChange={e => setLocalSystemConfig({...localSystemConfig, secretariatName: e.target.value})} className="w-full border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-teal-500 outline-none bg-white" />
-                       </div>
-                   </div>
-                   <div className="pt-6 border-t border-slate-100 flex items-center gap-4">
-                        <button type="submit" className="bg-teal-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-teal-700 transition-colors flex items-center gap-2"><Save size={18} /> {t('update')}</button>
-                        {generalSuccess && <span className="text-emerald-600 flex items-center gap-1 text-sm"><Check size={16} /> Updated successfully</span>}
-                    </div>
-               </form>
-           </div>
         )}
     </div>
   );

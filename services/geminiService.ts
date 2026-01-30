@@ -2,10 +2,16 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { CitizenRequest, Asset } from "../types";
 
-// Safely access API KEY
+// Safely access API KEY and trim it to remove accidental whitespace/text
 const getApiKey = () => {
   try {
-    return (process.env as any).API_KEY;
+    const key = (process.env as any).API_KEY;
+    // Remove any trailing comments or accidental text after the key
+    // This handles cases like "KEY_VALUE check now..."
+    if (key) {
+        return key.split(' ')[0].trim();
+    }
+    return undefined;
   } catch (e) {
     return undefined;
   }

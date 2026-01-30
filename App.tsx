@@ -13,9 +13,9 @@ import GaragePermitRegistry from './components/GaragePermitRegistry';
 import AIChat from './components/AIChat';
 import Login from './components/Login';
 import Settings from './components/Settings';
-import { Menu, Cloud, CloudOff, RefreshCw } from 'lucide-react';
+import { Menu, Cloud, CloudOff, RefreshCw, AlertTriangle, Database, Terminal } from 'lucide-react';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
-import { fetchPortalState, savePortalState, isSupabaseConfigured } from './services/supabaseService';
+import { fetchPortalState, savePortalState, isSupabaseConfigured, testConnection } from './services/supabaseService';
 
 const STORAGE_KEYS = {
   REQUESTS: 'civicpulse_requests',
@@ -92,6 +92,7 @@ const AppContent: React.FC = () => {
 
   // DB Sync States
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'error' | 'local'>(isSupabaseConfigured() ? 'idle' : 'local');
+  const [dbConnectionError, setDbConnectionError] = useState<string | null>(null);
   const isInitialLoad = useRef(true);
 
   // Language and UI state
@@ -101,7 +102,16 @@ const AppContent: React.FC = () => {
   // Background Sync from Supabase on mount
   useEffect(() => {
     if (isSupabaseConfigured()) {
-      const syncFromCloud = async () => {
+      const initCloud = async () => {
+        // 1. Check connection and table existence
+        const connection = await testConnection();
+        if (!connection.success) {
+            setDbConnectionError(connection.message);
+            setSyncStatus('error');
+            return;
+        }
+
+        // 2. Fetch data if connection is good
         setSyncStatus('syncing');
         const cloudData = await fetchPortalState(systemConfig.councilName);
         if (cloudData) {
@@ -119,7 +129,7 @@ const AppContent: React.FC = () => {
         }
         isInitialLoad.current = false;
       };
-      syncFromCloud();
+      initCloud();
     }
   }, []);
 
@@ -134,8 +144,8 @@ const AppContent: React.FC = () => {
     localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(accessLogs));
     localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(currentUser));
 
-    // Cloud Sync Debounce/Throttle logic simplified for prompt
-    if (!isInitialLoad.current && isSupabaseConfigured()) {
+    // Cloud Sync Debounce/Throttle
+    if (!isInitialLoad.current && isSupabaseConfigured() && !dbConnectionError) {
       const syncToCloud = async () => {
         setSyncStatus('syncing');
         const success = await savePortalState(systemConfig.councilName, {
@@ -146,7 +156,7 @@ const AppContent: React.FC = () => {
       const timer = setTimeout(syncToCloud, 2000); // 2-second debounce for cloud sync
       return () => clearTimeout(timer);
     }
-  }, [requests, assets, houses, garagePermits, staffMembers, systemConfig, accessLogs, currentUser]);
+  }, [requests, assets, houses, garagePermits, staffMembers, systemConfig, accessLogs, currentUser, dbConnectionError]);
 
   const handleAddAccessLog = (action: string, details: string) => {
     if (!currentUser) return;
@@ -415,6 +425,46 @@ const AppContent: React.FC = () => {
         </header>
 
         <main className="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full">
+            {/* OFFLINE MODE WARNING */}
+            {!isSupabaseConfigured() && (
+                <div className="bg-amber-50 border border-amber-200 p-4 mb-6 rounded-lg flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-top-2">
+                    <div className="flex-shrink-0 mt-0.5">
+                        <AlertTriangle className="h-5 w-5 text-amber-600" aria-hidden="true" />
+                    </div>
+                    <div>
+                        <h3 className="text-sm font-bold text-amber-800">Running in Local Storage Mode</h3>
+                        <p className="text-sm text-amber-700 mt-1">
+                            Your data is saved to this browser only. To enable Cloud Sync, create a <code className="bg-amber-100 px-1 py-0.5 rounded text-amber-900 border border-amber-200">.env</code> file with your Supabase keys.
+                        </p>
+                    </div>
+                </div>
+            )}
+
+            {/* DATABASE CONNECTION ERROR (e.g. Missing Table) */}
+            {dbConnectionError && (
+                 <div className="bg-red-50 border border-red-200 p-4 mb-6 rounded-lg flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-top-2">
+                    <div className="flex-shrink-0 mt-0.5">
+                        <Database className="h-5 w-5 text-red-600" aria-hidden="true" />
+                    </div>
+                    <div>
+                        <h3 className="text-sm font-bold text-red-800">Database Setup Required</h3>
+                        <p className="text-sm text-red-700 mt-1 mb-2">
+                            {dbConnectionError}
+                        </p>
+                        {dbConnectionError.includes('does not exist') && (
+                            <div className="bg-red-100 p-3 rounded text-xs font-mono text-red-900 border border-red-200">
+                                <p className="font-bold mb-1 flex items-center gap-1"><Terminal size={12}/> Run this in Supabase SQL Editor:</p>
+                                create table if not exists council_portal_state (
+                                  council_name text primary key,
+                                  data jsonb not null,
+                                  last_updated timestamptz default now()
+                                );
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
             <div className="mb-6 flex justify-between items-end border-b border-slate-200 pb-4">
                 <div className="flex items-center gap-4">
                      <div className="hidden md:block">
