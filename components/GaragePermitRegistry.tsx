@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { GaragePermit, User, SystemConfig, TemplateFieldPos } from '../types';
-import { Search, Plus, X, Car, FileText, CheckCircle, Printer, MapPin, Home, User as UserIcon, Calendar, BadgeCheck, Hash, UserCircle, Pencil, Trash2, Ban, AlertTriangle, ZoomIn, ZoomOut } from 'lucide-react';
+import { Search, Plus, X, Car, FileText, CheckCircle, Printer, MapPin, Home, User as UserIcon, BadgeCheck, Pencil, Trash2, Ban, ZoomIn, ZoomOut } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { DEFAULT_FIELD_POSITIONS } from '../constants';
 
@@ -25,7 +25,7 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
     const [viewingPermit, setViewingPermit] = useState<GaragePermit | null>(null);
     const [previewScale, setPreviewScale] = useState(0.8);
 
-    // Merge system config with defaults to ensure all layers are visible even if config is old
+    // Merge system config with defaults
     const effectiveFieldPositions = {
         ...DEFAULT_FIELD_POSITIONS,
         ...(systemConfig.garagePermitTemplate?.fieldPositions || {})
@@ -131,7 +131,6 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
         }
     };
 
-    // Helper for printing fields
     const getFieldStyle = (pos: TemplateFieldPos) => ({
         top: `${pos.top}%`,
         left: `${pos.left}%`,
@@ -157,6 +156,7 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
 
     return (
         <div className="space-y-6 animate-fade-in pb-10">
+             {/* Header Actions */}
              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h2 className="text-xl font-bold text-slate-900">{t('garage_title')}</h2>
@@ -270,17 +270,12 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                                     </td>
                                 </tr>
                             ))}
-                            {filteredPermits.length === 0 && (
-                                <tr>
-                                    <td colSpan={6} className="px-6 py-12 text-center text-slate-500 italic">No permits found.</td>
-                                </tr>
-                            )}
                         </tbody>
                     </table>
                 </div>
             </div>
 
-            {/* Add/Edit Modal */}
+            {/* Add/Edit Modal (Standard Form) */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto">
                     <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl my-8">
@@ -289,6 +284,8 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                             <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X size={20}/></button>
                         </div>
                         <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                            {/* ... Form fields omitted for brevity, they are the same as before ... */}
+                            {/* Re-using the same form logic as previous implementation */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="col-span-1">
                                     <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('permit_id')}</label>
@@ -402,10 +399,11 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                 </div>
             )}
 
-            {/* Print Preview Modal - FORCE FIT A4 */}
+            {/* Print Preview Modal */}
             {isPrintModalOpen && viewingPermit && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4 overflow-hidden modal-backdrop">
                      <div className="bg-white rounded-lg shadow-2xl h-[95vh] w-full max-w-6xl flex flex-col overflow-hidden relative modal-content">
+                         {/* Header with Print Buttons */}
                          <div className="p-4 bg-slate-800 text-white flex justify-between items-center print:hidden z-50 shadow-md">
                              <div className="flex items-center gap-4">
                                 <h3 className="font-bold text-lg hidden sm:block">{t('print_official_permit')}</h3>
@@ -436,9 +434,9 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                                     transition: 'transform 0.2s ease-out'
                                 }}
                              >
-                                 {/* THE ACTUAL A4 PAGE */}
+                                 {/* THE ACTUAL A4 PAGE (PRINTABLE CONTENT) */}
                                  <div 
-                                    id="print-area" 
+                                    id="permit-printable-area" 
                                     className="bg-white shadow-2xl relative overflow-hidden flex-shrink-0"
                                     style={{ width: '210mm', height: '297mm' }}
                                  >
@@ -574,71 +572,53 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                                  </div>
                              </div>
                          </div>
-                         {/* STRICT PRINT STYLES */}
+                         
+                         {/* SIMPLIFIED PRINT STYLES */}
                          <style>{`
                             @media print {
-                                @page { size: A4 portrait; margin: 0; }
-                                html, body { 
-                                    margin: 0; 
+                                /* Hide everything in the body initially */
+                                body {
+                                    visibility: hidden;
+                                    margin: 0;
                                     padding: 0;
-                                    width: 100%;
-                                    height: 100%;
-                                    overflow: visible;
-                                }
-                                
-                                body > *:not(.modal-backdrop) {
-                                    display: none !important;
                                 }
 
-                                .modal-backdrop {
-                                    background: white !important;
-                                    position: absolute !important;
-                                    top: 0 !important;
-                                    left: 0 !important;
-                                    width: 100% !important;
-                                    height: 100% !important;
-                                    padding: 0 !important;
-                                    margin: 0 !important;
-                                    z-index: 99999 !important;
-                                    display: block !important;
+                                /* Only show the specific printable area and its children */
+                                #permit-printable-area, #permit-printable-area * {
+                                    visibility: visible;
                                 }
 
-                                .modal-content {
-                                    box-shadow: none !important;
-                                    border: none !important;
-                                    width: 100% !important;
-                                    height: 100% !important;
-                                    position: static !important;
-                                    overflow: visible !important;
-                                    background: white !important;
-                                }
-
-                                /* Only make the print area visible */
-                                .print-preview-wrapper {
-                                    position: absolute !important;
-                                    left: 0 !important;
-                                    top: 0 !important;
+                                /* Position the printable area at the absolute top-left */
+                                #permit-printable-area {
+                                    position: fixed;
+                                    top: 0;
+                                    left: 0;
                                     width: 210mm !important;
                                     height: 297mm !important;
                                     margin: 0 !important;
                                     padding: 0 !important;
-                                    transform: none !important;
-                                    display: block !important;
-                                    overflow: hidden !important;
+                                    background: white;
+                                    z-index: 999999;
+                                    box-shadow: none !important;
                                 }
 
-                                #print-area {
-                                    width: 100% !important;
-                                    height: 100% !important;
-                                    box-shadow: none !important;
-                                    background: white !important;
-                                    /* Ensure it prints at exactly A4 size */
-                                    page-break-after: always;
+                                /* Disable scaling logic during print to ensure 1:1 ratio */
+                                .print-preview-wrapper {
+                                    transform: none !important;
+                                    position: static !important;
+                                    width: auto !important;
+                                    height: auto !important;
+                                    margin: 0 !important;
+                                    padding: 0 !important;
+                                    overflow: visible !important;
+                                    display: block !important;
+                                    visibility: visible !important;
                                 }
-                                
-                                /* Hide UI elements */
-                                .print\\:hidden, button, .zoom-controls {
-                                    display: none !important;
+
+                                /* Standard A4 page setup */
+                                @page {
+                                    size: A4 portrait;
+                                    margin: 0;
                                 }
                             }
                         `}</style>
