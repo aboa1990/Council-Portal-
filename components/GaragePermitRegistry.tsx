@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { GaragePermit, User, SystemConfig, TemplateFieldPos } from '../types';
-import { Search, Plus, X, Car, FileText, CheckCircle, Printer, MapPin, Home, User as UserIcon, Calendar, BadgeCheck, Hash, UserCircle, Pencil, Trash2, Ban, AlertTriangle } from 'lucide-react';
+import { Search, Plus, X, Car, FileText, CheckCircle, Printer, MapPin, Home, User as UserIcon, Calendar, BadgeCheck, Hash, UserCircle, Pencil, Trash2, Ban, AlertTriangle, ZoomIn, ZoomOut } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { DEFAULT_FIELD_POSITIONS } from '../constants';
 
@@ -23,6 +23,7 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
     const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
     const [editingPermit, setEditingPermit] = useState<GaragePermit | null>(null);
     const [viewingPermit, setViewingPermit] = useState<GaragePermit | null>(null);
+    const [previewScale, setPreviewScale] = useState(0.6); // Default scale for better visibility
 
     // Merge system config with defaults to ensure all layers are visible even if config is old
     const effectiveFieldPositions = {
@@ -121,6 +122,7 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
 
     const handlePrint = (permit: GaragePermit) => {
         setViewingPermit(permit);
+        setPreviewScale(0.6); // Reset scale on open
         setIsPrintModalOpen(true);
     };
 
@@ -407,15 +409,34 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
             {/* Print Preview Modal */}
             {isPrintModalOpen && viewingPermit && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4 overflow-hidden">
-                     <div className="bg-white rounded-lg shadow-2xl h-[95vh] w-auto max-w-full flex flex-col overflow-hidden relative">
+                     <div className="bg-white rounded-lg shadow-2xl h-[95vh] w-full max-w-6xl flex flex-col overflow-hidden relative">
                          <div className="p-4 bg-slate-800 text-white flex justify-between items-center print:hidden z-50 shadow-md">
                              <div className="flex items-center gap-4">
-                                <h3 className="font-bold text-lg">{t('print_official_permit')}</h3>
-                                <div className="text-xs bg-slate-700 px-3 py-1 rounded-full font-mono border border-slate-600">{viewingPermit.permitId}</div>
+                                <h3 className="font-bold text-lg hidden sm:block">{t('print_official_permit')}</h3>
+                                <div className="text-xs bg-slate-700 px-3 py-1 rounded-full font-mono border border-slate-600 whitespace-nowrap">{viewingPermit.permitId}</div>
                              </div>
-                             <div className="flex gap-3">
-                                <button onClick={() => window.print()} className="bg-teal-500 hover:bg-teal-600 text-white px-6 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all shadow-lg hover:shadow-teal-500/20">
-                                    <Printer size={18} /> Print
+                             
+                             <div className="flex items-center gap-2 sm:gap-4">
+                                <div className="hidden sm:flex items-center bg-slate-700 rounded-lg p-1">
+                                    <button 
+                                        onClick={() => setPreviewScale(Math.max(0.3, previewScale - 0.1))} 
+                                        className="p-1.5 hover:bg-slate-600 rounded transition-colors"
+                                        title="Zoom Out"
+                                    >
+                                        <ZoomOut size={16} />
+                                    </button>
+                                    <span className="text-xs font-mono w-12 text-center">{Math.round(previewScale * 100)}%</span>
+                                    <button 
+                                        onClick={() => setPreviewScale(Math.min(1.5, previewScale + 0.1))} 
+                                        className="p-1.5 hover:bg-slate-600 rounded transition-colors"
+                                        title="Zoom In"
+                                    >
+                                        <ZoomIn size={16} />
+                                    </button>
+                                </div>
+
+                                <button onClick={() => window.print()} className="bg-teal-500 hover:bg-teal-600 text-white px-4 sm:px-6 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all shadow-lg hover:shadow-teal-500/20">
+                                    <Printer size={18} /> <span className="hidden sm:inline">Print</span>
                                 </button>
                                 <button onClick={() => setIsPrintModalOpen(false)} className="bg-slate-700 hover:bg-slate-600 text-white p-2.5 rounded-lg transition-colors">
                                     <X size={20} />
@@ -424,163 +445,171 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                          </div>
                          
                          {/* SCROLLABLE PREVIEW AREA */}
-                         <div className="flex-1 overflow-auto bg-slate-200/50 p-8 flex justify-center items-start custom-scrollbar">
-                             {/* THE A4 PAPER */}
+                         <div className="flex-1 overflow-auto bg-slate-200/50 p-4 sm:p-8 flex justify-center items-start custom-scrollbar">
+                             {/* THE A4 PAPER CONTAINER */}
                              <div 
-                                id="print-area" 
-                                className="bg-white shadow-2xl relative overflow-hidden flex-shrink-0"
-                                style={{ width: '210mm', height: '297mm' }}
+                                style={{ 
+                                    transform: `scale(${previewScale})`,
+                                    transformOrigin: 'top center',
+                                    transition: 'transform 0.2s ease-out'
+                                }}
                              >
-                                {systemConfig.garagePermitTemplate.useCustomTemplate && systemConfig.garagePermitTemplate.backgroundImage ? (
-                                    <>
-                                        <img 
-                                            src={systemConfig.garagePermitTemplate.backgroundImage} 
-                                            className="absolute inset-0 w-full h-full object-cover z-0" 
-                                            alt="Permit Template"
-                                        />
-                                        <div className="absolute inset-0 z-10 pointer-events-none">
-                                            {renderPrintField('permitId', viewingPermit.permitId)}
-                                            {renderPrintField('issueDate', new Date(viewingPermit.issueDate).toLocaleDateString())}
-                                            {renderPrintField('vehicleChassis', viewingPermit.vehicleChassisNumber)}
-                                            {renderPrintField('vehicleReg', viewingPermit.vehicleRegistryNumber)}
-                                            {renderPrintField('vOwnerName', viewingPermit.vehicleOwnerName)}
-                                            {renderPrintField('vOwnerAddress', viewingPermit.vehicleOwnerAddress)}
-                                            {renderPrintField('vOwnerId', viewingPermit.vehicleOwnerId)}
-                                            {renderPrintField('vOwnerPhone', viewingPermit.vehicleOwnerContact)}
-                                            {renderPrintField('garageAddress', viewingPermit.garageAddress)}
-                                            {renderPrintField('garageSize', String(viewingPermit.garageSizeSqft))}
-                                            {renderPrintField('houseReg', viewingPermit.houseRegistryNumber)}
-                                            {renderPrintField('gOwnerName', viewingPermit.garageOwnerName)}
-                                            {renderPrintField('gOwnerAddress', viewingPermit.garageOwnerAddress)}
-                                            {renderPrintField('gOwnerId', viewingPermit.garageOwnerId)}
-                                            {renderPrintField('gOwnerPhone', viewingPermit.garageOwnerContact)}
-                                            {renderPrintField('authorizedBy', viewingPermit.authorizedBy || '')}
-                                            {renderPrintField('checkedBy', viewingPermit.checkedBy || '')}
-                                            {renderPrintField('notes', viewingPermit.notes || '')}
-                                        </div>
-                                    </>
-                                ) : (
-                                    // Robust Fallback Template (If no background image)
-                                    <div className="relative w-full h-full p-12 flex flex-col justify-between border-4 border-double border-slate-900 m-0 box-border bg-white">
-                                        
-                                        {/* Watermark */}
-                                        <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none">
-                                            <BadgeCheck size={400} />
-                                        </div>
-
-                                        {/* Header */}
-                                        <div className="relative z-10 text-center space-y-2 border-b-2 border-slate-900 pb-6">
-                                            <h2 className="text-sm font-bold uppercase tracking-[0.3em] text-slate-500">{systemConfig.secretariatName}</h2>
-                                            <h1 className="text-3xl font-black uppercase tracking-wider text-slate-900">{systemConfig.councilName}</h1>
-                                            <div className="pt-4">
-                                                <span className="inline-block border-2 border-slate-900 px-8 py-2 text-xl font-bold uppercase tracking-widest">
-                                                    Garage Utilization Permit
-                                                </span>
+                                 <div 
+                                    id="print-area" 
+                                    className="bg-white shadow-2xl relative overflow-hidden flex-shrink-0"
+                                    style={{ width: '210mm', height: '297mm' }}
+                                 >
+                                    {systemConfig.garagePermitTemplate.useCustomTemplate && systemConfig.garagePermitTemplate.backgroundImage ? (
+                                        <>
+                                            <img 
+                                                src={systemConfig.garagePermitTemplate.backgroundImage} 
+                                                className="absolute inset-0 w-full h-full object-cover z-0" 
+                                                alt="Permit Template"
+                                            />
+                                            <div className="absolute inset-0 z-10 pointer-events-none">
+                                                {renderPrintField('permitId', viewingPermit.permitId)}
+                                                {renderPrintField('issueDate', new Date(viewingPermit.issueDate).toLocaleDateString())}
+                                                {renderPrintField('vehicleChassis', viewingPermit.vehicleChassisNumber)}
+                                                {renderPrintField('vehicleReg', viewingPermit.vehicleRegistryNumber)}
+                                                {renderPrintField('vOwnerName', viewingPermit.vehicleOwnerName)}
+                                                {renderPrintField('vOwnerAddress', viewingPermit.vehicleOwnerAddress)}
+                                                {renderPrintField('vOwnerId', viewingPermit.vehicleOwnerId)}
+                                                {renderPrintField('vOwnerPhone', viewingPermit.vehicleOwnerContact)}
+                                                {renderPrintField('garageAddress', viewingPermit.garageAddress)}
+                                                {renderPrintField('garageSize', String(viewingPermit.garageSizeSqft))}
+                                                {renderPrintField('houseReg', viewingPermit.houseRegistryNumber)}
+                                                {renderPrintField('gOwnerName', viewingPermit.garageOwnerName)}
+                                                {renderPrintField('gOwnerAddress', viewingPermit.garageOwnerAddress)}
+                                                {renderPrintField('gOwnerId', viewingPermit.garageOwnerId)}
+                                                {renderPrintField('gOwnerPhone', viewingPermit.garageOwnerContact)}
+                                                {renderPrintField('authorizedBy', viewingPermit.authorizedBy || '')}
+                                                {renderPrintField('checkedBy', viewingPermit.checkedBy || '')}
+                                                {renderPrintField('notes', viewingPermit.notes || '')}
                                             </div>
-                                        </div>
-
-                                        {/* Permit Details Grid */}
-                                        <div className="relative z-10 flex-1 py-8 flex flex-col justify-start gap-10">
+                                        </>
+                                    ) : (
+                                        // Robust Fallback Template (If no background image)
+                                        <div className="relative w-full h-full p-12 flex flex-col justify-between border-4 border-double border-slate-900 m-0 box-border bg-white">
                                             
-                                            {/* Top Meta */}
-                                            <div className="flex justify-between items-end px-4">
-                                                <div>
-                                                    <p className="text-xs font-bold uppercase text-slate-500 mb-1">Permit Number</p>
-                                                    <p className="text-xl font-mono font-bold text-slate-900">{viewingPermit.permitId}</p>
-                                                </div>
-                                                <div className="text-right">
-                                                    <p className="text-xs font-bold uppercase text-slate-500 mb-1">Date of Issue</p>
-                                                    <p className="text-lg font-bold text-slate-900">{new Date(viewingPermit.issueDate).toLocaleDateString()}</p>
+                                            {/* Watermark */}
+                                            <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none">
+                                                <BadgeCheck size={400} />
+                                            </div>
+
+                                            {/* Header */}
+                                            <div className="relative z-10 text-center space-y-2 border-b-2 border-slate-900 pb-6">
+                                                <h2 className="text-sm font-bold uppercase tracking-[0.3em] text-slate-500">{systemConfig.secretariatName}</h2>
+                                                <h1 className="text-3xl font-black uppercase tracking-wider text-slate-900">{systemConfig.councilName}</h1>
+                                                <div className="pt-4">
+                                                    <span className="inline-block border-2 border-slate-900 px-8 py-2 text-xl font-bold uppercase tracking-widest">
+                                                        Garage Utilization Permit
+                                                    </span>
                                                 </div>
                                             </div>
 
-                                            {/* Vehicle Section */}
-                                            <div className="border border-slate-300 bg-slate-50/50 p-6 rounded-none">
-                                                <h3 className="text-xs font-black uppercase tracking-widest text-slate-900 border-b border-slate-300 pb-2 mb-4 flex items-center gap-2">
-                                                    <Car size={16} /> Vehicle Information
-                                                </h3>
-                                                <div className="grid grid-cols-2 gap-y-4 gap-x-8">
-                                                    <div className="flex justify-between border-b border-dotted border-slate-300 pb-1">
-                                                        <span className="text-sm font-bold text-slate-600">Registry No.</span>
-                                                        <span className="text-sm font-mono font-bold">{viewingPermit.vehicleRegistryNumber}</span>
+                                            {/* Permit Details Grid */}
+                                            <div className="relative z-10 flex-1 py-8 flex flex-col justify-start gap-10">
+                                                
+                                                {/* Top Meta */}
+                                                <div className="flex justify-between items-end px-4">
+                                                    <div>
+                                                        <p className="text-xs font-bold uppercase text-slate-500 mb-1">Permit Number</p>
+                                                        <p className="text-xl font-mono font-bold text-slate-900">{viewingPermit.permitId}</p>
                                                     </div>
-                                                    <div className="flex justify-between border-b border-dotted border-slate-300 pb-1">
-                                                        <span className="text-sm font-bold text-slate-600">Chassis No.</span>
-                                                        <span className="text-sm font-mono font-bold">{viewingPermit.vehicleChassisNumber}</span>
+                                                    <div className="text-right">
+                                                        <p className="text-xs font-bold uppercase text-slate-500 mb-1">Date of Issue</p>
+                                                        <p className="text-lg font-bold text-slate-900">{new Date(viewingPermit.issueDate).toLocaleDateString()}</p>
                                                     </div>
-                                                    <div className="col-span-2 flex justify-between border-b border-dotted border-slate-300 pb-1">
-                                                        <span className="text-sm font-bold text-slate-600">Registered Owner</span>
-                                                        <span className="text-sm font-bold">{viewingPermit.vehicleOwnerName}</span>
+                                                </div>
+
+                                                {/* Vehicle Section */}
+                                                <div className="border border-slate-300 bg-slate-50/50 p-6 rounded-none">
+                                                    <h3 className="text-xs font-black uppercase tracking-widest text-slate-900 border-b border-slate-300 pb-2 mb-4 flex items-center gap-2">
+                                                        <Car size={16} /> Vehicle Information
+                                                    </h3>
+                                                    <div className="grid grid-cols-2 gap-y-4 gap-x-8">
+                                                        <div className="flex justify-between border-b border-dotted border-slate-300 pb-1">
+                                                            <span className="text-sm font-bold text-slate-600">Registry No.</span>
+                                                            <span className="text-sm font-mono font-bold">{viewingPermit.vehicleRegistryNumber}</span>
+                                                        </div>
+                                                        <div className="flex justify-between border-b border-dotted border-slate-300 pb-1">
+                                                            <span className="text-sm font-bold text-slate-600">Chassis No.</span>
+                                                            <span className="text-sm font-mono font-bold">{viewingPermit.vehicleChassisNumber}</span>
+                                                        </div>
+                                                        <div className="col-span-2 flex justify-between border-b border-dotted border-slate-300 pb-1">
+                                                            <span className="text-sm font-bold text-slate-600">Registered Owner</span>
+                                                            <span className="text-sm font-bold">{viewingPermit.vehicleOwnerName}</span>
+                                                        </div>
+                                                        <div className="col-span-2 flex justify-between border-b border-dotted border-slate-300 pb-1">
+                                                            <span className="text-sm font-bold text-slate-600">Owner ID / Contact</span>
+                                                            <span className="text-sm">{viewingPermit.vehicleOwnerId} / {viewingPermit.vehicleOwnerContact}</span>
+                                                        </div>
                                                     </div>
-                                                    <div className="col-span-2 flex justify-between border-b border-dotted border-slate-300 pb-1">
-                                                        <span className="text-sm font-bold text-slate-600">Owner ID / Contact</span>
-                                                        <span className="text-sm">{viewingPermit.vehicleOwnerId} / {viewingPermit.vehicleOwnerContact}</span>
+                                                </div>
+
+                                                {/* Garage Section */}
+                                                <div className="border border-slate-300 bg-slate-50/50 p-6 rounded-none">
+                                                    <h3 className="text-xs font-black uppercase tracking-widest text-slate-900 border-b border-slate-300 pb-2 mb-4 flex items-center gap-2">
+                                                        <Home size={16} /> Garage Facility Details
+                                                    </h3>
+                                                    <div className="grid grid-cols-2 gap-y-4 gap-x-8">
+                                                        <div className="flex justify-between border-b border-dotted border-slate-300 pb-1">
+                                                            <span className="text-sm font-bold text-slate-600">House Registry</span>
+                                                            <span className="text-sm font-mono font-bold">{viewingPermit.houseRegistryNumber}</span>
+                                                        </div>
+                                                        <div className="flex justify-between border-b border-dotted border-slate-300 pb-1">
+                                                            <span className="text-sm font-bold text-slate-600">Garage Size</span>
+                                                            <span className="text-sm font-bold">{viewingPermit.garageSizeSqft} Sq. Ft</span>
+                                                        </div>
+                                                        <div className="col-span-2 flex justify-between border-b border-dotted border-slate-300 pb-1">
+                                                            <span className="text-sm font-bold text-slate-600">Location Address</span>
+                                                            <span className="text-sm font-bold">{viewingPermit.garageAddress}</span>
+                                                        </div>
+                                                        <div className="col-span-2 flex justify-between border-b border-dotted border-slate-300 pb-1">
+                                                            <span className="text-sm font-bold text-slate-600">Facility Owner</span>
+                                                            <span className="text-sm">{viewingPermit.garageOwnerName}</span>
+                                                        </div>
+                                                        <div className="col-span-2 flex justify-between border-b border-dotted border-slate-300 pb-1">
+                                                            <span className="text-sm font-bold text-slate-600">Owner ID / Contact</span>
+                                                            <span className="text-sm">{viewingPermit.garageOwnerId} / {viewingPermit.garageOwnerContact}</span>
+                                                        </div>
                                                     </div>
+                                                </div>
+
+                                                {/* Declaration */}
+                                                <div className="text-xs text-justify text-slate-600 leading-relaxed italic px-2">
+                                                    {systemConfig.garagePermitTemplate.declaration || 
+                                                    "This document certifies that the vehicle described above has been granted permission to utilize the registered garage facility in accordance with the Land Transport Act and local council regulations. This permit must be kept with the vehicle registration at all times."}
                                                 </div>
                                             </div>
 
-                                            {/* Garage Section */}
-                                            <div className="border border-slate-300 bg-slate-50/50 p-6 rounded-none">
-                                                <h3 className="text-xs font-black uppercase tracking-widest text-slate-900 border-b border-slate-300 pb-2 mb-4 flex items-center gap-2">
-                                                    <Home size={16} /> Garage Facility Details
-                                                </h3>
-                                                <div className="grid grid-cols-2 gap-y-4 gap-x-8">
-                                                    <div className="flex justify-between border-b border-dotted border-slate-300 pb-1">
-                                                        <span className="text-sm font-bold text-slate-600">House Registry</span>
-                                                        <span className="text-sm font-mono font-bold">{viewingPermit.houseRegistryNumber}</span>
+                                            {/* Footer / Signatures */}
+                                            <div className="relative z-10 mt-auto pt-8 border-t-2 border-slate-900">
+                                                <div className="grid grid-cols-2 gap-16">
+                                                    <div className="text-center">
+                                                        <div className="h-16 flex items-end justify-center pb-2">
+                                                            <span className="font-script text-2xl text-slate-800">{viewingPermit.checkedBy}</span>
+                                                        </div>
+                                                        <div className="border-t border-slate-400 pt-2">
+                                                            <p className="text-xs font-bold uppercase text-slate-500">Checked By</p>
+                                                        </div>
                                                     </div>
-                                                    <div className="flex justify-between border-b border-dotted border-slate-300 pb-1">
-                                                        <span className="text-sm font-bold text-slate-600">Garage Size</span>
-                                                        <span className="text-sm font-bold">{viewingPermit.garageSizeSqft} Sq. Ft</span>
-                                                    </div>
-                                                    <div className="col-span-2 flex justify-between border-b border-dotted border-slate-300 pb-1">
-                                                        <span className="text-sm font-bold text-slate-600">Location Address</span>
-                                                        <span className="text-sm font-bold">{viewingPermit.garageAddress}</span>
-                                                    </div>
-                                                    <div className="col-span-2 flex justify-between border-b border-dotted border-slate-300 pb-1">
-                                                        <span className="text-sm font-bold text-slate-600">Facility Owner</span>
-                                                        <span className="text-sm">{viewingPermit.garageOwnerName}</span>
-                                                    </div>
-                                                    <div className="col-span-2 flex justify-between border-b border-dotted border-slate-300 pb-1">
-                                                        <span className="text-sm font-bold text-slate-600">Owner ID / Contact</span>
-                                                        <span className="text-sm">{viewingPermit.garageOwnerId} / {viewingPermit.garageOwnerContact}</span>
+                                                    <div className="text-center">
+                                                        <div className="h-16 flex items-end justify-center pb-2">
+                                                            {/* Space for stamp/sig */}
+                                                        </div>
+                                                        <div className="border-t border-slate-400 pt-2">
+                                                            <p className="text-xs font-bold uppercase text-slate-500">Authorized Signature & Stamp</p>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-
-                                            {/* Declaration */}
-                                            <div className="text-xs text-justify text-slate-600 leading-relaxed italic px-2">
-                                                {systemConfig.garagePermitTemplate.declaration || 
-                                                "This document certifies that the vehicle described above has been granted permission to utilize the registered garage facility in accordance with the Land Transport Act and local council regulations. This permit must be kept with the vehicle registration at all times."}
+                                                <div className="text-center mt-8 text-[10px] text-slate-400 font-mono">
+                                                    OFFICIAL RECORD GENERATED BY {systemConfig.councilName.toUpperCase()} PORTAL
+                                                </div>
                                             </div>
                                         </div>
-
-                                        {/* Footer / Signatures */}
-                                        <div className="relative z-10 mt-auto pt-8 border-t-2 border-slate-900">
-                                            <div className="grid grid-cols-2 gap-16">
-                                                <div className="text-center">
-                                                    <div className="h-16 flex items-end justify-center pb-2">
-                                                        <span className="font-script text-2xl text-slate-800">{viewingPermit.checkedBy}</span>
-                                                    </div>
-                                                    <div className="border-t border-slate-400 pt-2">
-                                                        <p className="text-xs font-bold uppercase text-slate-500">Checked By</p>
-                                                    </div>
-                                                </div>
-                                                <div className="text-center">
-                                                    <div className="h-16 flex items-end justify-center pb-2">
-                                                        {/* Space for stamp/sig */}
-                                                    </div>
-                                                    <div className="border-t border-slate-400 pt-2">
-                                                        <p className="text-xs font-bold uppercase text-slate-500">Authorized Signature & Stamp</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="text-center mt-8 text-[10px] text-slate-400 font-mono">
-                                                OFFICIAL RECORD GENERATED BY {systemConfig.councilName.toUpperCase()} PORTAL
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
+                                    )}
+                                 </div>
                              </div>
                          </div>
                          <style>{`
@@ -598,6 +627,7 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                                     padding: 0; 
                                     z-index: 9999;
                                     background: white;
+                                    transform: none !important;
                                     print-color-adjust: exact;
                                     -webkit-print-color-adjust: exact;
                                 }
