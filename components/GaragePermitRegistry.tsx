@@ -408,8 +408,8 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
 
             {/* Print Preview Modal */}
             {isPrintModalOpen && viewingPermit && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4 overflow-hidden">
-                     <div className="bg-white rounded-lg shadow-2xl h-[95vh] w-full max-w-6xl flex flex-col overflow-hidden relative">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4 overflow-hidden modal-backdrop">
+                     <div className="bg-white rounded-lg shadow-2xl h-[95vh] w-full max-w-6xl flex flex-col overflow-hidden relative modal-content">
                          <div className="p-4 bg-slate-800 text-white flex justify-between items-center print:hidden z-50 shadow-md">
                              <div className="flex items-center gap-4">
                                 <h3 className="font-bold text-lg hidden sm:block">{t('print_official_permit')}</h3>
@@ -446,8 +446,9 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                          
                          {/* SCROLLABLE PREVIEW AREA */}
                          <div className="flex-1 overflow-auto bg-slate-200/50 p-4 sm:p-8 flex justify-center items-start custom-scrollbar">
-                             {/* THE A4 PAPER CONTAINER */}
+                             {/* THE A4 PAPER CONTAINER WRAPPER */}
                              <div 
+                                className="print-preview-wrapper"
                                 style={{ 
                                     transform: `scale(${previewScale})`,
                                     transformOrigin: 'top center',
@@ -615,30 +616,50 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                          <style>{`
                             @media print {
                                 @page { size: A4 portrait; margin: 0; }
-                                body { margin: 0; padding: 0; background: white; }
-                                body > * { display: none !important; }
-                                
-                                /* Keep visibility hidden for everything initially to ensure layout logic */
-                                body * { visibility: hidden; }
-
-                                /* Only show the print modal contents */
-                                #print-area, #print-area * { 
-                                    visibility: visible; 
+                                body { 
+                                    visibility: hidden; 
+                                    background: white;
                                 }
                                 
+                                /* Ensure the wrapper overrides inline React scaling styles */
+                                .print-preview-wrapper {
+                                    transform: none !important;
+                                    position: absolute !important;
+                                    top: 0 !important;
+                                    left: 0 !important;
+                                    margin: 0 !important;
+                                    padding: 0 !important;
+                                    width: 100% !important;
+                                    height: auto !important;
+                                    overflow: visible !important;
+                                }
+
+                                /* Explicitly show the print area and its children */
                                 #print-area {
-                                    position: fixed;
-                                    left: 0;
-                                    top: 0;
+                                    visibility: visible !important;
+                                    position: absolute !important;
+                                    left: 0 !important;
+                                    top: 0 !important;
                                     width: 210mm !important;
                                     height: 297mm !important;
                                     margin: 0 !important;
                                     padding: 0 !important;
-                                    z-index: 99999;
-                                    background: white;
+                                    z-index: 9999;
                                     box-shadow: none !important;
-                                    transform: none !important;
-                                    display: block !important;
+                                    background: white !important;
+                                }
+                                
+                                #print-area * {
+                                    visibility: visible !important;
+                                }
+
+                                /* Hide modal UI elements specifically to be safe */
+                                .modal-backdrop, .modal-content {
+                                    position: static !important;
+                                    overflow: visible !important;
+                                    width: auto !important;
+                                    height: auto !important;
+                                    background: white !important;
                                 }
                             }
                         `}</style>
