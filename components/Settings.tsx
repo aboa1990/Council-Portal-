@@ -1,8 +1,15 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { User, UserRole, AssetCategory, AssetStatusConfig, SystemConfig, TemplateFieldPos, AccessLog } from '../types';
-// Added Building2 and XCircle to imports
-import { UserCircle, Upload, Save, Plus, Trash2, Shield, Mail, Check, Camera, X, Layers, Activity, Globe, Key, FileBadge, Briefcase, UserSquare2, FileText, Layout, Move, Settings as SettingsIcon, Eye, Type, Bold, Info, Lock, History, UserPlus, Search, Phone, MapPin, BadgeCheck, Fingerprint, Users, Pencil, Hash, ShieldAlert, ShieldCheck, CheckCircle2, User as UserIcon, Database, Download, RefreshCw, FileJson, Cloud, CloudOff, PlugZap, PlayCircle, Loader2, Building2, XCircle } from 'lucide-react';
+import { 
+  UserCircle, Upload, Save, Plus, Trash2, Shield, Mail, Check, Camera, X, Layers, 
+  Activity, Globe, Key, FileBadge, Briefcase, UserSquare2, FileText, Layout, 
+  Move, Settings as SettingsIcon, Eye, Type, Bold, Info, Lock, History, 
+  UserPlus, Search, Phone, MapPin, BadgeCheck, Fingerprint, Users, Pencil, 
+  Hash, ShieldAlert, ShieldCheck, CheckCircle2, User as UserIcon, Database, 
+  Download, RefreshCw, FileJson, Cloud, CloudOff, PlugZap, PlayCircle, 
+  Loader2, Building2, XCircle 
+} from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { isSupabaseConfigured, testConnection } from '../services/supabaseService';
 
@@ -145,7 +152,7 @@ const Settings: React.FC<SettingsProps> = ({
   };
 
   const handleSaveGeneral = (e: React.MouseEvent | React.FormEvent) => {
-      e.preventDefault();
+      if (e) e.preventDefault();
       if (onUpdateSystemConfig) {
           onUpdateSystemConfig(localSystemConfig);
           onAddAccessLog?.('System Config Updated', 'Council branding or template configuration changed.');
@@ -667,13 +674,18 @@ const Settings: React.FC<SettingsProps> = ({
                             <h2 className="text-xl font-bold text-slate-900">Official Permit Template Designer</h2>
                             <p className="text-sm text-slate-500">Overlay dynamic council data onto your high-resolution paper templates.</p>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex items-center gap-3">
+                            {generalSuccess && (
+                                <span className="text-emerald-600 flex items-center gap-2 text-sm font-bold animate-in fade-in slide-in-from-right-2">
+                                    <CheckCircle2 size={18} /> Template Saved
+                                </span>
+                            )}
                             <button onClick={() => templateInputRef.current?.click()} className="bg-white border border-teal-600 text-teal-700 px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-teal-50 flex items-center gap-2 transition-all">
                                 <Upload size={16} /> Upload Background
                             </button>
                             <input type="file" ref={templateInputRef} onChange={handleTemplateUpload} className="hidden" accept="image/*" />
                             <button onClick={handleSaveGeneral} className="bg-teal-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold hover:bg-teal-700 transition-all flex items-center gap-2 shadow-lg shadow-teal-600/20 active:scale-95">
-                                <Save size={16} /> Save Template
+                                <Save size={16} /> {generalSuccess ? 'Saved!' : 'Save Template'}
                             </button>
                         </div>
                     </div>
