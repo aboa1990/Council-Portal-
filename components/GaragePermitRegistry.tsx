@@ -168,6 +168,10 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
         p.vehicleOwnerName.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    const getOwnerPermitCount = (ownerId: string) => {
+        return permits.filter(p => p.vehicleOwnerId === ownerId && p.status === 'Issued').length;
+    };
+
     const handleOpenAdd = () => {
         setEditingPermit(null);
         const year = new Date().getFullYear();
@@ -281,7 +285,18 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                                 <tr key={permit.permitId} className="hover:bg-slate-50 transition-colors">
                                     <td className="px-6 py-4 whitespace-nowrap"><div className="flex items-center gap-3"><div className="bg-indigo-50 p-2 rounded-lg text-indigo-600"><FileText size={20} /></div><div><div className="text-sm font-bold text-slate-900 font-mono">{permit.permitId}</div><div className="text-xs text-slate-500">{new Date(permit.issueDate).toLocaleDateString()}</div></div></div></td>
                                     <td className="px-6 py-4 whitespace-nowrap"><div className="flex flex-col"><div className="flex items-center gap-2 text-sm font-bold text-slate-700"><Car size={14} className="text-slate-400"/> {permit.vehicleRegistryNumber}</div><div className="text-xs text-slate-500 font-mono">Chassis: {permit.vehicleChassisNumber}</div></div></td>
-                                    <td className="px-6 py-4 whitespace-nowrap"><div className="flex flex-col"><div className="flex items-center gap-2 text-sm text-slate-900"><UserIcon size={14} className="text-slate-400"/> {permit.vehicleOwnerName}</div><div className="text-xs text-slate-500">{permit.vehicleOwnerContact}</div></div></td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="flex flex-col">
+                                            <div className="flex items-center gap-2 text-sm text-slate-900"><UserIcon size={14} className="text-slate-400"/> {permit.vehicleOwnerName}</div>
+                                            <div className="text-xs text-slate-500">{permit.vehicleOwnerContact}</div>
+                                            <div className="mt-1">
+                                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200" title="Total active permits for this owner">
+                                                    <FileText size={10} />
+                                                    {t('permits_held')}: {getOwnerPermitCount(permit.vehicleOwnerId)}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </td>
                                     <td className="px-6 py-4 whitespace-nowrap"><div className="flex flex-col"><div className="flex items-center gap-2 text-sm text-slate-700"><Home size={14} className="text-slate-400"/> {permit.houseRegistryNumber}</div><div className="text-xs text-slate-500">{permit.garageAddress}</div></div></td>
                                     <td className="px-6 py-4 whitespace-nowrap">{permit.status === 'Issued' ? <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200"><CheckCircle size={12} className="mr-1"/> Issued</span> : <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200"><Ban size={12} className="mr-1"/> Void</span>}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right"><div className="flex items-center justify-end gap-2"><button onClick={() => handleOpenEdit(permit)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="View Details"><Eye size={16} /></button><button onClick={() => handlePrint(permit)} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"><Printer size={16} /></button><button onClick={() => handleOpenEdit(permit)} className="p-1.5 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded transition-colors"><Pencil size={16} /></button>{permit.status !== 'Void' && <button onClick={() => handleVoid(permit)} className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors"><Ban size={16} /></button>}{onDeletePermit && <button onClick={() => handleDelete(permit.permitId)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"><Trash2 size={16} /></button>}</div></td>
