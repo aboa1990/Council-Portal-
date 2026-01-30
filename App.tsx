@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { ViewState, CitizenRequest, RequestStatus, Asset, User, UserRole, House, AssetCategory, AssetStatusConfig, SystemConfig, GaragePermit, TemplateFieldPos, AccessLog } from './types';
+import { ViewState, CitizenRequest, RequestStatus, Asset, User, UserRole, House, AssetCategory, AssetStatusConfig, SystemConfig, GaragePermit, TemplateFieldPos, AccessLog, RequisitionForm } from './types';
 import { MOCK_REQUESTS, MOCK_ASSETS, MOCK_HOUSES, DEFAULT_ASSET_CATEGORIES, DEFAULT_ASSET_STATUSES, MOCK_GARAGE_PERMITS, MOCK_STAFF } from './constants';
 import Sidebar from './components/Sidebar';
 import DashboardStats from './components/DashboardStats';
@@ -23,6 +23,7 @@ const STORAGE_KEYS = {
   ASSETS: 'civicpulse_assets',
   HOUSES: 'civicpulse_houses',
   GARAGE_PERMITS: 'civicpulse_garage_permits',
+  REQUISITION_FORMS: 'civicpulse_requisitions',
   STAFF: 'civicpulse_staff',
   CONFIG: 'civicpulse_config',
   LOGS: 'civicpulse_logs',
@@ -70,6 +71,7 @@ const AppContent: React.FC = () => {
   const [assets, setAssets] = useState<Asset[]>(() => loadLocal<Asset[]>(STORAGE_KEYS.ASSETS, MOCK_ASSETS));
   const [houses, setHouses] = useState<House[]>(() => loadLocal<House[]>(STORAGE_KEYS.HOUSES, MOCK_HOUSES));
   const [garagePermits, setGaragePermits] = useState<GaragePermit[]>(() => loadLocal<GaragePermit[]>(STORAGE_KEYS.GARAGE_PERMITS, MOCK_GARAGE_PERMITS));
+  const [requisitionForms, setRequisitionForms] = useState<RequisitionForm[]>(() => loadLocal<RequisitionForm[]>(STORAGE_KEYS.REQUISITION_FORMS, []));
 
   const [currentView, setCurrentView] = useState<ViewState>('dashboard');
   const [selectedRequest, setSelectedRequest] = useState<CitizenRequest | null>(null);
@@ -120,6 +122,7 @@ const AppContent: React.FC = () => {
           if (cloudData.assets) setAssets(cloudData.assets);
           if (cloudData.houses) setHouses(cloudData.houses);
           if (cloudData.garagePermits) setGaragePermits(cloudData.garagePermits);
+          if (cloudData.requisitionForms) setRequisitionForms(cloudData.requisitionForms);
           if (cloudData.staffMembers) setStaffMembers(cloudData.staffMembers);
           if (cloudData.systemConfig) setSystemConfig(cloudData.systemConfig);
           if (cloudData.accessLogs) setAccessLogs(cloudData.accessLogs);
@@ -140,6 +143,7 @@ const AppContent: React.FC = () => {
     localStorage.setItem(STORAGE_KEYS.ASSETS, JSON.stringify(assets));
     localStorage.setItem(STORAGE_KEYS.HOUSES, JSON.stringify(houses));
     localStorage.setItem(STORAGE_KEYS.GARAGE_PERMITS, JSON.stringify(garagePermits));
+    localStorage.setItem(STORAGE_KEYS.REQUISITION_FORMS, JSON.stringify(requisitionForms));
     localStorage.setItem(STORAGE_KEYS.STAFF, JSON.stringify(staffMembers));
     localStorage.setItem(STORAGE_KEYS.CONFIG, JSON.stringify(systemConfig));
     localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(accessLogs));
@@ -150,14 +154,14 @@ const AppContent: React.FC = () => {
       const syncToCloud = async () => {
         setSyncStatus('syncing');
         const success = await savePortalState(systemConfig.councilName, {
-          requests, assets, houses, garagePermits, staffMembers, systemConfig, accessLogs
+          requests, assets, houses, garagePermits, requisitionForms, staffMembers, systemConfig, accessLogs
         });
         setSyncStatus(success ? 'synced' : 'error');
       };
       const timer = setTimeout(syncToCloud, 2000); // 2-second debounce for cloud sync
       return () => clearTimeout(timer);
     }
-  }, [requests, assets, houses, garagePermits, staffMembers, systemConfig, accessLogs, currentUser, dbConnectionError]);
+  }, [requests, assets, houses, garagePermits, requisitionForms, staffMembers, systemConfig, accessLogs, currentUser, dbConnectionError]);
 
   const handleAddAccessLog = (action: string, details: string) => {
     if (!currentUser) return;
@@ -265,6 +269,11 @@ const AppContent: React.FC = () => {
     setGaragePermits(prev => prev.filter(p => p.permitId !== permitId));
   };
 
+  const handleAddRequisitionForm = (newForm: RequisitionForm) => {
+      setRequisitionForms(prev => [newForm, ...prev]);
+      handleAddAccessLog('Requisition Created', `New form ${newForm.id} created by ${currentUser?.name}`);
+  };
+
   const handleUpdateCategories = (newCategories: AssetCategory[]) => {
       setAssetCategories(newCategories);
   };
@@ -310,7 +319,14 @@ const AppContent: React.FC = () => {
             />
         );
       case 'hudha':
-        return <HudhaForms systemConfig={systemConfig} currentUser={currentUser!} />;
+        return (
+            <HudhaForms 
+                systemConfig={systemConfig} 
+                currentUser={currentUser!} 
+                requisitionForms={requisitionForms}
+                onAddRequisition={handleAddRequisitionForm}
+            />
+        );
       case 'houses':
         return (
             <HouseRegistry 

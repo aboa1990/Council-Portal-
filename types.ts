@@ -112,6 +112,25 @@ export interface GaragePermit {
   logs?: AccessLog[];
 }
 
+export interface RequisitionItem {
+  id: string;
+  description: string;
+  quantity: number;
+  rate: number;
+}
+
+export interface RequisitionForm {
+  id: string; // Format: RF258/2026/01
+  date: string;
+  department: string;
+  requestedBy: string;
+  purpose: string;
+  items: RequisitionItem[];
+  status: 'Pending' | 'Approved' | 'Rejected';
+  totalAmount: number;
+  createdAt: string;
+}
+
 export interface TemplateFieldPos {
   top: number;
   left: number;
