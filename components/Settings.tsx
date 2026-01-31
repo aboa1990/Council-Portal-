@@ -392,6 +392,16 @@ const Settings: React.FC<SettingsProps> = ({
       default: return 'bg-slate-100 text-slate-700 border-slate-200';
     }
   };
+  
+  const getRoleDescription = (role: string) => {
+      switch(role) {
+          case 'Admin': return 'Full System Access + User Management + Audit Logs';
+          case 'Executive': return 'Full Access + Analytics + Settings (No Logs)';
+          case 'Senior Management': return 'Asset Registry + Requests + Reports';
+          case 'Staff': return 'Basic Access (Requests, Forms, Houses) - No Assets';
+          default: return '';
+      }
+  }
 
   const isCloudActive = isSupabaseConfigured();
 
@@ -411,7 +421,7 @@ const Settings: React.FC<SettingsProps> = ({
                 className={`px-6 py-4 text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === 'staff' ? 'border-teal-600 text-teal-700 bg-teal-50/30' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
               >
                 <Users size={18} />
-                Staff Profiles
+                Staff Management
               </button>
             )}
             {(currentUser.role === 'Admin') && (
@@ -620,7 +630,7 @@ const Settings: React.FC<SettingsProps> = ({
 
             {activeTab === 'config' && (
                 <div className="space-y-8 animate-fade-in">
-                     {/* ... config content remains the same ... */}
+                     {/* ... config content ... */}
                      <div className="flex justify-between items-start border-b border-slate-100 pb-4">
                         <div>
                             <h2 className="text-xl font-bold text-slate-900">{t('tab_config') || "Asset Configuration"}</h2>
@@ -1058,66 +1068,6 @@ const Settings: React.FC<SettingsProps> = ({
                 </div>
             )}
 
-            {activeTab === 'data' && (
-                <div className="space-y-8 animate-fade-in">
-                    <div className="flex justify-between items-start border-b border-slate-100 pb-4">
-                        <div>
-                            <h2 className="text-xl font-bold text-slate-900">Database & Storage</h2>
-                            <p className="text-sm text-slate-500">Manage backups and cloud connectivity.</p>
-                        </div>
-                        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${isCloudActive ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-amber-50 border-amber-200 text-amber-700'}`}>
-                            {isCloudActive ? <Cloud size={16}/> : <CloudOff size={16}/>}
-                            <span className="text-xs font-bold uppercase">{isCloudActive ? 'Cloud Active' : 'Local Mode'}</span>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-6">
-                            <h3 className="font-bold text-slate-800 flex items-center gap-2"><Database size={18} className="text-teal-600"/> Local Backup</h3>
-                            <p className="text-sm text-slate-500">Download a full JSON snapshot of the current system state or restore from a previous file.</p>
-                            
-                            <div className="flex flex-col gap-3">
-                                <button onClick={handleExportDatabase} className="flex items-center justify-center gap-2 py-3 bg-slate-100 text-slate-700 font-bold text-sm rounded-xl hover:bg-slate-200 transition-colors">
-                                    <Download size={16}/> Export Full Backup
-                                </button>
-                                <div className="relative">
-                                    <button onClick={() => importDatabaseRef.current?.click()} className="w-full flex items-center justify-center gap-2 py-3 bg-white border-2 border-dashed border-slate-300 text-slate-600 font-bold text-sm rounded-xl hover:border-teal-500 hover:text-teal-600 transition-colors">
-                                        <Upload size={16}/> Restore from Backup
-                                    </button>
-                                    <input type="file" ref={importDatabaseRef} onChange={handleImportDatabase} className="hidden" accept=".json" />
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-6">
-                            <h3 className="font-bold text-slate-800 flex items-center gap-2"><PlugZap size={18} className="text-purple-600"/> Cloud Connection</h3>
-                            <p className="text-sm text-slate-500">Test the connection to the Supabase backend. Requires .env configuration.</p>
-                            
-                            {connectionStatus && (
-                                <div className={`p-3 rounded-lg text-xs font-mono border ${connectionStatus.success ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
-                                    {connectionStatus.message}
-                                </div>
-                            )}
-
-                            <div className="flex flex-col gap-3">
-                                <button onClick={handleTestConnection} disabled={testingConnection} className="flex items-center justify-center gap-2 py-3 bg-purple-50 text-purple-700 font-bold text-sm rounded-xl hover:bg-purple-100 transition-colors disabled:opacity-50">
-                                    {testingConnection ? <Loader2 className="animate-spin" size={16}/> : <Activity size={16}/>}
-                                    {testingConnection ? 'Testing...' : 'Test Connection'}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="p-6 rounded-2xl bg-red-50 border border-red-100 shadow-sm">
-                        <h3 className="font-bold text-red-800 flex items-center gap-2 mb-2"><ShieldAlert size={18}/> Danger Zone</h3>
-                        <p className="text-sm text-red-600 mb-4">Irreversible actions. Proceed with caution.</p>
-                        <button onClick={handleClearDatabase} className="px-6 py-2.5 bg-white border border-red-200 text-red-600 font-bold text-sm rounded-xl hover:bg-red-600 hover:text-white transition-colors">
-                            Factory Reset / Clear All Data
-                        </button>
-                    </div>
-                </div>
-            )}
-
             {isStaffModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
                     <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full">
@@ -1137,10 +1087,10 @@ const Settings: React.FC<SettingsProps> = ({
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Full Name</label>
-                                    <input required type="text" className="w-full border border-slate-300 rounded px-3 py-2 text-sm" value={newStaff.name} onChange={e => setNewStaff({...newStaff, name: e.target.value})} />
+                                    <input required type="text" className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" value={newStaff.name} onChange={e => setNewStaff({...newStaff, name: e.target.value})} />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Role</label>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Role / Permissions</label>
                                     <select className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" value={newStaff.role} onChange={e => setNewStaff({...newStaff, role: e.target.value as UserRole})}>
                                         <option value="Staff">Staff</option>
                                         <option value="Senior Management">Senior Management</option>
@@ -1149,22 +1099,29 @@ const Settings: React.FC<SettingsProps> = ({
                                     </select>
                                 </div>
                             </div>
+                            
+                            {/* Permission Preview Box */}
+                            <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs">
+                                <span className="font-bold text-slate-700 block mb-1">Access Level: {newStaff.role}</span>
+                                <p className="text-slate-600">{getRoleDescription(newStaff.role || 'Staff')}</p>
+                            </div>
+
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Email / Login ID</label>
-                                <input required type="email" className="w-full border border-slate-300 rounded px-3 py-2 text-sm" value={newStaff.email} onChange={e => setNewStaff({...newStaff, email: e.target.value})} />
+                                <input required type="email" className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" value={newStaff.email} onChange={e => setNewStaff({...newStaff, email: e.target.value})} />
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Designation</label>
-                                <input type="text" className="w-full border border-slate-300 rounded px-3 py-2 text-sm" value={newStaff.designation} onChange={e => setNewStaff({...newStaff, designation: e.target.value})} />
+                                <input type="text" className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" value={newStaff.designation} onChange={e => setNewStaff({...newStaff, designation: e.target.value})} />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Staff ID (RC)</label>
-                                    <input type="text" className="w-full border border-slate-300 rounded px-3 py-2 text-sm" value={newStaff.rcNo} onChange={e => setNewStaff({...newStaff, rcNo: e.target.value})} />
+                                    <input type="text" className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" value={newStaff.rcNo} onChange={e => setNewStaff({...newStaff, rcNo: e.target.value})} />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Password</label>
-                                    <input type="password" placeholder="Leave blank to keep current" className="w-full border border-slate-300 rounded px-3 py-2 text-sm" value={newStaff.password} onChange={e => setNewStaff({...newStaff, password: e.target.value})} />
+                                    <input type="password" placeholder="Leave blank to keep current" className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" value={newStaff.password} onChange={e => setNewStaff({...newStaff, password: e.target.value})} />
                                 </div>
                             </div>
                             <div className="pt-4 flex justify-end gap-2">

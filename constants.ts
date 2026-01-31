@@ -22,11 +22,23 @@ export const DEFAULT_ASSET_STATUSES: AssetStatusConfig[] = [
 
 export const MOCK_STAFF: User[] = [
   {
+    id: 'ADM-001',
+    name: 'System Administrator',
+    role: 'Admin',
+    email: 'admin@hanimaadhoo.gov.mv',
+    designation: 'IT Admin',
+    rcNo: 'RC-ADMIN',
+    address: 'Council Secretariat',
+    idNo: 'A000000',
+    joinedDate: '2023-01-01',
+    password: 'admin' // Default password for initial access
+  },
+  {
     id: 'USR-001',
     name: 'Ahmed Riza',
-    role: 'Admin',
+    role: 'Senior Management',
     email: 'riza@hanimaadhoo.gov.mv',
-    designation: 'Director of IT',
+    designation: 'Director of Infrastructure',
     rcNo: 'RC-2024-001',
     address: 'H. Noon Villa, Male',
     idNo: 'A101010',
@@ -43,6 +55,18 @@ export const MOCK_STAFF: User[] = [
     address: 'M. Blue Sky, Male',
     idNo: 'A202020',
     joinedDate: '2022-12-01',
+    password: 'password123'
+  },
+  {
+    id: 'USR-003',
+    name: 'Ali Moosa',
+    role: 'Staff',
+    email: 'ali@hanimaadhoo.gov.mv',
+    designation: 'Front Desk Officer',
+    rcNo: 'RC-2024-003',
+    address: 'Rose Garden',
+    idNo: 'A303030',
+    joinedDate: '2024-01-01',
     password: 'password123'
   }
 ];

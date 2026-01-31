@@ -1,5 +1,4 @@
 
-
 import React, { useState } from 'react';
 import { User, UserRole, SystemConfig } from '../types';
 import { Building2, Lock, ArrowRight, UserCircle2, ShieldCheck, Hexagon, AlertCircle } from 'lucide-react';
@@ -25,7 +24,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, systemConfig, staffList }) => {
     
     // Simulate API delay and check credentials
     setTimeout(() => {
-      // Find staff member by email or name (for demo convenience, we check both)
+      // Find staff member by email or name
       const staffMember = staffList.find(s => 
         (s.email.toLowerCase() === username.toLowerCase() || s.name.toLowerCase() === username.toLowerCase()) && 
         (s.password === password || (!s.password && password === 'password123'))
@@ -34,20 +33,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, systemConfig, staffList }) => {
       if (staffMember) {
         onLogin(staffMember);
       } else {
-        // Fallback for demo users if list is empty or specific logic needed
-        const lowerUser = username.toLowerCase();
-        if (lowerUser === 'admin' && password === 'admin') {
-            onLogin({
-                id: 'ADM-001',
-                name: 'System Admin',
-                role: 'Admin',
-                email: 'admin@hanimaadhoo.gov.mv',
-                designation: 'IT Administrator',
-                password: 'admin'
-            });
-        } else {
-            setError('Invalid credentials. Please check your staff ID/Email and password.');
-        }
+        setError('Access Denied: Invalid credentials. Please contact your System Administrator.');
       }
       setLoading(false);
     }, 1200);
