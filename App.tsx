@@ -364,7 +364,13 @@ const AppContent: React.FC = () => {
 
     switch (currentView) {
       case 'dashboard':
-        return <DashboardStats requests={requests} assets={assets} />;
+        return <DashboardStats 
+            requests={requests} 
+            assets={assets} 
+            garagePermits={garagePermits}
+            houses={houses}
+            requisitionForms={requisitionForms}
+        />;
       case 'requests':
         return (
             <RequestList 
@@ -447,7 +453,13 @@ const AppContent: React.FC = () => {
             />
         );
       default:
-        return <DashboardStats requests={requests} assets={assets} />;
+        return <DashboardStats 
+            requests={requests} 
+            assets={assets} 
+            garagePermits={garagePermits}
+            houses={houses}
+            requisitionForms={requisitionForms}
+        />;
     }
   };
 

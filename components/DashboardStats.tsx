@@ -1,17 +1,18 @@
+
 import React from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Asset, CitizenRequest, RequestStatus } from '../types';
-import { AlertCircle, CheckCircle2, Clock, Inbox, TrendingUp, Box, DollarSign } from 'lucide-react';
+import { Asset, CitizenRequest, RequestStatus, GaragePermit, House, RequisitionForm } from '../types';
+import { AlertCircle, CheckCircle2, Clock, Inbox, TrendingUp, Box, DollarSign, Car, Home, FileText, Ban, MapPin } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface DashboardStatsProps {
   requests: CitizenRequest[];
   assets: Asset[];
+  garagePermits: GaragePermit[];
+  houses: House[];
+  requisitionForms: RequisitionForm[];
 }
 
-const COLORS = ['#0d9488', '#f59e0b', '#10b981', '#64748b']; // Teal, Amber, Emerald, Slate
-
-const DashboardStats: React.FC<DashboardStatsProps> = ({ requests, assets }) => {
+const DashboardStats: React.FC<DashboardStatsProps> = ({ requests, assets, garagePermits, houses, requisitionForms }) => {
   const { t } = useLanguage();
   
   // Request Stats
@@ -19,22 +20,6 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ requests, assets }) => 
   const newReqs = requests.filter(r => r.status === RequestStatus.NEW).length;
   const inProgress = requests.filter(r => r.status === RequestStatus.IN_PROGRESS).length;
   const resolved = requests.filter(r => r.status === RequestStatus.RESOLVED).length;
-
-  const statusData = [
-    { name: 'New', value: newReqs },
-    { name: 'In Progress', value: inProgress },
-    { name: 'Resolved', value: resolved },
-  ];
-
-  const categoryCount = requests.reduce((acc, curr) => {
-    acc[curr.category] = (acc[curr.category] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-
-  const categoryData = Object.keys(categoryCount).map(key => ({
-    name: key,
-    count: categoryCount[key]
-  }));
 
   // Asset Stats
   const totalAssets = assets.length;
@@ -49,6 +34,24 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ requests, assets }) => 
     name: key,
     count: assetCategoryCount[key]
   }));
+
+  // Garage Stats
+  const activePermits = garagePermits.filter(p => p.status === 'Issued').length;
+  const pendingPermits = garagePermits.filter(p => p.status === 'Pending Upload').length;
+  const voidPermits = garagePermits.filter(p => p.status === 'Void').length;
+
+  // House Stats
+  const totalHouses = houses.length;
+  const housesByZone = houses.reduce((acc, h) => {
+      acc[h.islandZone] = (acc[h.islandZone] || 0) + 1;
+      return acc;
+  }, {} as Record<string, number>);
+  const sortedZones = Object.entries(housesByZone).sort((a: [string, number], b: [string, number]) => b[1] - a[1]).slice(0, 3);
+
+  // Hudha Stats
+  const totalReqs = requisitionForms.length;
+  const totalReqValue = requisitionForms.reduce((sum, f) => sum + f.totalAmount, 0);
+  const pendingReqs = requisitionForms.filter(f => f.status === 'Pending').length;
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('en-MV', { style: 'currency', currency: 'MVR', maximumFractionDigits: 0 }).format(val);
@@ -70,94 +73,147 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ requests, assets }) => 
   );
 
   return (
-    <div className="space-y-6">
-      {/* Request Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard 
-            title="Total Requests" 
-            value={total} 
-            subtext={<span className="text-emerald-600 flex items-center gap-1"><TrendingUp size={12}/> +12% this week</span>}
-            icon={Inbox} 
-            color="text-teal-700" 
-        />
-        <StatCard 
-            title="Pending Attention" 
-            value={newReqs} 
-            subtext="Requires triage"
-            icon={AlertCircle} 
-            color="text-amber-600" 
-        />
-        <StatCard 
-            title="Active Jobs" 
-            value={inProgress} 
-            subtext="Currently assigned"
-            icon={Clock} 
-            color="text-indigo-600" 
-        />
-        <StatCard 
-            title="Completed" 
-            value={resolved} 
-            subtext="This month"
-            icon={CheckCircle2} 
-            color="text-emerald-600" 
-        />
+    <div className="space-y-8 pb-12">
+      {/* 1. Request Overview (Top Row) */}
+      <div>
+          <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+              <Inbox size={20} className="text-teal-600"/>
+              Service Requests Overview
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard 
+                title="Total Requests" 
+                value={total} 
+                subtext={<span className="text-emerald-600 flex items-center gap-1"><TrendingUp size={12}/> All time</span>}
+                icon={Inbox} 
+                color="text-teal-700" 
+            />
+            <StatCard 
+                title="Pending Attention" 
+                value={newReqs} 
+                subtext="Requires triage"
+                icon={AlertCircle} 
+                color="text-amber-600" 
+            />
+            <StatCard 
+                title="Active Jobs" 
+                value={inProgress} 
+                subtext="Currently assigned"
+                icon={Clock} 
+                color="text-indigo-600" 
+            />
+            <StatCard 
+                title="Completed" 
+                value={resolved} 
+                subtext="Resolved issues"
+                icon={CheckCircle2} 
+                color="text-emerald-600" 
+            />
+          </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-white p-5 rounded-md border border-slate-200 shadow-sm h-96">
-          <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide mb-6">Volume by Category</h3>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={categoryData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} dy={10} />
-              <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} />
-              <Tooltip 
-                cursor={{fill: '#f8fafc'}} 
-                contentStyle={{borderRadius: '4px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} 
-              />
-              <Bar dataKey="count" fill="#0d9488" radius={[2, 2, 0, 0]} barSize={40} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="bg-white p-5 rounded-md border border-slate-200 shadow-sm h-96 flex flex-col">
-          <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide mb-2">Status Distribution</h3>
-          <div className="flex-1 min-h-0">
-            <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                <Pie
-                    data={statusData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={70}
-                    outerRadius={110}
-                    fill="#8884d8"
-                    paddingAngle={2}
-                    dataKey="value"
-                >
-                    {statusData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                </Pie>
-                <Tooltip contentStyle={{borderRadius: '4px', border: '1px solid #e2e8f0'}} />
-                </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="flex justify-center gap-6 mt-4 border-t border-slate-100 pt-4">
-              {statusData.map((entry, index) => (
-                  <div key={entry.name} className="flex items-center gap-2">
-                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
-                      <span className="text-xs font-medium text-slate-600 uppercase tracking-wide">{entry.name}</span>
-                      <span className="text-xs text-slate-400">({entry.value})</span>
+      {/* 2. Departmental Overviews (New Layout) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          {/* Garage Permit Overview */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+              <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
+                  <Car size={18} className="text-indigo-600"/>
+                  <h3 className="font-bold text-slate-800">Garage Permits</h3>
+              </div>
+              <div className="p-6 flex-1 flex flex-col justify-center">
+                  <div className="flex items-end justify-between mb-6">
+                      <div>
+                          <p className="text-sm text-slate-500 font-medium">Total Registered</p>
+                          <p className="text-3xl font-bold text-slate-900">{garagePermits.length}</p>
+                      </div>
+                      <div className="h-10 w-10 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-600">
+                          <Car size={20}/>
+                      </div>
                   </div>
-              ))}
+                  <div className="space-y-3">
+                      <div className="flex justify-between items-center text-sm">
+                          <span className="flex items-center gap-2 text-slate-600"><CheckCircle2 size={14} className="text-emerald-500"/> Active / Issued</span>
+                          <span className="font-bold text-slate-900">{activePermits}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                          <span className="flex items-center gap-2 text-slate-600"><Clock size={14} className="text-amber-500"/> Pending Upload</span>
+                          <span className="font-bold text-slate-900">{pendingPermits}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                          <span className="flex items-center gap-2 text-slate-600"><Ban size={14} className="text-red-500"/> Void / Cancelled</span>
+                          <span className="font-bold text-slate-900">{voidPermits}</span>
+                      </div>
+                  </div>
+              </div>
           </div>
-        </div>
+
+          {/* House Registry Overview */}
+           <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+              <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
+                  <Home size={18} className="text-teal-600"/>
+                  <h3 className="font-bold text-slate-800">House Registry</h3>
+              </div>
+              <div className="p-6 flex-1 flex flex-col justify-center">
+                  <div className="flex items-end justify-between mb-6">
+                      <div>
+                          <p className="text-sm text-slate-500 font-medium">Total Houses</p>
+                          <p className="text-3xl font-bold text-slate-900">{totalHouses}</p>
+                      </div>
+                      <div className="h-10 w-10 bg-teal-50 rounded-full flex items-center justify-center text-teal-600">
+                          <Home size={20}/>
+                      </div>
+                  </div>
+                  <div className="space-y-2">
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Top Zones</p>
+                      {sortedZones.length > 0 ? sortedZones.map(([zone, count]) => (
+                          <div key={zone} className="flex justify-between items-center text-sm">
+                              <span className="flex items-center gap-2 text-slate-600"><MapPin size={14} className="text-slate-400"/> {zone} Zone</span>
+                              <span className="font-bold text-slate-900">{count}</span>
+                          </div>
+                      )) : (
+                          <p className="text-sm text-slate-400 italic">No house data available</p>
+                      )}
+                  </div>
+              </div>
+          </div>
+
+           {/* Hudha Forms Overview */}
+           <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+              <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
+                  <FileText size={18} className="text-rose-600"/>
+                  <h3 className="font-bold text-slate-800">Hudha Forms</h3>
+              </div>
+              <div className="p-6 flex-1 flex flex-col justify-center">
+                  <div className="flex items-end justify-between mb-6">
+                      <div>
+                          <p className="text-sm text-slate-500 font-medium">Total Requisitions</p>
+                          <p className="text-3xl font-bold text-slate-900">{totalReqs}</p>
+                      </div>
+                      <div className="h-10 w-10 bg-rose-50 rounded-full flex items-center justify-center text-rose-600">
+                          <FileText size={20}/>
+                      </div>
+                  </div>
+                  <div className="space-y-3">
+                      <div className="flex justify-between items-center text-sm">
+                          <span className="flex items-center gap-2 text-slate-600"><Clock size={14} className="text-amber-500"/> Pending Approval</span>
+                          <span className="font-bold text-slate-900">{pendingReqs}</span>
+                      </div>
+                      <div className="pt-3 border-t border-slate-100">
+                          <p className="text-xs text-slate-500 mb-1">Total Requested Value</p>
+                          <p className="text-lg font-bold text-emerald-600">{formatCurrency(totalReqValue)}</p>
+                      </div>
+                  </div>
+              </div>
+          </div>
       </div>
 
-      {/* Asset Overview Section */}
-      <div className="pt-6 border-t border-slate-200">
-          <h2 className="text-xl font-bold text-slate-900 mb-4">{t('asset_overview')}</h2>
+      {/* 3. Asset Overview Section (Bottom) */}
+      <div>
+          <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+              <Box size={20} className="text-blue-600"/>
+              {t('asset_overview')}
+          </h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               <StatCard 
@@ -182,7 +238,7 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ requests, assets }) => 
                  {assetCategoryData.map((cat) => (
                      <div key={cat.name} className="bg-slate-50 p-3 rounded-lg border border-slate-100 flex flex-col items-center justify-center text-center">
                          <div className="text-2xl font-bold text-slate-700">{cat.count}</div>
-                         <div className="text-xs font-medium text-slate-500 uppercase mt-1">{cat.name}</div>
+                         <div className="text-xs font-medium text-slate-500 uppercase mt-1 truncate w-full" title={cat.name}>{cat.name}</div>
                      </div>
                  ))}
              </div>
