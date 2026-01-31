@@ -1,7 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { GaragePermit, User, SystemConfig, TemplateFieldPos, AccessLog } from '../types';
-import { Search, Plus, X, Car, FileText, CheckCircle, Printer, MapPin, Home, User as UserIcon, BadgeCheck, Pencil, Trash2, Ban, ZoomIn, ZoomOut, History, Eye, AlertCircle, Upload, FileCheck, Download } from 'lucide-react';
+import { Search, Plus, X, Car, FileText, CheckCircle, Printer, MapPin, Home, User as UserIcon, BadgeCheck, Pencil, Trash2, Ban, ZoomIn, ZoomOut, History, Eye, AlertCircle, Upload, FileCheck, Download, PieChart, BarChart3 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { DEFAULT_FIELD_POSITIONS } from '../constants';
 
@@ -132,6 +132,7 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
     const [isSignedDocModalOpen, setIsSignedDocModalOpen] = useState(false);
+    const [isReportModalOpen, setIsReportModalOpen] = useState(false);
     
     const [editingPermit, setEditingPermit] = useState<GaragePermit | null>(null);
     const [viewingPermit, setViewingPermit] = useState<GaragePermit | null>(null);
@@ -168,11 +169,23 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
 
     const [formData, setFormData] = useState<Partial<GaragePermit>>(initialFormState);
 
+    // Filter permits
     const filteredPermits = permits.filter(p => 
         p.permitId.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.vehicleRegistryNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.vehicleOwnerName.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    // Calculate Stats for Report
+    const totalPermits = permits.length;
+    const activePermits = permits.filter(p => p.status === 'Issued').length;
+    const voidPermits = permits.filter(p => p.status === 'Void').length;
+    
+    const permitsByYear = permits.reduce((acc, p) => {
+        const year = new Date(p.issueDate).getFullYear();
+        acc[year] = (acc[year] || 0) + 1;
+        return acc;
+    }, {} as Record<string, number>);
 
     // Calculate active permits for a given owner ID (both vehicle and garage roles)
     const getActivePermitCount = (id: string, type: 'vehicle' | 'garage') => {
@@ -287,9 +300,14 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                     <h2 className="text-xl font-bold text-slate-900">{t('garage_title')}</h2>
                     <p className="text-sm text-slate-500">{t('garage_subtitle')}</p>
                 </div>
-                <button onClick={handleOpenAdd} className="bg-teal-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-teal-700 transition-colors flex items-center gap-2 shadow-sm">
-                    <Plus size={16} /> {t('new_permit')}
-                </button>
+                <div className="flex gap-2">
+                    <button onClick={() => setIsReportModalOpen(true)} className="bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-slate-50 transition-colors flex items-center gap-2 shadow-sm">
+                        <BarChart3 size={16} /> Report
+                    </button>
+                    <button onClick={handleOpenAdd} className="bg-teal-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-teal-700 transition-colors flex items-center gap-2 shadow-sm">
+                        <Plus size={16} /> {t('new_permit')}
+                    </button>
+                </div>
             </div>
 
             <div className="relative">
@@ -358,6 +376,115 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                     </table>
                 </div>
             </div>
+
+            {/* REPORT MODAL */}
+            {isReportModalOpen && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl h-[90vh] flex flex-col overflow-hidden">
+                        {/* Header */}
+                        <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50 print:hidden">
+                            <h3 className="font-bold text-lg text-slate-800">Garage Permit Summary Report</h3>
+                            <div className="flex items-center gap-2">
+                                <button onClick={() => window.print()} className="bg-white border border-slate-300 text-slate-700 px-3 py-2 rounded-md text-sm font-medium hover:bg-slate-50 flex items-center gap-2">
+                                    <Printer size={16} /> Print Report
+                                </button>
+                                <button onClick={() => setIsReportModalOpen(false)} className="text-slate-400 hover:text-slate-600 p-2"><X size={20}/></button>
+                            </div>
+                        </div>
+                        
+                        {/* Report Content */}
+                        <div className="flex-1 overflow-auto p-8" id="garage-report-area">
+                            <div className="text-center mb-8 border-b-2 border-slate-800 pb-4">
+                                <h1 className="text-2xl font-bold uppercase tracking-wide text-slate-900">{systemConfig.councilName}</h1>
+                                <h2 className="text-lg font-medium text-slate-600 mt-1">{systemConfig.secretariatName}</h2>
+                                <div className="mt-4 inline-block bg-slate-900 text-white px-4 py-1 text-sm font-bold uppercase">
+                                    Garage Permit Activity Report
+                                </div>
+                                <p className="text-xs text-slate-500 mt-2">Generated on {new Date().toLocaleDateString()}</p>
+                            </div>
+
+                            {/* KPI Cards */}
+                            <div className="grid grid-cols-3 gap-6 mb-8">
+                                <div className="bg-slate-50 border border-slate-200 p-4 text-center rounded-lg">
+                                    <div className="text-3xl font-black text-slate-900">{totalPermits}</div>
+                                    <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">Total Permits Issued</div>
+                                </div>
+                                <div className="bg-emerald-50 border border-emerald-100 p-4 text-center rounded-lg">
+                                    <div className="text-3xl font-black text-emerald-700">{activePermits}</div>
+                                    <div className="text-xs font-bold text-emerald-600 uppercase tracking-widest mt-1">Active / Valid</div>
+                                </div>
+                                <div className="bg-red-50 border border-red-100 p-4 text-center rounded-lg">
+                                    <div className="text-3xl font-black text-red-700">{voidPermits}</div>
+                                    <div className="text-xs font-bold text-red-600 uppercase tracking-widest mt-1">Void / Cancelled</div>
+                                </div>
+                            </div>
+
+                            {/* Breakdown Table */}
+                            <div className="mb-8">
+                                <h3 className="text-sm font-bold text-slate-800 uppercase border-b border-slate-200 pb-2 mb-4">Issuance by Year</h3>
+                                <table className="w-full text-sm text-left">
+                                    <thead className="bg-slate-100">
+                                        <tr>
+                                            <th className="px-4 py-2 font-bold text-slate-700">Year</th>
+                                            <th className="px-4 py-2 font-bold text-slate-700 text-right">Count</th>
+                                            <th className="px-4 py-2 font-bold text-slate-700 text-right">% of Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {Object.entries(permitsByYear).sort((a,b) => Number(b[0]) - Number(a[0])).map(([year, count]) => (
+                                            <tr key={year}>
+                                                <td className="px-4 py-2 font-medium">{year}</td>
+                                                <td className="px-4 py-2 text-right">{count}</td>
+                                                <td className="px-4 py-2 text-right text-slate-500">{((Number(count) / totalPermits) * 100).toFixed(1)}%</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Recent Activity List */}
+                            <div>
+                                <h3 className="text-sm font-bold text-slate-800 uppercase border-b border-slate-200 pb-2 mb-4">Last 10 Issued Permits</h3>
+                                <table className="w-full text-sm text-left">
+                                    <thead className="bg-slate-100">
+                                        <tr>
+                                            <th className="px-4 py-2 font-bold text-slate-700">Permit ID</th>
+                                            <th className="px-4 py-2 font-bold text-slate-700">Date</th>
+                                            <th className="px-4 py-2 font-bold text-slate-700">Vehicle Owner</th>
+                                            <th className="px-4 py-2 font-bold text-slate-700">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {[...permits].sort((a,b) => new Date(b.issueDate).getTime() - new Date(a.issueDate).getTime()).slice(0, 10).map(p => (
+                                            <tr key={p.permitId}>
+                                                <td className="px-4 py-2 font-mono text-xs">{p.permitId}</td>
+                                                <td className="px-4 py-2 text-slate-600">{new Date(p.issueDate).toLocaleDateString()}</td>
+                                                <td className="px-4 py-2 text-slate-900">{p.vehicleOwnerName}</td>
+                                                <td className="px-4 py-2">
+                                                    <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${p.status === 'Issued' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                                                        {p.status}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div className="mt-12 pt-8 border-t border-slate-200 flex justify-between items-end text-xs text-slate-500">
+                                <div>
+                                    <p className="font-bold text-slate-700 uppercase mb-4">Prepared By:</p>
+                                    <div className="h-8 border-b border-slate-300 w-48 mb-1"></div>
+                                    <p>{currentUser.name} ({currentUser.role})</p>
+                                </div>
+                                <div>
+                                    <p>End of Report</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Add/Edit Modal */}
             {isModalOpen && (
@@ -572,7 +699,16 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                     visibility: visible;
                 }
 
-                /* Position it perfectly */
+                /* Added for Report Printing */
+                #garage-report-area, #garage-report-area * {
+                    visibility: visible;
+                }
+                #garage-report-area {
+                    position: absolute;
+                    left: 0; top: 0; width: 100%; height: auto;
+                    padding: 40px; margin: 0; background: white; z-index: 99999;
+                }
+
                 #official-print-version {
                     position: fixed;
                     left: 0;
@@ -584,6 +720,8 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                     z-index: 99999;
                     background: white;
                 }
+                
+                .print\\:hidden { display: none !important; }
 
                 @page { size: A4; margin: 0; }
             }
