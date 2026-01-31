@@ -200,13 +200,25 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
     }, {} as Record<string, number>);
 
     // Calculate active permits for a given owner ID (both vehicle and garage roles)
-    const getActivePermitCount = (id: string, type: 'vehicle' | 'garage') => {
+    // IMPROVED: Case insensitive and trimmed matching, robust against nulls
+    const getActivePermitCount = (id: string | undefined, type: 'vehicle' | 'garage') => {
         if (!id) return 0;
-        return permits.filter(p => 
-            p.status === 'Issued' && 
-            (type === 'vehicle' ? p.vehicleOwnerId === id : p.garageOwnerId === id)
-        ).length;
+        const searchId = String(id).trim().toLowerCase();
+        if (!searchId) return 0;
+
+        return permits.filter(p => {
+            if (p.status !== 'Issued') return false;
+            
+            const rawId = type === 'vehicle' ? p.vehicleOwnerId : p.garageOwnerId;
+            if (!rawId) return false;
+
+            return String(rawId).trim().toLowerCase() === searchId;
+        }).length;
     };
+
+    // Live counts for form inputs - These recalculate on every render based on formData state
+    const activeVehiclePermitsInForm = getActivePermitCount(formData.vehicleOwnerId, 'vehicle');
+    const activeGaragePermitsInForm = getActivePermitCount(formData.garageOwnerId, 'garage');
 
     const handleOpenAdd = () => {
         setEditingPermit(null);
@@ -320,10 +332,6 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                 return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800 border border-slate-200">{status}</span>;
         }
     };
-
-    // Live counts for form inputs
-    const activeVehiclePermitsInForm = getActivePermitCount(formData.vehicleOwnerId || '', 'vehicle');
-    const activeGaragePermitsInForm = getActivePermitCount(formData.garageOwnerId || '', 'garage');
 
     return (
         <div className="space-y-6 animate-fade-in pb-10">
