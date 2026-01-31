@@ -91,7 +91,7 @@ export interface House {
 export interface GaragePermit {
   permitId: string;
   issueDate: string;
-  status: 'Issued' | 'Void';
+  status: 'Issued' | 'Void' | 'Pending Upload';
   
   vehicleChassisNumber: string;
   vehicleRegistryNumber: string;

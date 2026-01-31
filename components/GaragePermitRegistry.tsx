@@ -1,7 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { GaragePermit, User, SystemConfig, TemplateFieldPos, AccessLog } from '../types';
-import { Search, Plus, X, Car, FileText, CheckCircle, Printer, MapPin, Home, User as UserIcon, BadgeCheck, Pencil, Trash2, Ban, ZoomIn, ZoomOut, History, Eye, AlertCircle, Upload, FileCheck, Download, PieChart, BarChart3 } from 'lucide-react';
+import { Search, Plus, X, Car, FileText, CheckCircle, Printer, MapPin, Home, User as UserIcon, BadgeCheck, Pencil, Trash2, Ban, ZoomIn, ZoomOut, History, Eye, AlertCircle, Upload, FileCheck, Download, PieChart, BarChart3, Clock } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { DEFAULT_FIELD_POSITIONS } from '../constants';
 
@@ -113,6 +113,11 @@ const PermitPaper: React.FC<{ permit: GaragePermit, systemConfig: SystemConfig, 
                             </div>
                         </div>
                         <div className="text-xs text-justify text-slate-600 leading-relaxed italic px-2">{systemConfig.garagePermitTemplate.declaration}</div>
+                        {permit.notes && (
+                            <div className="mt-2 border border-slate-200 p-2 text-xs">
+                                <span className="font-bold uppercase">Notes:</span> {permit.notes}
+                            </div>
+                        )}
                     </div>
                     <div className="relative z-10 mt-auto pt-8 border-t-2 border-slate-900">
                         <div className="grid grid-cols-2 gap-16">
@@ -149,7 +154,7 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
     const initialFormState: Partial<GaragePermit> = {
         permitId: '',
         issueDate: new Date().toISOString().split('T')[0],
-        status: 'Issued',
+        status: 'Pending Upload',
         vehicleChassisNumber: '',
         vehicleRegistryNumber: '',
         vehicleOwnerName: '',
@@ -215,6 +220,13 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
         e.preventDefault();
         
         const timestamp = new Date().toISOString();
+        let currentStatus = formData.status;
+
+        // Workflow automation: If pending upload and we have data, change to Issued
+        if (currentStatus === 'Pending Upload' && formData.signedPermitData) {
+            currentStatus = 'Issued';
+        }
+
         const logEntry: AccessLog = {
             id: `log-${Date.now()}`,
             userId: currentUser.id,
@@ -222,19 +234,21 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
             role: currentUser.role,
             timestamp: timestamp,
             action: editingPermit ? 'Updated' : 'Created',
-            details: editingPermit ? 'Permit details updated' : 'Permit issued'
+            details: editingPermit ? 'Permit details updated' : 'Permit record created'
         };
 
         if (editingPermit) {
              const updatedPermit: GaragePermit = { 
                  ...editingPermit, 
                  ...formData as GaragePermit,
+                 status: currentStatus as 'Issued' | 'Void' | 'Pending Upload',
                  logs: [logEntry, ...(editingPermit.logs || [])]
              };
              onUpdatePermit(updatedPermit);
         } else {
             const newPermit: GaragePermit = { 
                 ...formData as GaragePermit, 
+                status: currentStatus as 'Issued' | 'Void' | 'Pending Upload',
                 checkedBy: currentUser.name, 
                 authorizedBy: '', 
                 logs: [logEntry] 
@@ -286,6 +300,19 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                 status: 'Void',
                 logs: [logEntry, ...(permit.logs || [])]
             });
+        }
+    };
+    
+    const getStatusBadge = (status: string) => {
+        switch(status) {
+            case 'Issued':
+                return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200"><CheckCircle size={12} className="mr-1"/> Issued</span>;
+            case 'Pending Upload':
+                return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200"><Clock size={12} className="mr-1"/> Pending Upload</span>;
+            case 'Void':
+                return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200"><Ban size={12} className="mr-1"/> Void</span>;
+            default:
+                return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800 border border-slate-200">{status}</span>;
         }
     };
 
@@ -364,7 +391,7 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                                             )}
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">{permit.status === 'Issued' ? <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200"><CheckCircle size={12} className="mr-1"/> Issued</span> : <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200"><Ban size={12} className="mr-1"/> Void</span>}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(permit.status)}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right"><div className="flex items-center justify-end gap-2">
                                         {permit.signedPermitData && (
                                             <button onClick={() => handleViewSignedDoc(permit)} className="p-1.5 text-teal-600 bg-teal-50 hover:bg-teal-100 rounded transition-colors" title="View Signed Permit"><FileCheck size={16} /></button>
@@ -461,9 +488,7 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                                                 <td className="px-4 py-2 text-slate-600">{new Date(p.issueDate).toLocaleDateString()}</td>
                                                 <td className="px-4 py-2 text-slate-900">{p.vehicleOwnerName}</td>
                                                 <td className="px-4 py-2">
-                                                    <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${p.status === 'Issued' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
-                                                        {p.status}
-                                                    </span>
+                                                    {getStatusBadge(p.status)}
                                                 </td>
                                             </tr>
                                         ))}
@@ -553,6 +578,17 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                                     </div>
                                 </div>
                                 
+                                {/* Notes Section */}
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Notes</label>
+                                    <textarea
+                                        className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white h-24 resize-none focus:ring-2 focus:ring-teal-500 outline-none"
+                                        placeholder="Enter additional notes here..."
+                                        value={formData.notes || ''}
+                                        onChange={e => setFormData({...formData, notes: e.target.value})}
+                                    />
+                                </div>
+                                
                                 {/* Signed Permit Upload Section - Only when editing */}
                                 {editingPermit && (
                                     <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
@@ -561,7 +597,7 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                                         </h4>
                                         <div className="flex items-center gap-4">
                                             <div className="flex-1">
-                                                <p className="text-xs text-blue-700 mb-2">Upload the scanned/signed copy of this permit for digital archiving.</p>
+                                                <p className="text-xs text-blue-700 mb-2">Upload the scanned/signed copy of this permit for digital archiving. (Status will change to 'Issued')</p>
                                                 <div className="flex items-center gap-2">
                                                     <button 
                                                         type="button"
