@@ -456,6 +456,7 @@ const AppContent: React.FC = () => {
                 <button onClick={() => { setCurrentView('houses'); setIsMobileMenuOpen(false); }} className="block w-full text-left py-3 border-b border-slate-100 text-slate-600">{t('nav_houses')}</button>
                 <button onClick={() => { setCurrentView('assets'); setIsMobileMenuOpen(false); }} className="block w-full text-left py-3 border-b border-slate-100 text-slate-600">{t('nav_assets')}</button>
                  <button onClick={() => { setCurrentView('garage'); setIsMobileMenuOpen(false); }} className="block w-full text-left py-3 border-b border-slate-100 text-slate-600">{t('nav_garage')}</button>
+                 <button onClick={() => { setCurrentView('settings'); setIsMobileMenuOpen(false); }} className="block w-full text-left py-3 border-b border-slate-100 text-slate-600">{t('nav_settings')}</button>
                 <button onClick={handleLogout} className="mt-4 text-sm text-red-500 font-medium">{t('sign_out')}</button>
              </div>
         </div>

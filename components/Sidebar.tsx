@@ -24,7 +24,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, userRole, 
     { id: 'assets', label: t('nav_assets'), icon: Box, roles: ['Admin', 'Executive', 'Senior Management'] },
     { id: 'garage', label: t('nav_garage'), icon: Car, roles: ['Admin', 'Executive', 'Senior Management', 'Staff'] },
     { id: 'analytics', label: t('nav_analytics'), icon: BarChart3, roles: ['Admin', 'Executive'] },
-    { id: 'settings', label: t('nav_settings'), icon: Settings, roles: ['Admin', 'Executive', 'Senior Management'] },
+    // Enabled 'Staff' role for Settings so they can access the "My Profile" tab
+    { id: 'settings', label: t('nav_settings'), icon: Settings, roles: ['Admin', 'Executive', 'Senior Management', 'Staff'] },
   ];
 
   const navItems = allNavItems.filter(item => item.roles.includes(userRole));
