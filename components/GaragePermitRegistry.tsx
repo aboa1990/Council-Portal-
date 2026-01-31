@@ -1,7 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { GaragePermit, User, SystemConfig, TemplateFieldPos, AccessLog } from '../types';
-import { Search, Plus, X, Car, FileText, CheckCircle, Printer, MapPin, Home, User as UserIcon, BadgeCheck, Pencil, Trash2, Ban, ZoomIn, ZoomOut, History, Eye, AlertCircle } from 'lucide-react';
+import { Search, Plus, X, Car, FileText, CheckCircle, Printer, MapPin, Home, User as UserIcon, BadgeCheck, Pencil, Trash2, Ban, ZoomIn, ZoomOut, History, Eye, AlertCircle, Upload, FileCheck, Download } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { DEFAULT_FIELD_POSITIONS } from '../constants';
 
@@ -131,9 +131,14 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
     const [searchTerm, setSearchTerm] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+    const [isSignedDocModalOpen, setIsSignedDocModalOpen] = useState(false);
+    
     const [editingPermit, setEditingPermit] = useState<GaragePermit | null>(null);
     const [viewingPermit, setViewingPermit] = useState<GaragePermit | null>(null);
+    const [viewingSignedDoc, setViewingSignedDoc] = useState<GaragePermit | null>(null);
+    
     const [previewScale, setPreviewScale] = useState(0.8);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const effectiveFieldPositions = {
         ...DEFAULT_FIELD_POSITIONS,
@@ -157,7 +162,8 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
         garageOwnerAddress: '',
         garageOwnerId: '',
         garageOwnerContact: '',
-        notes: ''
+        notes: '',
+        signedPermitData: ''
     };
 
     const [formData, setFormData] = useState<Partial<GaragePermit>>(initialFormState);
@@ -233,6 +239,22 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
         setViewingPermit(permit);
         setPreviewScale(0.8); 
         setIsPrintModalOpen(true);
+    };
+
+    const handleViewSignedDoc = (permit: GaragePermit) => {
+        setViewingSignedDoc(permit);
+        setIsSignedDocModalOpen(true);
+    };
+
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                setFormData(prev => ({ ...prev, signedPermitData: event.target?.result as string }));
+            };
+            reader.readAsDataURL(file);
+        }
     };
 
     const handleVoid = (permit: GaragePermit) => {
@@ -325,7 +347,11 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">{permit.status === 'Issued' ? <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200"><CheckCircle size={12} className="mr-1"/> Issued</span> : <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200"><Ban size={12} className="mr-1"/> Void</span>}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right"><div className="flex items-center justify-end gap-2"><button onClick={() => handleOpenEdit(permit)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="View Details"><Eye size={16} /></button><button onClick={() => handlePrint(permit)} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"><Printer size={16} /></button><button onClick={() => handleOpenEdit(permit)} className="p-1.5 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded transition-colors"><Pencil size={16} /></button>{permit.status !== 'Void' && <button onClick={() => handleVoid(permit)} className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors"><Ban size={16} /></button>}{onDeletePermit && <button onClick={() => handleDelete(permit.permitId)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"><Trash2 size={16} /></button>}</div></td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-right"><div className="flex items-center justify-end gap-2">
+                                        {permit.signedPermitData && (
+                                            <button onClick={() => handleViewSignedDoc(permit)} className="p-1.5 text-teal-600 bg-teal-50 hover:bg-teal-100 rounded transition-colors" title="View Signed Permit"><FileCheck size={16} /></button>
+                                        )}
+                                        <button onClick={() => handleOpenEdit(permit)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="View Details"><Eye size={16} /></button><button onClick={() => handlePrint(permit)} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"><Printer size={16} /></button><button onClick={() => handleOpenEdit(permit)} className="p-1.5 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded transition-colors"><Pencil size={16} /></button>{permit.status !== 'Void' && <button onClick={() => handleVoid(permit)} className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded transition-colors"><Ban size={16} /></button>}{onDeletePermit && <button onClick={() => handleDelete(permit.permitId)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"><Trash2 size={16} /></button>}</div></td>
                                 </tr>
                             ))}
                         </tbody>
@@ -399,6 +425,42 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                                 </div>
                             </div>
                             
+                            {/* Signed Permit Upload Section - Only when editing */}
+                            {editingPermit && (
+                                <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                                    <h4 className="text-sm font-bold text-blue-800 flex items-center gap-2 mb-4 border-b border-blue-200 pb-2">
+                                        <FileCheck size={16} className="text-blue-600"/> Signed Permit Record
+                                    </h4>
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex-1">
+                                            <p className="text-xs text-blue-700 mb-2">Upload the scanned/signed copy of this permit for digital archiving.</p>
+                                            <div className="flex items-center gap-2">
+                                                <button 
+                                                    type="button"
+                                                    onClick={() => fileInputRef.current?.click()}
+                                                    className="bg-white border border-blue-300 text-blue-700 px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-50 transition-colors flex items-center gap-2 shadow-sm"
+                                                >
+                                                    <Upload size={16} />
+                                                    {formData.signedPermitData ? 'Replace Document' : 'Upload Signed Copy'}
+                                                </button>
+                                                <input 
+                                                    type="file" 
+                                                    ref={fileInputRef}
+                                                    onChange={handleFileUpload}
+                                                    className="hidden"
+                                                    accept="image/*,application/pdf"
+                                                />
+                                                {formData.signedPermitData && (
+                                                     <span className="text-xs font-bold text-emerald-600 flex items-center gap-1">
+                                                         <CheckCircle size={14} /> Document Attached
+                                                     </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Access Log Section - ONLY when editing */}
                             {editingPermit && (
                                 <div className="mt-8 pt-6 border-t border-slate-200">
@@ -435,6 +497,28 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                             </div>
                         </form>
                     </div>
+                </div>
+            )}
+            
+            {/* Signed Document Viewer Modal */}
+            {isSignedDocModalOpen && viewingSignedDoc && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/90 backdrop-blur-sm p-4">
+                     <div className="bg-white rounded-lg shadow-2xl h-[90vh] w-full max-w-4xl flex flex-col overflow-hidden relative">
+                         <div className="p-4 bg-slate-800 text-white flex justify-between items-center z-50 shadow-md">
+                             <div className="flex items-center gap-4">
+                                <h3 className="font-bold text-lg flex items-center gap-2"><FileCheck size={20} /> Signed Permit Record</h3>
+                                <div className="text-xs bg-slate-700 px-3 py-1 rounded-full font-mono border border-slate-600 whitespace-nowrap">{viewingSignedDoc.permitId}</div>
+                             </div>
+                             <button onClick={() => setIsSignedDocModalOpen(false)} className="bg-slate-700 hover:bg-slate-600 p-2 rounded"><X size={20} /></button>
+                         </div>
+                         <div className="flex-1 overflow-auto bg-slate-100 p-4 flex justify-center items-center">
+                             {viewingSignedDoc.signedPermitData?.startsWith('data:application/pdf') ? (
+                                 <iframe src={viewingSignedDoc.signedPermitData} className="w-full h-full border-none rounded shadow-lg" title="Signed Permit PDF" />
+                             ) : (
+                                 <img src={viewingSignedDoc.signedPermitData} className="max-w-full max-h-full object-contain rounded shadow-lg" alt="Signed Permit" />
+                             )}
+                         </div>
+                     </div>
                 </div>
             )}
 

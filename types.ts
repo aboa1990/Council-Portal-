@@ -1,4 +1,5 @@
 
+
 export enum RequestStatus {
   NEW = 'New',
   IN_PROGRESS = 'In Progress',
@@ -110,6 +111,7 @@ export interface GaragePermit {
   notes?: string;
 
   logs?: AccessLog[];
+  signedPermitData?: string;
 }
 
 export interface RequisitionItem {
