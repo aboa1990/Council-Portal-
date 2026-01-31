@@ -37,6 +37,7 @@ export interface AssetStatusConfig {
 export interface AssetCategory {
   id: string;
   name: string;
+  nameDh?: string; // Dhivehi Name
   code: string;
 }
 
@@ -64,6 +65,9 @@ export interface Asset {
   lastMaintenance?: string;
   notes?: string;
   logs?: AccessLog[];
+  // New fields for Land & Buildings
+  assetSize?: string;
+  constructedDate?: string;
 }
 
 export type RegistryType = 'Bandara Goathi' | 'Amilla Goathi' | 'Government Plot' | 'Agriculture Plot' | 'Industrial Plot';

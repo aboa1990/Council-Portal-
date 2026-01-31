@@ -1,7 +1,9 @@
+
+
 import React, { useState } from 'react';
 import { Asset, AssetStatusConfig } from '../types';
 import { generateMaintenancePlan } from '../services/geminiService';
-import { ArrowLeft, Sparkles, Wrench, DollarSign, Calendar, MapPin, Loader2, ClipboardCheck, Printer, X, QrCode, History } from 'lucide-react';
+import { ArrowLeft, Sparkles, Wrench, DollarSign, Calendar, MapPin, Loader2, ClipboardCheck, Printer, X, QrCode, History, Maximize2, HardHat } from 'lucide-react';
 import ReactMarkdown from 'react-markdown'; 
 import QRCode from "react-qr-code";
 import { useLanguage } from '../contexts/LanguageContext';
@@ -35,6 +37,7 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ asset, statuses, onBack }) =>
   };
 
   const isVehicle = asset.category === 'Fleet';
+  const isLand = asset.category === 'Land, Buildings & Other Tangible Assets';
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -70,24 +73,46 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ asset, statuses, onBack }) =>
              <div className="flex items-center gap-3">
                 <div className="bg-blue-50 p-3 rounded-lg text-blue-600"><DollarSign size={20} /></div>
                 <div>
-                    <div className="text-xs text-slate-500 font-medium uppercase">Purchase Value</div>
+                    <div className="text-xs text-slate-500 font-medium uppercase">Value</div>
                     <div className="font-semibold text-slate-800">{formatCurrency(asset.value)}</div>
                 </div>
              </div>
-             <div className="flex items-center gap-3">
-                <div className="bg-purple-50 p-3 rounded-lg text-purple-600"><Calendar size={20} /></div>
-                <div>
-                    <div className="text-xs text-slate-500 font-medium uppercase">Acquired</div>
-                    <div className="font-semibold text-slate-800">{new Date(asset.purchaseDate).toLocaleDateString()}</div>
-                </div>
-             </div>
-             <div className="flex items-center gap-3">
-                <div className="bg-orange-50 p-3 rounded-lg text-orange-600"><Wrench size={20} /></div>
-                <div>
-                    <div className="text-xs text-slate-500 font-medium uppercase">Last Service</div>
-                    <div className="font-semibold text-slate-800">{asset.lastMaintenance || 'N/A'}</div>
-                </div>
-             </div>
+             
+             {isLand ? (
+                 <>
+                    <div className="flex items-center gap-3">
+                        <div className="bg-purple-50 p-3 rounded-lg text-purple-600"><Maximize2 size={20} /></div>
+                        <div>
+                            <div className="text-xs text-slate-500 font-medium uppercase">Asset Size</div>
+                            <div className="font-semibold text-slate-800">{asset.assetSize || 'N/A'}</div>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <div className="bg-orange-50 p-3 rounded-lg text-orange-600"><HardHat size={20} /></div>
+                        <div>
+                            <div className="text-xs text-slate-500 font-medium uppercase">Constructed</div>
+                            <div className="font-semibold text-slate-800">{asset.constructedDate || 'N/A'}</div>
+                        </div>
+                    </div>
+                 </>
+             ) : (
+                 <>
+                    <div className="flex items-center gap-3">
+                        <div className="bg-purple-50 p-3 rounded-lg text-purple-600"><Calendar size={20} /></div>
+                        <div>
+                            <div className="text-xs text-slate-500 font-medium uppercase">Acquired</div>
+                            <div className="font-semibold text-slate-800">{new Date(asset.purchaseDate).toLocaleDateString()}</div>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <div className="bg-orange-50 p-3 rounded-lg text-orange-600"><Wrench size={20} /></div>
+                        <div>
+                            <div className="text-xs text-slate-500 font-medium uppercase">Last Service</div>
+                            <div className="font-semibold text-slate-800">{asset.lastMaintenance || 'N/A'}</div>
+                        </div>
+                    </div>
+                 </>
+             )}
         </div>
       </div>
 
@@ -212,7 +237,7 @@ const AssetDetail: React.FC<AssetDetailProps> = ({ asset, statuses, onBack }) =>
 
             {/* Asset Notes */}
             <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                <h4 className="font-bold text-slate-800 mb-2 text-sm uppercase tracking-wider">Asset Notes</h4>
+                <h4 className="font-bold text-slate-800 mb-2 text-sm uppercase tracking-wider">{isLand ? "Additional Info" : "Asset Notes"}</h4>
                 <div className="text-sm text-slate-600 bg-slate-50 p-3 rounded border border-slate-100 min-h-[60px]">
                     {asset.notes ? asset.notes : <span className="text-slate-400 italic">No notes available.</span>}
                 </div>

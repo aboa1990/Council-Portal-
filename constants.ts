@@ -1,13 +1,16 @@
 
+
 import { CitizenRequest, RequestPriority, RequestStatus, Asset, House, AssetCategory, AssetStatusConfig, GaragePermit, User, TemplateFieldPos } from './types';
 
 export const DEFAULT_ASSET_CATEGORIES: AssetCategory[] = [
-  { id: 'cat_fac', name: 'Facilities', code: '01' },
-  { id: 'cat_fur', name: 'Furniture', code: '02' },
-  { id: 'cat_it', name: 'IT Hardware', code: '03' },
-  { id: 'cat_flt', name: 'Fleet', code: '04' },
-  { id: 'cat_tls', name: 'Tools & Equipment', code: '05' },
-  { id: 'cat_oth', name: 'Other', code: '99' },
+  { id: 'cat_isl', name: 'Inhabited Islands, Coral Reefs & Living Seeds', nameDh: 'މީހުން ދިރިއުޅޭ ރަށްތައް، ފަރުތައް އަދި ދިރޭ ތަކެތި', code: '01' },
+  { id: 'cat_hist', name: 'Historical Sites', nameDh: 'އާސާރީ ތަންތަން', code: '02' },
+  { id: 'cat_cpr', name: 'Copyrights & Patterns', nameDh: 'ކޮޕީރައިޓްސް އަދި ޕެޓާންސް', code: '03' },
+  { id: 'cat_tls', name: 'Tools & Equipment', nameDh: 'އާލާތްތަކާއި އިކުއިޕްމަންޓް', code: '04' },
+  { id: 'cat_veh', name: 'Vehicles', nameDh: 'އެއްގަމު އުޅަނދު / ވެހިކަލް', code: '05' },
+  { id: 'cat_pmes', name: 'Plant, Machineries, Equipment, Software & IT Hardware', nameDh: 'ޕްލާންޓް، މެޝިނަރީ، އިކުއިޕްމަންޓް، ސޮފްޓްވެއަރ އަދި އައި.ޓީ ހާޑްވެއަރ', code: '06' },
+  { id: 'cat_fff', name: 'Furniture, Fixtures & Fittings', nameDh: 'ފަރުނީޗަރު، ފިކްސްޗަރސް އަދި ފިޓިންގސް', code: '07' },
+  { id: 'cat_lbo', name: 'Land, Buildings & Other Tangible Assets', nameDh: 'ބިން، އިމާރާތް އަދި އެހެނިހެން މާއްދީ މުދާ', code: '08' },
 ];
 
 export const DEFAULT_ASSET_STATUSES: AssetStatusConfig[] = [

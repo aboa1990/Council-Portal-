@@ -2,7 +2,7 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import { Asset, AssetCategory, AssetStatusConfig, AccessLog, User, SystemConfig } from '../types';
-import { Search, MapPin, Truck, Monitor, Armchair, Hammer, CheckCircle, Upload, Plus, X, Filter, Printer, FileText, Layers, QrCode, FileDown, FileSpreadsheet, Pencil, Trash2 } from 'lucide-react';
+import { Search, MapPin, Truck, Monitor, Armchair, Hammer, CheckCircle, Upload, Plus, X, Filter, Printer, FileText, Layers, QrCode, FileDown, FileSpreadsheet, Pencil, Trash2, Building, Globe, Book, Shield, Cpu } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import QRCode from "react-qr-code";
 
@@ -31,7 +31,7 @@ const AssetRegistry: React.FC<AssetRegistryProps> = ({ currentUser, assets, cate
   const officeCode = systemConfig.inventoryPrefix || "258";
 
   // Default to first category or Furniture if available
-  const initialCategory = categories.find(c => c.name === 'Furniture') || categories[0];
+  const initialCategory = categories.find(c => c.name.toLowerCase().includes('furniture')) || categories[0];
   const initialStatus = statuses.find(s => s.name === 'Operational') || statuses[0];
 
   // New Asset Form State
@@ -47,7 +47,9 @@ const AssetRegistry: React.FC<AssetRegistryProps> = ({ currentUser, assets, cate
       purchaseDate: new Date().toISOString().split('T')[0],
       entryDate: new Date().toISOString().split('T')[0],
       lastMaintenance: '',
-      notes: ''
+      notes: '',
+      assetSize: '',
+      constructedDate: ''
   });
   const [customCategory, setCustomCategory] = useState('');
   const [inventoryGroupCode, setInventoryGroupCode] = useState('');
@@ -93,7 +95,9 @@ const AssetRegistry: React.FC<AssetRegistryProps> = ({ currentUser, assets, cate
         purchaseDate: new Date().toISOString().split('T')[0], 
         entryDate: new Date().toISOString().split('T')[0], 
         lastMaintenance: '', 
-        notes: ''
+        notes: '',
+        assetSize: '',
+        constructedDate: ''
     });
     setCustomCategory('');
     // Trigger initial ID generation for new asset
@@ -235,7 +239,7 @@ const AssetRegistry: React.FC<AssetRegistryProps> = ({ currentUser, assets, cate
 
   const handleExportCSV = () => {
     // CSV Header
-    const headers = ["ID", "Name", "Category", "Status", "Location", "Value (MVR)", "Purchase Date", "Model No", "Serial No", "Notes"];
+    const headers = ["ID", "Name", "Category", "Status", "Location", "Value (MVR)", "Purchase Date", "Model No", "Serial No", "Asset Size", "Constructed Date", "Notes"];
     
     // CSV Rows
     const rows = assets.map(asset => [
@@ -248,6 +252,8 @@ const AssetRegistry: React.FC<AssetRegistryProps> = ({ currentUser, assets, cate
         asset.purchaseDate,
         `"${(asset.modelNumber || '').replace(/"/g, '""')}"`,
         `"${(asset.serialNumber || '').replace(/"/g, '""')}"`,
+        `"${(asset.assetSize || '').replace(/"/g, '""')}"`,
+        `"${(asset.constructedDate || '').replace(/"/g, '""')}"`,
         `"${(asset.notes || '').replace(/"/g, '""')}"`
     ]);
 
@@ -260,8 +266,8 @@ const AssetRegistry: React.FC<AssetRegistryProps> = ({ currentUser, assets, cate
   };
 
   const handleDownloadTemplate = () => {
-     const headers = ["name", "category", "status", "location", "value", "purchaseDate", "modelNumber", "serialNumber", "notes"];
-     const example = ["Example Chair", "Furniture", "Operational", "Reception", "1500", "2024-01-01", "CH-01", "SN123", "Office chair"];
+     const headers = ["name", "category", "status", "location", "value", "purchaseDate", "modelNumber", "serialNumber", "assetSize", "constructedDate", "notes"];
+     const example = ["Example Chair", "Furniture", "Operational", "Reception", "1500", "2024-01-01", "CH-01", "SN123", "", "", "Office chair"];
      
      const csvContent = [headers.join(","), example.join(",")].join("\n");
      downloadCSV(csvContent, "asset_import_template.csv");
@@ -274,11 +280,15 @@ const AssetRegistry: React.FC<AssetRegistryProps> = ({ currentUser, assets, cate
 
   const getCategoryIcon = (category: string) => {
       const cat = category.toLowerCase();
-      if (cat.includes('fleet')) return <Truck size={18} />;
-      if (cat.includes('it') || cat.includes('computer') || cat.includes('hardware')) return <Monitor size={18} />;
-      if (cat.includes('furniture')) return <Armchair size={18} />;
+      if (cat.includes('vehicle') || cat.includes('fleet')) return <Truck size={18} />;
+      if (cat.includes('it') || cat.includes('computer') || cat.includes('hardware') || cat.includes('software')) return <Monitor size={18} />;
+      if (cat.includes('furniture') || cat.includes('fixture')) return <Armchair size={18} />;
       if (cat.includes('tool') || cat.includes('equipment')) return <Hammer size={18} />;
-      if (cat.includes('facilit') || cat.includes('building')) return <Layers size={18} />;
+      if (cat.includes('building') || cat.includes('land') || cat.includes('tangible')) return <Building size={18} />;
+      if (cat.includes('island') || cat.includes('reef') || cat.includes('seed')) return <Globe size={18} />;
+      if (cat.includes('historical')) return <Book size={18} />;
+      if (cat.includes('copyright') || cat.includes('pattern')) return <Shield size={18} />;
+      if (cat.includes('plant') || cat.includes('machiner')) return <Cpu size={18} />;
       return <CheckCircle size={18} />;
   };
 
@@ -302,6 +312,12 @@ const AssetRegistry: React.FC<AssetRegistryProps> = ({ currentUser, assets, cate
 
   // Fix: Comparison with overlapping types 'Admin' | 'Executive'
   const canManage = currentUser.role === 'Admin' || currentUser.role === 'Executive';
+
+  // Specific check for the Land category
+  const isLandAsset = formData.category?.toLowerCase().includes('land') || formData.category?.toLowerCase().includes('building');
+  
+  // Find selected category object to get Dhivehi name
+  const selectedCategoryObj = categories.find(c => c.name === formData.category);
 
   return (
     <div className="space-y-6 animate-fade-in pb-10">
@@ -485,7 +501,7 @@ const AssetRegistry: React.FC<AssetRegistryProps> = ({ currentUser, assets, cate
                                     value={formData.id} />
                             </div>
                             
-                            <div>
+                            <div className="col-span-2">
                                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('category')}</label>
                                 <select 
                                     className="w-full border border-slate-300 rounded px-3 py-2 text-sm outline-none bg-white disabled:bg-slate-100"
@@ -497,6 +513,11 @@ const AssetRegistry: React.FC<AssetRegistryProps> = ({ currentUser, assets, cate
                                         <option key={cat.id} value={cat.name}>{cat.name}</option>
                                     ))}
                                 </select>
+                                {selectedCategoryObj?.nameDh && (
+                                    <div className="text-right text-xs text-teal-600 font-thaana mt-1 px-1">
+                                        {selectedCategoryObj.nameDh}
+                                    </div>
+                                )}
                                 {formData.category === 'Other' && !editingAssetId && (
                                     <input 
                                         type="text" 
@@ -511,7 +532,7 @@ const AssetRegistry: React.FC<AssetRegistryProps> = ({ currentUser, assets, cate
 
                              {/* Date Fields - Entry Date affects ID */}
                              <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('entry_date')}</label>
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('entry_date')} (System Registry)</label>
                                 <input 
                                     type="date" 
                                     className="w-full border border-slate-300 rounded px-3 py-2 text-sm outline-none bg-white focus:ring-2 focus:ring-teal-500 disabled:bg-slate-100" 
@@ -527,6 +548,41 @@ const AssetRegistry: React.FC<AssetRegistryProps> = ({ currentUser, assets, cate
                                     value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
                             </div>
 
+                            <div className="col-span-2">
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('location')}</label>
+                                <input type="text" className="w-full border border-slate-300 rounded px-3 py-2 text-sm outline-none bg-white" 
+                                    value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} />
+                            </div>
+
+                            {/* Conditional Fields based on Category */}
+                            {isLandAsset ? (
+                                <>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Asset Size</label>
+                                        <input type="text" className="w-full border border-slate-300 rounded px-3 py-2 text-sm outline-none bg-white" placeholder="e.g. 500 Sqft"
+                                            value={formData.assetSize || ''} onChange={e => setFormData({...formData, assetSize: e.target.value})} />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Constructed / Acquired Year</label>
+                                        <input type="text" className="w-full border border-slate-300 rounded px-3 py-2 text-sm outline-none bg-white" placeholder="e.g. 2020"
+                                            value={formData.constructedDate || ''} onChange={e => setFormData({...formData, constructedDate: e.target.value})} />
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('model_number')}</label>
+                                        <input type="text" className="w-full border border-slate-300 rounded px-3 py-2 text-sm outline-none bg-white" placeholder="e.g. S-5000"
+                                            value={formData.modelNumber} onChange={e => setFormData({...formData, modelNumber: e.target.value})} />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('serial_number')}</label>
+                                        <input type="text" className="w-full border border-slate-300 rounded px-3 py-2 text-sm outline-none bg-white" placeholder="e.g. SN-998877"
+                                            value={formData.serialNumber} onChange={e => setFormData({...formData, serialNumber: e.target.value})} />
+                                    </div>
+                                </>
+                            )}
+
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('status')}</label>
                                 <select className="w-full border border-slate-300 rounded px-3 py-2 text-sm outline-none bg-white"
@@ -536,36 +592,20 @@ const AssetRegistry: React.FC<AssetRegistryProps> = ({ currentUser, assets, cate
                             </div>
                             
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('model_number')}</label>
-                                <input type="text" className="w-full border border-slate-300 rounded px-3 py-2 text-sm outline-none bg-white" placeholder="e.g. S-5000"
-                                    value={formData.modelNumber} onChange={e => setFormData({...formData, modelNumber: e.target.value})} />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('serial_number')}</label>
-                                <input type="text" className="w-full border border-slate-300 rounded px-3 py-2 text-sm outline-none bg-white" placeholder="e.g. SN-998877"
-                                    value={formData.serialNumber} onChange={e => setFormData({...formData, serialNumber: e.target.value})} />
-                            </div>
-
-                            <div>
                                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('value_mvr')}</label>
                                 <input type="number" className="w-full border border-slate-300 rounded px-3 py-2 text-sm outline-none bg-white" 
                                     value={formData.value} onChange={e => setFormData({...formData, value: Number(e.target.value)})} />
                             </div>
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('location')}</label>
-                                <input type="text" className="w-full border border-slate-300 rounded px-3 py-2 text-sm outline-none bg-white" 
-                                    value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} />
-                            </div>
 
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('purchase_date')}</label>
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{isLandAsset ? "Received Date" : t('purchase_date')}</label>
                                 <input type="date" className="w-full border border-slate-300 rounded px-3 py-2 text-sm outline-none bg-white" 
                                     value={formData.purchaseDate} onChange={e => setFormData({...formData, purchaseDate: e.target.value})} />
                             </div>
                            
                             
                             <div className="col-span-2">
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('notes')}</label>
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{isLandAsset ? "Additional Info" : t('notes')}</label>
                                 <textarea 
                                     className="w-full border border-slate-300 rounded px-3 py-2 text-sm outline-none bg-white focus:ring-2 focus:ring-teal-500 resize-none h-20" 
                                     placeholder={t('notes_placeholder')}
@@ -574,7 +614,7 @@ const AssetRegistry: React.FC<AssetRegistryProps> = ({ currentUser, assets, cate
                                 />
                             </div>
                             
-                            {formData.category === 'Fleet' && (
+                            {formData.category?.toLowerCase().includes('fleet') && (
                                 <div className="col-span-2 bg-amber-50 p-3 rounded border border-amber-100">
                                     <label className="block text-xs font-bold text-amber-700 uppercase mb-1">{t('last_service')}</label>
                                     <input type="date" className="w-full border border-amber-200 rounded px-3 py-2 text-sm outline-none bg-white" 
@@ -680,14 +720,23 @@ const AssetRegistry: React.FC<AssetRegistryProps> = ({ currentUser, assets, cate
                                     <div>
                                         <div className="text-sm font-semibold text-slate-900">{asset.name}</div>
                                         <div className="text-xs text-slate-500 font-mono mt-0.5">{asset.id}</div>
-                                        <div className="text-xs text-teal-600 font-medium mt-0.5">{asset.category}</div>
+                                        <div className="text-xs text-teal-600 font-medium mt-0.5 max-w-[200px] truncate">{asset.category}</div>
                                     </div>
                                 </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="text-xs text-slate-500">
-                                    <div className="flex gap-1"><span className="font-semibold">M:</span> {asset.modelNumber || '-'}</div>
-                                    <div className="flex gap-1"><span className="font-semibold">S:</span> {asset.serialNumber || '-'}</div>
+                                    {asset.category?.toLowerCase().includes('land') || asset.category?.toLowerCase().includes('building') ? (
+                                        <>
+                                            <div className="flex gap-1"><span className="font-semibold">Size:</span> {asset.assetSize || '-'}</div>
+                                            <div className="flex gap-1"><span className="font-semibold">Year:</span> {asset.constructedDate || '-'}</div>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div className="flex gap-1"><span className="font-semibold">M:</span> {asset.modelNumber || '-'}</div>
+                                            <div className="flex gap-1"><span className="font-semibold">S:</span> {asset.serialNumber || '-'}</div>
+                                        </>
+                                    )}
                                 </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
@@ -705,7 +754,7 @@ const AssetRegistry: React.FC<AssetRegistryProps> = ({ currentUser, assets, cate
                                 {formatCurrency(asset.value)}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                                {asset.category === 'Fleet' ? (
+                                {asset.category?.toLowerCase().includes('fleet') ? (
                                     <span className="text-amber-700 font-medium bg-amber-50 px-2 py-0.5 rounded">{asset.lastMaintenance || 'Overdue'}</span>
                                 ) : (
                                     <span className="text-slate-300">-</span>
