@@ -179,6 +179,9 @@ export interface SystemConfig {
   loginTitle?: string;
   loginHighlight?: string;
   loginSubtitle?: string;
+  // Custom Fonts
+  customDhivehiFont?: string; // Base64 data string
+  customDhivehiFontName?: string; // Name of the uploaded file
 }
 
 export type ViewState = 'dashboard' | 'requests' | 'assets' | 'houses' | 'garage' | 'analytics' | 'settings' | 'hudha';

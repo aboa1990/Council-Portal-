@@ -10,29 +10,69 @@
       window.process = window.process || { env: { NODE_ENV: 'production' } };
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Thaana:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Updated Font Import: Including all weights for better rendering -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+Thaana:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
     <style>
+      /* Base English Font */
       body { 
         font-family: 'Inter', sans-serif; 
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
       }
       
-      /* Thaana Font Class with optimized rendering */
-      .font-thaana { 
-        font-family: 'Noto Sans Thaana', sans-serif;
-        line-height: 1.8;
-        letter-spacing: 0;
+      /* --- DHIVEHI FONT OVERRIDES --- */
+      
+      /* Apply to the specific container or body when dir="rtl" */
+      [dir="rtl"], 
+      [dir="rtl"] body,
+      [dir="rtl"] button,
+      [dir="rtl"] input,
+      [dir="rtl"] optgroup,
+      [dir="rtl"] select,
+      [dir="rtl"] textarea,
+      [dir="rtl"] span,
+      [dir="rtl"] p,
+      [dir="rtl"] h1, [dir="rtl"] h2, [dir="rtl"] h3, [dir="rtl"] h4, [dir="rtl"] h5, [dir="rtl"] h6,
+      .font-thaana {
+        font-family: 'Noto Sans Thaana', sans-serif !important;
       }
 
-      /* Adjust font sizes for Thaana as they appear smaller than Latin */
-      [dir="rtl"].font-thaana input,
-      [dir="rtl"].font-thaana select,
-      [dir="rtl"].font-thaana textarea,
-      [dir="rtl"].font-thaana button,
-      [dir="rtl"].font-thaana p,
-      [dir="rtl"].font-thaana span {
-        font-size: 105%;
+      /* Specific adjustments for Dhivehi Text Readability */
+      [dir="rtl"] {
+        /* Dhivehi characters are visually smaller than English, so we scale them up slightly */
+        font-size: 105%; 
+        /* Thaana requires more vertical space for accents (fili) */
+        line-height: 1.8 !important; 
+        letter-spacing: 0.01em;
+      }
+
+      /* Ensure placeholders in inputs also pick up the font */
+      [dir="rtl"] input::placeholder,
+      [dir="rtl"] textarea::placeholder {
+        font-family: 'Noto Sans Thaana', sans-serif !important;
+        opacity: 0.7;
+      }
+
+      /* Fix alignment for icons in RTL mode */
+      [dir="rtl"] .lucide {
+        transform: scaleX(-1); /* Optional: Flips directional icons like arrows */
+      }
+      /* But don't flip universal icons that shouldn't be flipped */
+      [dir="rtl"] .lucide-printer, 
+      [dir="rtl"] .lucide-user, 
+      [dir="rtl"] .lucide-home,
+      [dir="rtl"] .lucide-settings,
+      [dir="rtl"] .lucide-search,
+      [dir="rtl"] .lucide-check,
+      [dir="rtl"] .lucide-x,
+      [dir="rtl"] .lucide-plus,
+      [dir="rtl"] .lucide-trash-2,
+      [dir="rtl"] .lucide-car,
+      [dir="rtl"] .lucide-box {
+        transform: none !important;
       }
 
       /* Custom Scrollbar */
@@ -52,9 +92,13 @@
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
         }
-        .font-thaana { line-height: 1.6; }
+        /* Ensure font renders correctly in print */
+        [dir="rtl"] { 
+            font-family: 'Noto Sans Thaana', sans-serif !important;
+            font-size: 10pt; 
+            line-height: 1.6;
+        }
         .print\:hidden { display: none !important; }
-        /* Hide scrollbars during print */
         ::-webkit-scrollbar { display: none; }
       }
     </style>

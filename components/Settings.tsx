@@ -54,6 +54,7 @@ const Settings: React.FC<SettingsProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const staffPhotoInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const fontInputRef = useRef<HTMLInputElement>(null);
   const templateInputRef = useRef<HTMLInputElement>(null);
   const importDatabaseRef = useRef<HTMLInputElement>(null);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -164,6 +165,21 @@ const Settings: React.FC<SettingsProps> = ({
       reader.onload = (event) => setLocalSystemConfig(prev => ({ ...prev, councilLogo: event.target?.result as string }));
       reader.readAsDataURL(e.target.files[0]);
     }
+  };
+
+  const handleFontUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files && e.target.files[0]) {
+          const file = e.target.files[0];
+          const reader = new FileReader();
+          reader.onload = (event) => {
+              setLocalSystemConfig(prev => ({
+                  ...prev,
+                  customDhivehiFont: event.target?.result as string,
+                  customDhivehiFontName: file.name
+              }));
+          };
+          reader.readAsDataURL(file);
+      }
   };
 
   const handleTemplateUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -571,6 +587,24 @@ const Settings: React.FC<SettingsProps> = ({
                                         <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Subtitle / Welcome Message</label>
                                         <textarea value={localSystemConfig.loginSubtitle || ''} onChange={(e) => setLocalSystemConfig({...localSystemConfig, loginSubtitle: e.target.value})} className="w-full border border-slate-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-teal-500 outline-none bg-white resize-none h-20" placeholder="Welcome to the official Council Portal..." />
                                     </div>
+                                </div>
+                            </div>
+                             {/* Font Upload Section */}
+                             <div className="md:col-span-2 border-t border-slate-100 pt-6 mt-2">
+                                <h3 className="font-bold text-slate-800 mb-4">Custom Fonts</h3>
+                                <div>
+                                    <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Dhivehi Font (.ttf, .otf, .woff)</label>
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex-1 border border-slate-300 rounded-lg px-4 py-2 bg-slate-50 text-sm text-slate-600 truncate">
+                                            {localSystemConfig.customDhivehiFontName || "Default (Noto Sans Thaana)"}
+                                        </div>
+                                        <button type="button" onClick={() => fontInputRef.current?.click()} className="text-sm bg-white border border-slate-300 px-3 py-2 rounded-lg font-medium text-slate-700 hover:bg-slate-50">Upload Font</button>
+                                        <input type="file" ref={fontInputRef} onChange={handleFontUpload} className="hidden" accept=".ttf,.otf,.woff,.woff2" />
+                                        {localSystemConfig.customDhivehiFont && (
+                                            <button type="button" onClick={() => setLocalSystemConfig(p => ({...p, customDhivehiFont: undefined, customDhivehiFontName: undefined}))} className="text-xs text-red-500 hover:text-red-700">Reset</button>
+                                        )}
+                                    </div>
+                                    <p className="text-xs text-slate-400 mt-2">This font will be applied automatically when the interface language is switched to Dhivehi.</p>
                                 </div>
                             </div>
                         </div>

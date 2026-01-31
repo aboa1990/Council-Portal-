@@ -105,6 +105,45 @@ const AppContent: React.FC = () => {
   const { t, isRTL } = useLanguage();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // Apply Custom Font Effect
+  useEffect(() => {
+    const styleId = 'custom-dhivehi-font-style';
+    let styleTag = document.getElementById(styleId);
+
+    if (systemConfig.customDhivehiFont) {
+        if (!styleTag) {
+            styleTag = document.createElement('style');
+            styleTag.id = styleId;
+            document.head.appendChild(styleTag);
+        }
+        // Inject @font-face and overrides for RTL/Thaana contexts
+        styleTag.innerHTML = `
+            @font-face {
+                font-family: 'CustomDhivehiFont';
+                src: url('${systemConfig.customDhivehiFont}');
+                font-display: swap;
+            }
+            [dir="rtl"], 
+            [dir="rtl"] body, 
+            [dir="rtl"] button, 
+            [dir="rtl"] input, 
+            [dir="rtl"] textarea, 
+            [dir="rtl"] select,
+            .font-thaana {
+                font-family: 'CustomDhivehiFont', 'Noto Sans Thaana', sans-serif !important;
+            }
+            [dir="rtl"] input::placeholder,
+            [dir="rtl"] textarea::placeholder {
+                font-family: 'CustomDhivehiFont', 'Noto Sans Thaana', sans-serif !important;
+            }
+        `;
+    } else {
+        if (styleTag) {
+            styleTag.remove();
+        }
+    }
+  }, [systemConfig.customDhivehiFont]);
+
   // Background Sync from Supabase on mount
   useEffect(() => {
     if (isSupabaseConfigured()) {
