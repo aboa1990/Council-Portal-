@@ -61,6 +61,7 @@ export interface Asset {
   value: number;
   modelNumber?: string;
   serialNumber?: string;
+  registrationNumber?: string;
   lastMaintenance?: string;
   notes?: string;
   logs?: AccessLog[];

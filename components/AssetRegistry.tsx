@@ -44,6 +44,7 @@ const AssetRegistry: React.FC<AssetRegistryProps> = ({ currentUser, assets, cate
       value: 0,
       modelNumber: '',
       serialNumber: '',
+      registrationNumber: '',
       purchaseDate: new Date().toISOString().split('T')[0],
       entryDate: new Date().toISOString().split('T')[0],
       lastMaintenance: '',
@@ -92,6 +93,7 @@ const AssetRegistry: React.FC<AssetRegistryProps> = ({ currentUser, assets, cate
         value: 0, 
         modelNumber: '', 
         serialNumber: '', 
+        registrationNumber: '',
         purchaseDate: new Date().toISOString().split('T')[0], 
         entryDate: new Date().toISOString().split('T')[0], 
         lastMaintenance: '', 
@@ -239,7 +241,7 @@ const AssetRegistry: React.FC<AssetRegistryProps> = ({ currentUser, assets, cate
 
   const handleExportCSV = () => {
     // CSV Header
-    const headers = ["ID", "Name", "Category", "Status", "Location", "Value (MVR)", "Purchase Date", "Model No", "Serial No", "Asset Size", "Constructed Date", "Notes"];
+    const headers = ["ID", "Name", "Category", "Status", "Location", "Value (MVR)", "Purchase Date", "Model No", "Serial No", "Reg No", "Asset Size", "Constructed Date", "Notes"];
     
     // CSV Rows
     const rows = assets.map(asset => [
@@ -252,6 +254,7 @@ const AssetRegistry: React.FC<AssetRegistryProps> = ({ currentUser, assets, cate
         asset.purchaseDate,
         `"${(asset.modelNumber || '').replace(/"/g, '""')}"`,
         `"${(asset.serialNumber || '').replace(/"/g, '""')}"`,
+        `"${(asset.registrationNumber || '').replace(/"/g, '""')}"`,
         `"${(asset.assetSize || '').replace(/"/g, '""')}"`,
         `"${(asset.constructedDate || '').replace(/"/g, '""')}"`,
         `"${(asset.notes || '').replace(/"/g, '""')}"`
@@ -266,8 +269,8 @@ const AssetRegistry: React.FC<AssetRegistryProps> = ({ currentUser, assets, cate
   };
 
   const handleDownloadTemplate = () => {
-     const headers = ["name", "category", "status", "location", "value", "purchaseDate", "modelNumber", "serialNumber", "assetSize", "constructedDate", "notes"];
-     const example = ["Example Chair", "Furniture", "Operational", "Reception", "1500", "2024-01-01", "CH-01", "SN123", "", "", "Office chair"];
+     const headers = ["name", "category", "status", "location", "value", "purchaseDate", "modelNumber", "serialNumber", "registrationNumber", "assetSize", "constructedDate", "notes"];
+     const example = ["Example Vehicle", "Vehicles", "Operational", "Garage", "150000", "2024-01-01", "ModelX", "VIN123", "P1234", "", "", "Office car"];
      
      const csvContent = [headers.join(","), example.join(",")].join("\n");
      downloadCSV(csvContent, "asset_import_template.csv");
@@ -317,6 +320,7 @@ const AssetRegistry: React.FC<AssetRegistryProps> = ({ currentUser, assets, cate
   // Specific check for the Land category
   const isLandAsset = formData.category?.toLowerCase().includes('land') || formData.category?.toLowerCase().includes('building');
   const isFurniture = formData.category?.toLowerCase().includes('furniture');
+  const isVehicle = formData.category?.toLowerCase().includes('vehicle') || formData.category?.toLowerCase().includes('fleet');
   
   // Find selected category object to get Dhivehi name
   const selectedCategoryObj = categories.find(c => c.name === formData.category);
@@ -463,6 +467,7 @@ const AssetRegistry: React.FC<AssetRegistryProps> = ({ currentUser, assets, cate
                                                         <>
                                                             {asset.modelNumber && <span className="mr-2">Model: {asset.modelNumber}</span>}
                                                             {asset.serialNumber && <span>SN: {asset.serialNumber}</span>}
+                                                            {asset.registrationNumber && <span className="ml-2">Reg: {asset.registrationNumber}</span>}
                                                         </>
                                                     )}
                                                 </div>
@@ -645,6 +650,14 @@ const AssetRegistry: React.FC<AssetRegistryProps> = ({ currentUser, assets, cate
                                             value={formData.serialNumber} onChange={e => setFormData({...formData, serialNumber: e.target.value})} />
                                     </div>
                                 </>
+                            )}
+                            
+                            {isVehicle && (
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('vehicle_reg_no')}</label>
+                                    <input type="text" className="w-full border border-slate-300 rounded px-3 py-2 text-sm outline-none bg-white" placeholder="e.g. AB1A P1234"
+                                        value={formData.registrationNumber || ''} onChange={e => setFormData({...formData, registrationNumber: e.target.value})} />
+                                </div>
                             )}
 
                             <div>
