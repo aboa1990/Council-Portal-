@@ -408,54 +408,116 @@ const AssetRegistry: React.FC<AssetRegistryProps> = ({ currentUser, assets, cate
                         <div className="print:block">
                             <div className="text-center mb-8 border-b-2 border-slate-800 pb-4">
                                 <h1 className="text-2xl font-bold uppercase tracking-wide text-slate-900">{t('secretariat')} {t('council_name')}</h1>
-                                <h2 className="text-lg font-medium text-slate-600 mt-2">Official Asset Inventory Report - {reportYear}</h2>
+                                <h2 className="text-lg font-medium text-slate-600 mt-2">Detailed Asset Inventory Report - {reportYear}</h2>
                                 <p className="text-sm text-slate-500 mt-1">Generated on: {new Date().toLocaleDateString()}</p>
                             </div>
+
+                            {/* Summary Boxes for Report */}
+                            <div className="grid grid-cols-4 gap-4 mb-8 text-sm">
+                                <div className="border border-slate-300 p-3 rounded">
+                                    <div className="text-xs text-slate-500 uppercase font-bold">Total Assets</div>
+                                    <div className="font-bold text-lg">{reportAssets.length}</div>
+                                </div>
+                                <div className="border border-slate-300 p-3 rounded">
+                                    <div className="text-xs text-slate-500 uppercase font-bold">Total Value</div>
+                                    <div className="font-bold text-lg">{new Intl.NumberFormat('en-MV', { style: 'currency', currency: 'MVR' }).format(reportAssets.reduce((sum, a) => sum + (a.value || 0), 0))}</div>
+                                </div>
+                                <div className="border border-slate-300 p-3 rounded">
+                                    <div className="text-xs text-slate-500 uppercase font-bold">Operational</div>
+                                    <div className="font-bold text-lg text-emerald-600">{reportAssets.filter(a => a.status === 'Operational').length}</div>
+                                </div>
+                                <div className="border border-slate-300 p-3 rounded">
+                                    <div className="text-xs text-slate-500 uppercase font-bold">Maintenance/Repair</div>
+                                    <div className="font-bold text-lg text-amber-600">{reportAssets.filter(a => ['Maintenance', 'Repair Needed'].includes(a.status)).length}</div>
+                                </div>
+                            </div>
+
                             <table className="w-full text-sm text-left border-collapse mb-10">
                                 <thead>
-                                    <tr className="border-b-2 border-slate-800">
-                                        <th className="py-2 font-bold text-slate-900">ID</th>
-                                        <th className="py-2 font-bold text-slate-900">{t('entry_date')}</th>
-                                        <th className="py-2 font-bold text-slate-900">{t('asset_name')}</th>
-                                        <th className="py-2 font-bold text-slate-900">{t('category')}</th>
-                                        <th className="py-2 font-bold text-slate-900">{t('th_value')}</th>
-                                        <th className="py-2 font-bold text-slate-900">{t('status')}</th>
+                                    <tr className="border-b-2 border-slate-800 bg-slate-50">
+                                        <th className="py-2 pl-2 font-bold text-slate-900 w-24">ID / Date</th>
+                                        <th className="py-2 font-bold text-slate-900">Asset Details</th>
+                                        <th className="py-2 font-bold text-slate-900">Category & Location</th>
+                                        <th className="py-2 font-bold text-slate-900 text-right">Value</th>
+                                        <th className="py-2 pr-2 font-bold text-slate-900 text-right">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-200">
                                     {reportAssets.length > 0 ? reportAssets.map((asset) => (
-                                        <tr key={asset.id} className="break-inside-avoid">
-                                            <td className="py-2 font-mono text-xs">{asset.id}</td>
-                                            <td className="py-2">{new Date(asset.entryDate).toLocaleDateString()}</td>
-                                            <td className="py-2 font-medium">{asset.name}</td>
-                                            <td className="py-2">{asset.category}</td>
-                                            <td className="py-2 text-right">{new Intl.NumberFormat('en-MV').format(asset.value)}</td>
-                                            <td className="py-2 text-xs uppercase">{asset.status}</td>
+                                        <tr key={asset.id} className="break-inside-avoid hover:bg-slate-50">
+                                            <td className="py-3 pl-2 align-top">
+                                                <div className="font-mono text-xs font-bold text-slate-700">{asset.id}</div>
+                                                <div className="text-[10px] text-slate-500">{new Date(asset.entryDate).toLocaleDateString()}</div>
+                                            </td>
+                                            <td className="py-3 align-top">
+                                                <div className="font-bold text-slate-900">{asset.name}</div>
+                                                <div className="text-xs text-slate-600 mt-0.5">
+                                                    {asset.category.toLowerCase().includes('land') || asset.category.toLowerCase().includes('building') ? (
+                                                        <>
+                                                            {asset.assetSize && <span className="mr-2">Size: {asset.assetSize}</span>}
+                                                            {asset.constructedDate && <span>Built: {asset.constructedDate}</span>}
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            {asset.modelNumber && <span className="mr-2">Model: {asset.modelNumber}</span>}
+                                                            {asset.serialNumber && <span>SN: {asset.serialNumber}</span>}
+                                                        </>
+                                                    )}
+                                                </div>
+                                                {asset.notes && <div className="text-[10px] text-slate-500 italic mt-1 line-clamp-2 max-w-xs">{asset.notes}</div>}
+                                            </td>
+                                            <td className="py-3 align-top">
+                                                <div className="text-xs font-semibold text-slate-700">{asset.category}</div>
+                                                <div className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                                                    <span className="truncate max-w-[150px]">{asset.location}</span>
+                                                </div>
+                                            </td>
+                                            <td className="py-3 align-top text-right">
+                                                <div className="font-mono text-sm">{new Intl.NumberFormat('en-MV').format(asset.value)}</div>
+                                            </td>
+                                            <td className="py-3 pr-2 align-top text-right">
+                                                <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${
+                                                    asset.status === 'Operational' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 
+                                                    asset.status.includes('Repair') ? 'bg-red-50 border-red-200 text-red-700' :
+                                                    'bg-slate-50 border-slate-200 text-slate-600'
+                                                }`}>
+                                                    {asset.status}
+                                                </span>
+                                            </td>
                                         </tr>
                                     )) : (
                                         <tr>
-                                            <td colSpan={6} className="py-8 text-center text-slate-500 italic">{t('no_assets')}</td>
+                                            <td colSpan={5} className="py-8 text-center text-slate-500 italic">{t('no_assets')}</td>
                                         </tr>
                                     )}
                                 </tbody>
                             </table>
                             
                             {/* Signature Footer for Official Use */}
-                            <div className="mt-16 break-inside-avoid">
+                            <div className="mt-16 break-inside-avoid border-t border-slate-200 pt-8">
                                 <div className="grid grid-cols-2 gap-20">
                                     <div>
-                                        <p className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-8">{t('report_footer_prepared')}</p>
-                                        <div className="border-b border-slate-400 h-8"></div>
-                                        <p className="text-xs text-slate-500 mt-1">Name / Signature</p>
-                                        <div className="border-b border-slate-400 h-8 mt-4"></div>
-                                        <p className="text-xs text-slate-500 mt-1">{t('report_footer_date')}</p>
+                                        <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">{t('report_footer_prepared')}</p>
+                                        
+                                        <div className="mb-6">
+                                            <div className="font-bold text-slate-900 text-lg">{currentUser.name}</div>
+                                            <div className="text-sm text-slate-600">{currentUser.designation || currentUser.role}</div>
+                                        </div>
+
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <div className="text-xs text-slate-400 uppercase w-12">Date:</div>
+                                            <div className="font-mono text-sm font-bold text-slate-800">{new Date().toLocaleDateString()}</div>
+                                        </div>
+                                        
+                                        <div className="mt-8 border-b border-dashed border-slate-400 w-3/4"></div>
+                                        <p className="text-[10px] text-slate-400 mt-1 uppercase">Signature</p>
                                     </div>
                                     <div>
-                                        <p className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-8">{t('report_footer_verified')}</p>
+                                        <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-8">{t('report_footer_verified')}</p>
                                         <div className="border-b border-slate-400 h-8"></div>
-                                        <p className="text-xs text-slate-500 mt-1">Name / Signature / Stamp</p>
-                                        <div className="border-b border-slate-400 h-8 mt-4"></div>
-                                        <p className="text-xs text-slate-500 mt-1">{t('report_footer_date')}</p>
+                                        <p className="text-[10px] text-slate-400 mt-1 uppercase">Name / Signature / Stamp</p>
+                                        <div className="border-b border-slate-400 h-8 mt-6"></div>
+                                        <p className="text-[10px] text-slate-400 mt-1 uppercase">{t('report_footer_date')}</p>
                                     </div>
                                 </div>
                             </div>
