@@ -116,24 +116,55 @@ const AppContent: React.FC = () => {
             styleTag.id = styleId;
             document.head.appendChild(styleTag);
         }
-        // Inject @font-face and overrides for RTL/Thaana contexts
+        
+        // Comprehensive Style Injection for Custom Font
+        // We use the ID #civic-portal-root for high specificity to override Tailwind and other styles
         styleTag.innerHTML = `
             @font-face {
                 font-family: 'CustomDhivehiFont';
                 src: url('${systemConfig.customDhivehiFont}');
                 font-display: swap;
             }
-            [dir="rtl"], 
-            [dir="rtl"] body, 
-            [dir="rtl"] button, 
-            [dir="rtl"] input, 
-            [dir="rtl"] textarea, 
-            [dir="rtl"] select,
-            .font-thaana {
+            
+            /* Universal Override for RTL Context */
+            #civic-portal-root[dir="rtl"],
+            #civic-portal-root[dir="rtl"] * {
                 font-family: 'CustomDhivehiFont', 'Noto Sans Thaana', sans-serif !important;
             }
-            [dir="rtl"] input::placeholder,
-            [dir="rtl"] textarea::placeholder {
+            
+            /* Explicit Form Elements (Inputs, Textareas, Selects, Buttons) */
+            #civic-portal-root[dir="rtl"] input,
+            #civic-portal-root[dir="rtl"] textarea,
+            #civic-portal-root[dir="rtl"] select,
+            #civic-portal-root[dir="rtl"] button,
+            #civic-portal-root[dir="rtl"] label,
+            #civic-portal-root[dir="rtl"] option,
+            #civic-portal-root[dir="rtl"] optgroup {
+                font-family: 'CustomDhivehiFont', 'Noto Sans Thaana', sans-serif !important;
+            }
+
+            /* Tables and Lists */
+            #civic-portal-root[dir="rtl"] table,
+            #civic-portal-root[dir="rtl"] th,
+            #civic-portal-root[dir="rtl"] td,
+            #civic-portal-root[dir="rtl"] tr,
+            #civic-portal-root[dir="rtl"] ul,
+            #civic-portal-root[dir="rtl"] ol,
+            #civic-portal-root[dir="rtl"] li {
+                font-family: 'CustomDhivehiFont', 'Noto Sans Thaana', sans-serif !important;
+            }
+
+            /* Placeholders */
+            #civic-portal-root[dir="rtl"] input::placeholder,
+            #civic-portal-root[dir="rtl"] textarea::placeholder {
+                font-family: 'CustomDhivehiFont', 'Noto Sans Thaana', sans-serif !important;
+                opacity: 0.7;
+            }
+
+            /* Specific Override for Tailwind classes that might force other fonts */
+            #civic-portal-root[dir="rtl"] .font-mono,
+            #civic-portal-root[dir="rtl"] .font-sans,
+            #civic-portal-root[dir="rtl"] .font-serif {
                 font-family: 'CustomDhivehiFont', 'Noto Sans Thaana', sans-serif !important;
             }
         `;
@@ -440,6 +471,7 @@ const AppContent: React.FC = () => {
 
   return (
     <div 
+        id="civic-portal-root"
         className={`flex min-h-screen bg-slate-50 text-slate-900 ${isRTL ? 'font-thaana' : 'font-sans'}`}
         dir={isRTL ? 'rtl' : 'ltr'}>
       

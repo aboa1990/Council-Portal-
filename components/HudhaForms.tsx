@@ -1,8 +1,8 @@
 
-
 import React, { useState } from 'react';
 import { ShoppingCart, FileText, Printer, Plus, Trash2, CheckCircle2, Eye, ChevronLeft, Calendar } from 'lucide-react';
 import { SystemConfig, User, RequisitionForm, RequisitionItem } from '../types';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface HudhaFormsProps {
   systemConfig: SystemConfig;
@@ -24,6 +24,7 @@ interface Quotation {
 const OFFICE_CODE = "258"; // Office Code for Requisition Forms
 
 const HudhaForms: React.FC<HudhaFormsProps> = ({ systemConfig, currentUser, requisitionForms, onAddRequisition }) => {
+  const { t, isRTL } = useLanguage();
   const [activeForm, setActiveForm] = useState<FormType>('requisition');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [selectedForm, setSelectedForm] = useState<RequisitionForm | null>(null);
@@ -142,7 +143,7 @@ const HudhaForms: React.FC<HudhaFormsProps> = ({ systemConfig, currentUser, requ
                 }`}
                 >
                 <ShoppingCart size={18} />
-                GOODS/SERVICES REQUISITION
+                {t('tab_requisition')}
                 </button>
                 <button
                 onClick={() => setActiveForm('agu-balaa')}
@@ -153,12 +154,12 @@ const HudhaForms: React.FC<HudhaFormsProps> = ({ systemConfig, currentUser, requ
                 }`}
                 >
                 <FileText size={18} />
-                AGU BALAA FORM
+                {t('tab_agubalaa')}
                 </button>
             </div>
           ) : (
              <button onClick={() => setViewMode('list')} className="mb-4 flex items-center gap-2 text-slate-600 hover:text-teal-600 font-bold text-sm">
-                 <ChevronLeft size={16} /> Back to Forms List
+                 <ChevronLeft size={16} className={isRTL ? 'rotate-180' : ''}/> {t('back_to_forms')}
              </button>
           )}
       </div>
@@ -172,21 +173,21 @@ const HudhaForms: React.FC<HudhaFormsProps> = ({ systemConfig, currentUser, requ
                 {viewMode === 'list' && (
                     <div>
                          <div className="flex justify-between items-center mb-6">
-                            <h3 className="font-bold text-lg text-slate-800">Requisition Records</h3>
+                            <h3 className="font-bold text-lg text-slate-800">{t('req_records')}</h3>
                             <button onClick={handleStartNewRequisition} className="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-teal-700">
-                                <Plus size={16} /> Create New Requisition
+                                <Plus size={16} /> {t('create_req')}
                             </button>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-slate-200">
                                 <thead className="bg-slate-50">
                                     <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Form ID</th>
-                                        <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
-                                        <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Department</th>
-                                        <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Requested By</th>
-                                        <th className="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Total (MVR)</th>
-                                        <th className="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Action</th>
+                                        <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-bold text-slate-500 uppercase tracking-wider`}>{t('th_form_id')}</th>
+                                        <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-bold text-slate-500 uppercase tracking-wider`}>{t('th_date')}</th>
+                                        <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-bold text-slate-500 uppercase tracking-wider`}>{t('th_department')}</th>
+                                        <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-bold text-slate-500 uppercase tracking-wider`}>{t('th_requested_by')}</th>
+                                        <th className={`px-6 py-3 ${isRTL ? 'text-left' : 'text-right'} text-xs font-bold text-slate-500 uppercase tracking-wider`}>{t('th_total')}</th>
+                                        <th className={`px-6 py-3 ${isRTL ? 'text-left' : 'text-right'} text-xs font-bold text-slate-500 uppercase tracking-wider`}>{t('actions')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-slate-200">
@@ -196,17 +197,17 @@ const HudhaForms: React.FC<HudhaFormsProps> = ({ systemConfig, currentUser, requ
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700">{new Date(form.date).toLocaleDateString()}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700">{form.department}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700">{form.requestedBy}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 font-bold text-right">{form.totalAmount.toFixed(2)}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-right">
-                                                <button onClick={() => handleViewForm(form)} className="text-teal-600 hover:text-teal-800 font-medium text-sm flex items-center justify-end gap-1">
-                                                    <Eye size={16} /> View
+                                            <td className={`px-6 py-4 whitespace-nowrap text-sm text-slate-900 font-bold ${isRTL ? 'text-left' : 'text-right'}`}>{form.totalAmount.toFixed(2)}</td>
+                                            <td className={`px-6 py-4 whitespace-nowrap ${isRTL ? 'text-left' : 'text-right'}`}>
+                                                <button onClick={() => handleViewForm(form)} className={`text-teal-600 hover:text-teal-800 font-medium text-sm flex items-center ${isRTL ? 'justify-start' : 'justify-end'} gap-1`}>
+                                                    <Eye size={16} /> {t('view_btn')}
                                                 </button>
                                             </td>
                                         </tr>
                                     ))}
                                     {requisitionForms.length === 0 && (
                                         <tr>
-                                            <td colSpan={6} className="px-6 py-12 text-center text-slate-500 italic">No requisition forms found. Create one to get started.</td>
+                                            <td colSpan={6} className="px-6 py-12 text-center text-slate-500 italic">{t('no_reqs')}</td>
                                         </tr>
                                     )}
                                 </tbody>
@@ -223,7 +224,7 @@ const HudhaForms: React.FC<HudhaFormsProps> = ({ systemConfig, currentUser, requ
                             <h1 className="text-xl font-bold uppercase tracking-wide">{systemConfig.councilName}</h1>
                             <h2 className="text-lg font-medium text-slate-600">{systemConfig.secretariatName}</h2>
                             <div className="mt-4 bg-slate-900 text-white inline-block px-4 py-1 text-sm font-bold uppercase">
-                                Goods / Services Requisition Form
+                                {t('req_form_title')}
                             </div>
                         </div>
 
@@ -231,16 +232,16 @@ const HudhaForms: React.FC<HudhaFormsProps> = ({ systemConfig, currentUser, requ
                         <div className="grid grid-cols-2 gap-8 mb-6">
                             <div>
                                 <div className="flex items-center gap-2 mb-2">
-                                    <span className="text-xs font-bold uppercase w-24">Date:</span>
+                                    <span className="text-xs font-bold uppercase w-24">{t('th_date')}:</span>
                                     <input type="date" value={reqDate} onChange={e => setReqDate(e.target.value)} className="border-b border-slate-300 focus:outline-none px-1 text-sm bg-transparent" />
                                 </div>
                                 <div className="flex items-center gap-2 mb-2">
-                                    <span className="text-xs font-bold uppercase w-24">Department:</span>
+                                    <span className="text-xs font-bold uppercase w-24">{t('th_department')}:</span>
                                     <input type="text" value={reqDepartment} onChange={e => setReqDepartment(e.target.value)} className="border-b border-slate-300 focus:outline-none px-1 text-sm bg-transparent w-48" />
                                 </div>
                             </div>
                             <div className="text-right">
-                                <div className="flex items-center justify-end gap-2 mb-2">
+                                <div className={`flex items-center ${isRTL ? 'justify-start' : 'justify-end'} gap-2 mb-2`}>
                                     <span className="text-xs font-bold uppercase">Req No:</span>
                                     <span className="font-mono bg-slate-100 px-2 py-1 text-sm font-bold text-slate-800 border border-slate-300">{generatedId}</span>
                                 </div>
@@ -251,11 +252,11 @@ const HudhaForms: React.FC<HudhaFormsProps> = ({ systemConfig, currentUser, requ
                         <table className="w-full border-collapse border border-slate-300 mb-6 text-sm">
                             <thead className="bg-slate-100">
                                 <tr>
-                                    <th className="border border-slate-300 px-3 py-2 text-left w-12">No.</th>
-                                    <th className="border border-slate-300 px-3 py-2 text-left">Description of Goods / Services</th>
-                                    <th className="border border-slate-300 px-3 py-2 text-right w-20">Qty</th>
-                                    <th className="border border-slate-300 px-3 py-2 text-right w-24">Est. Rate</th>
-                                    <th className="border border-slate-300 px-3 py-2 text-right w-28">Total</th>
+                                    <th className={`border border-slate-300 px-3 py-2 ${isRTL ? 'text-right' : 'text-left'} w-12`}>No.</th>
+                                    <th className={`border border-slate-300 px-3 py-2 ${isRTL ? 'text-right' : 'text-left'}`}>Description of Goods / Services</th>
+                                    <th className="border border-slate-300 px-3 py-2 text-center w-20">Qty</th>
+                                    <th className={`border border-slate-300 px-3 py-2 ${isRTL ? 'text-left' : 'text-right'} w-24`}>Est. Rate</th>
+                                    <th className={`border border-slate-300 px-3 py-2 ${isRTL ? 'text-left' : 'text-right'} w-28`}>Total</th>
                                     <th className="border border-slate-300 px-2 py-2 w-10"></th>
                                 </tr>
                             </thead>
@@ -267,12 +268,12 @@ const HudhaForms: React.FC<HudhaFormsProps> = ({ systemConfig, currentUser, requ
                                             <input type="text" className="w-full outline-none bg-transparent" value={item.description} onChange={(e) => updateReqItem(item.id, 'description', e.target.value)} placeholder="Item description..." />
                                         </td>
                                         <td className="border border-slate-300 px-3 py-2">
-                                            <input type="number" className="w-full outline-none bg-transparent text-right" value={item.quantity} onChange={(e) => updateReqItem(item.id, 'quantity', Number(e.target.value))} />
+                                            <input type="number" className="w-full outline-none bg-transparent text-center" value={item.quantity} onChange={(e) => updateReqItem(item.id, 'quantity', Number(e.target.value))} />
                                         </td>
                                         <td className="border border-slate-300 px-3 py-2">
-                                            <input type="number" className="w-full outline-none bg-transparent text-right" value={item.rate} onChange={(e) => updateReqItem(item.id, 'rate', Number(e.target.value))} />
+                                            <input type="number" className={`w-full outline-none bg-transparent ${isRTL ? 'text-left' : 'text-right'}`} value={item.rate} onChange={(e) => updateReqItem(item.id, 'rate', Number(e.target.value))} />
                                         </td>
-                                        <td className="border border-slate-300 px-3 py-2 text-right font-medium">
+                                        <td className={`border border-slate-300 px-3 py-2 font-medium ${isRTL ? 'text-left' : 'text-right'}`}>
                                             {(item.quantity * item.rate).toFixed(2)}
                                         </td>
                                         <td className="border border-slate-300 px-2 py-2 text-center">
@@ -283,27 +284,27 @@ const HudhaForms: React.FC<HudhaFormsProps> = ({ systemConfig, currentUser, requ
                                 <tr>
                                     <td colSpan={6} className="p-2 bg-slate-50 text-center">
                                         <button onClick={addReqItem} className="text-teal-600 text-xs font-bold flex items-center justify-center gap-1 mx-auto hover:text-teal-800">
-                                            <Plus size={14} /> Add Line Item
+                                            <Plus size={14} /> {t('add_item')}
                                         </button>
                                     </td>
                                 </tr>
                                 <tr className="bg-slate-50 font-bold">
-                                    <td colSpan={4} className="border border-slate-300 px-3 py-2 text-right uppercase text-xs">Grand Total (MVR)</td>
-                                    <td className="border border-slate-300 px-3 py-2 text-right text-base">{calculateTotal(reqItems).toFixed(2)}</td>
+                                    <td colSpan={4} className={`border border-slate-300 px-3 py-2 uppercase text-xs ${isRTL ? 'text-left' : 'text-right'}`}>{t('grand_total')}</td>
+                                    <td className={`border border-slate-300 px-3 py-2 text-base ${isRTL ? 'text-left' : 'text-right'}`}>{calculateTotal(reqItems).toFixed(2)}</td>
                                     <td className="border border-slate-300"></td>
                                 </tr>
                             </tbody>
                         </table>
 
                         <div className="mb-8">
-                            <label className="block text-xs font-bold uppercase mb-1">Purpose / Justification:</label>
+                            <label className="block text-xs font-bold uppercase mb-1">{t('purpose_justification')}:</label>
                             <textarea className="w-full border border-slate-300 rounded p-2 text-sm h-24 resize-none focus:outline-none focus:border-slate-500 bg-transparent" value={reqPurpose} onChange={(e) => setReqPurpose(e.target.value)}></textarea>
                         </div>
                         
                         <div className="flex justify-end gap-4 mt-8 pt-4 border-t border-slate-200">
-                            <button onClick={() => setViewMode('list')} className="px-4 py-2 text-sm font-bold text-slate-500 border border-slate-300 rounded-lg hover:bg-slate-50">Cancel</button>
+                            <button onClick={() => setViewMode('list')} className="px-4 py-2 text-sm font-bold text-slate-500 border border-slate-300 rounded-lg hover:bg-slate-50">{t('cancel')}</button>
                             <button onClick={handleSaveRequisition} className="px-4 py-2 text-sm font-bold text-white bg-teal-600 rounded-lg hover:bg-teal-700 flex items-center gap-2">
-                                <CheckCircle2 size={16} /> Save & View
+                                <CheckCircle2 size={16} /> {t('save_and_view')}
                             </button>
                         </div>
                     </div>
@@ -317,7 +318,7 @@ const HudhaForms: React.FC<HudhaFormsProps> = ({ systemConfig, currentUser, requ
                                 onClick={handlePrint}
                                 className="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-slate-900 transition-colors"
                             >
-                                <Printer size={16} /> Print Official Form
+                                <Printer size={16} /> {t('print_official')}
                             </button>
                         </div>
 
@@ -339,7 +340,7 @@ const HudhaForms: React.FC<HudhaFormsProps> = ({ systemConfig, currentUser, requ
                                     <h1 className="text-xl font-black uppercase tracking-widest mb-1">{systemConfig.councilName}</h1>
                                     <h2 className="text-sm font-bold text-slate-600 uppercase tracking-wide mb-3">{systemConfig.secretariatName}</h2>
                                     <div className="inline-block border-2 border-slate-900 px-6 py-2">
-                                        <h3 className="text-lg font-black uppercase tracking-wide">GOODS / SERVICES REQUISITION FORM</h3>
+                                        <h3 className="text-lg font-black uppercase tracking-wide">{t('req_form_title')}</h3>
                                     </div>
                                 </div>
                                 <div className="col-span-2 flex flex-col items-end justify-center">
@@ -351,15 +352,15 @@ const HudhaForms: React.FC<HudhaFormsProps> = ({ systemConfig, currentUser, requ
                              {/* Info Grid */}
                              <div className="grid grid-cols-2 gap-x-12 gap-y-4 mb-8">
                                 <div className="flex border-b border-slate-300 pb-1">
-                                    <span className="w-32 text-xs font-bold uppercase">Date:</span>
+                                    <span className="w-32 text-xs font-bold uppercase">{t('th_date')}:</span>
                                     <span className="flex-1 font-mono text-sm">{new Date(selectedForm.date).toLocaleDateString()}</span>
                                 </div>
                                 <div className="flex border-b border-slate-300 pb-1">
-                                    <span className="w-32 text-xs font-bold uppercase">Department:</span>
+                                    <span className="w-32 text-xs font-bold uppercase">{t('th_department')}:</span>
                                     <span className="flex-1 text-sm font-bold uppercase">{selectedForm.department}</span>
                                 </div>
                                 <div className="col-span-2 flex border-b border-slate-300 pb-1">
-                                    <span className="w-32 text-xs font-bold uppercase">Requested By:</span>
+                                    <span className="w-32 text-xs font-bold uppercase">{t('th_requested_by')}:</span>
                                     <span className="flex-1 text-sm">{selectedForm.requestedBy}</span>
                                 </div>
                              </div>
@@ -369,10 +370,10 @@ const HudhaForms: React.FC<HudhaFormsProps> = ({ systemConfig, currentUser, requ
                                 <thead>
                                     <tr className="bg-slate-100">
                                         <th className="border border-slate-900 px-2 py-2 w-12 text-center">No.</th>
-                                        <th className="border border-slate-900 px-2 py-2 text-left">Description of Goods / Services</th>
+                                        <th className={`border border-slate-900 px-2 py-2 ${isRTL ? 'text-right' : 'text-left'}`}>Description of Goods / Services</th>
                                         <th className="border border-slate-900 px-2 py-2 w-20 text-center">Qty</th>
-                                        <th className="border border-slate-900 px-2 py-2 w-24 text-right">Rate</th>
-                                        <th className="border border-slate-900 px-2 py-2 w-32 text-right">Total</th>
+                                        <th className={`border border-slate-900 px-2 py-2 w-24 ${isRTL ? 'text-left' : 'text-right'}`}>Rate</th>
+                                        <th className={`border border-slate-900 px-2 py-2 w-32 ${isRTL ? 'text-left' : 'text-right'}`}>Total</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -381,8 +382,8 @@ const HudhaForms: React.FC<HudhaFormsProps> = ({ systemConfig, currentUser, requ
                                             <td className="border border-slate-900 px-2 py-2 text-center">{idx + 1}</td>
                                             <td className="border border-slate-900 px-2 py-2">{item.description}</td>
                                             <td className="border border-slate-900 px-2 py-2 text-center">{item.quantity}</td>
-                                            <td className="border border-slate-900 px-2 py-2 text-right">{item.rate.toFixed(2)}</td>
-                                            <td className="border border-slate-900 px-2 py-2 text-right font-bold">{(item.quantity * item.rate).toFixed(2)}</td>
+                                            <td className={`border border-slate-900 px-2 py-2 ${isRTL ? 'text-left' : 'text-right'}`}>{item.rate.toFixed(2)}</td>
+                                            <td className={`border border-slate-900 px-2 py-2 font-bold ${isRTL ? 'text-left' : 'text-right'}`}>{(item.quantity * item.rate).toFixed(2)}</td>
                                         </tr>
                                     ))}
                                     {/* Empty rows to fill space if needed */}
@@ -396,30 +397,30 @@ const HudhaForms: React.FC<HudhaFormsProps> = ({ systemConfig, currentUser, requ
                                         </tr>
                                     ))}
                                     <tr className="bg-slate-50">
-                                        <td colSpan={4} className="border border-slate-900 px-2 py-2 text-right font-black uppercase text-xs">Grand Total (MVR)</td>
-                                        <td className="border border-slate-900 px-2 py-2 text-right font-black text-base">{selectedForm.totalAmount.toFixed(2)}</td>
+                                        <td colSpan={4} className={`border border-slate-900 px-2 py-2 font-black uppercase text-xs ${isRTL ? 'text-left' : 'text-right'}`}>{t('grand_total')}</td>
+                                        <td className={`border border-slate-900 px-2 py-2 font-black text-base ${isRTL ? 'text-left' : 'text-right'}`}>{selectedForm.totalAmount.toFixed(2)}</td>
                                     </tr>
                                 </tbody>
                              </table>
 
                              {/* Purpose */}
                              <div className="mb-8 border border-slate-900 p-4 min-h-[100px]">
-                                <h4 className="text-xs font-bold uppercase mb-2 underline">Purpose / Justification:</h4>
+                                <h4 className="text-xs font-bold uppercase mb-2 underline">{t('purpose_justification')}:</h4>
                                 <p className="text-sm">{selectedForm.purpose}</p>
                              </div>
 
                              {/* Signatures */}
                              <div className="grid grid-cols-3 gap-4 mt-auto">
                                 <div className="border border-slate-900 p-4 h-40 flex flex-col justify-between">
-                                    <div className="text-xs font-bold uppercase text-center border-b border-slate-300 pb-2">Requested By</div>
+                                    <div className="text-xs font-bold uppercase text-center border-b border-slate-300 pb-2">{t('th_requested_by')}</div>
                                     <div className="text-center text-[10px] text-slate-500 italic mt-auto pt-2 border-t border-dotted border-slate-400">Signature & Date</div>
                                 </div>
                                 <div className="border border-slate-900 p-4 h-40 flex flex-col justify-between">
-                                    <div className="text-xs font-bold uppercase text-center border-b border-slate-300 pb-2">Verified By</div>
+                                    <div className="text-xs font-bold uppercase text-center border-b border-slate-300 pb-2">{t('verified_by')}</div>
                                     <div className="text-center text-[10px] text-slate-500 italic mt-auto pt-2 border-t border-dotted border-slate-400">Signature & Stamp</div>
                                 </div>
                                 <div className="border border-slate-900 p-4 h-40 flex flex-col justify-between">
-                                    <div className="text-xs font-bold uppercase text-center border-b border-slate-300 pb-2">Approved By</div>
+                                    <div className="text-xs font-bold uppercase text-center border-b border-slate-300 pb-2">{t('approved_by')}</div>
                                     <div className="text-center text-[10px] text-slate-500 italic mt-auto pt-2 border-t border-dotted border-slate-400">Signature & Stamp</div>
                                 </div>
                              </div>
@@ -440,13 +441,13 @@ const HudhaForms: React.FC<HudhaFormsProps> = ({ systemConfig, currentUser, requ
                     <h1 className="text-xl font-bold uppercase tracking-wide">{systemConfig.councilName}</h1>
                     <h2 className="text-lg font-medium text-slate-600">{systemConfig.secretariatName}</h2>
                     <div className="mt-4 bg-slate-900 text-white inline-block px-4 py-1 text-sm font-bold uppercase">
-                        Price Verification Form (Agu Balaa)
+                        {t('agu_form_title')}
                     </div>
                 </div>
 
                 <div className="mb-6">
                     <div className="flex items-center gap-2 mb-4">
-                        <span className="text-xs font-bold uppercase w-32 flex-shrink-0">Project / Item:</span>
+                        <span className="text-xs font-bold uppercase w-32 flex-shrink-0">{t('project_item')}:</span>
                         <input 
                             type="text" 
                             className="w-full border-b border-slate-300 focus:outline-none px-1 text-sm bg-transparent" 
@@ -464,7 +465,7 @@ const HudhaForms: React.FC<HudhaFormsProps> = ({ systemConfig, currentUser, requ
                 <table className="w-full border-collapse border border-slate-300 mb-8 text-sm">
                     <thead className="bg-slate-100">
                         <tr>
-                            <th className="border border-slate-300 px-3 py-3 text-left w-32">Details</th>
+                            <th className={`border border-slate-300 px-3 py-3 ${isRTL ? 'text-right' : 'text-left'} w-32`}>Details</th>
                             <th className="border border-slate-300 px-3 py-3 text-center w-1/3">Quotation 1</th>
                             <th className="border border-slate-300 px-3 py-3 text-center w-1/3">Quotation 2</th>
                             <th className="border border-slate-300 px-3 py-3 text-center w-1/3">Quotation 3</th>
@@ -472,7 +473,7 @@ const HudhaForms: React.FC<HudhaFormsProps> = ({ systemConfig, currentUser, requ
                     </thead>
                     <tbody>
                         <tr>
-                            <td className="border border-slate-300 px-3 py-3 font-bold bg-slate-50">Supplier Name</td>
+                            <td className="border border-slate-300 px-3 py-3 font-bold bg-slate-50">{t('supplier_name')}</td>
                             {quotations.map((q, i) => (
                                 <td key={i} className="border border-slate-300 px-3 py-2">
                                     <input 
@@ -486,7 +487,7 @@ const HudhaForms: React.FC<HudhaFormsProps> = ({ systemConfig, currentUser, requ
                             ))}
                         </tr>
                         <tr>
-                            <td className="border border-slate-300 px-3 py-3 font-bold bg-slate-50">Total Price</td>
+                            <td className="border border-slate-300 px-3 py-3 font-bold bg-slate-50">{t('total_price')}</td>
                              {quotations.map((q, i) => (
                                 <td key={i} className="border border-slate-300 px-3 py-2">
                                     <input 
@@ -500,7 +501,7 @@ const HudhaForms: React.FC<HudhaFormsProps> = ({ systemConfig, currentUser, requ
                             ))}
                         </tr>
                          <tr>
-                            <td className="border border-slate-300 px-3 py-3 font-bold bg-slate-50">Duration</td>
+                            <td className="border border-slate-300 px-3 py-3 font-bold bg-slate-50">{t('duration')}</td>
                              {quotations.map((q, i) => (
                                 <td key={i} className="border border-slate-300 px-3 py-2">
                                     <input 
@@ -514,7 +515,7 @@ const HudhaForms: React.FC<HudhaFormsProps> = ({ systemConfig, currentUser, requ
                             ))}
                         </tr>
                          <tr>
-                            <td className="border border-slate-300 px-3 py-3 font-bold bg-slate-50 align-top">Comments</td>
+                            <td className="border border-slate-300 px-3 py-3 font-bold bg-slate-50 align-top">{t('comments')}</td>
                              {quotations.map((q, i) => (
                                 <td key={i} className="border border-slate-300 px-3 py-2">
                                     <textarea 
@@ -527,7 +528,7 @@ const HudhaForms: React.FC<HudhaFormsProps> = ({ systemConfig, currentUser, requ
                             ))}
                         </tr>
                         <tr className="print:hidden">
-                            <td className="border border-slate-300 px-3 py-3 font-bold bg-slate-50">Selection</td>
+                            <td className="border border-slate-300 px-3 py-3 font-bold bg-slate-50">{t('selection')}</td>
                              {quotations.map((q, i) => (
                                 <td key={i} className="border border-slate-300 px-3 py-2 text-center">
                                     <button 
@@ -540,12 +541,12 @@ const HudhaForms: React.FC<HudhaFormsProps> = ({ systemConfig, currentUser, requ
                             ))}
                         </tr>
                          <tr className="hidden print:table-row">
-                            <td className="border border-slate-300 px-3 py-3 font-bold bg-slate-50">Selected</td>
+                            <td className="border border-slate-300 px-3 py-3 font-bold bg-slate-50">{t('selected_label')}</td>
                              {quotations.map((q, i) => (
                                 <td key={i} className="border border-slate-300 px-3 py-2 text-center">
                                      {selectedSupplierIndex === i ? (
                                          <div className="flex items-center justify-center gap-1 font-bold text-black">
-                                             [ X ] SELECTED
+                                             [ X ] {t('selected_label').toUpperCase()}
                                          </div>
                                      ) : ''}
                                 </td>
@@ -555,7 +556,7 @@ const HudhaForms: React.FC<HudhaFormsProps> = ({ systemConfig, currentUser, requ
                 </table>
 
                 <div className="mb-8">
-                    <label className="block text-xs font-bold uppercase mb-1">Recommendation / Justification for Selection:</label>
+                    <label className="block text-xs font-bold uppercase mb-1">{t('recommendation')}:</label>
                     <textarea 
                         className="w-full border border-slate-300 rounded p-2 text-sm h-24 resize-none focus:outline-none focus:border-slate-500 bg-transparent"
                         placeholder="e.g. Lowest price compliant with requirements..."
@@ -566,14 +567,14 @@ const HudhaForms: React.FC<HudhaFormsProps> = ({ systemConfig, currentUser, requ
 
                 <div className="grid grid-cols-2 gap-12 mt-12 pt-8 border-t border-slate-200">
                     <div>
-                        <h3 className="text-xs font-bold uppercase border-b border-slate-400 pb-1 mb-12">Verified By</h3>
+                        <h3 className="text-xs font-bold uppercase border-b border-slate-400 pb-1 mb-12">{t('verified_by')}</h3>
                         <div className="text-sm">
                             <p className="mb-1"><span className="font-bold">Name:</span> {currentUser.name}</p>
                             <p className="border-t border-dotted border-slate-400 mt-8 pt-1 w-3/4 text-xs text-slate-500">Signature</p>
                         </div>
                     </div>
                     <div>
-                        <h3 className="text-xs font-bold uppercase border-b border-slate-400 pb-1 mb-12">Approved By (Financial Controller)</h3>
+                        <h3 className="text-xs font-bold uppercase border-b border-slate-400 pb-1 mb-12">{t('approved_by')} (Financial Controller)</h3>
                         <div className="text-sm">
                             <p className="mb-1"><span className="font-bold">Name:</span> ______________________</p>
                             <p className="border-t border-dotted border-slate-400 mt-8 pt-1 w-3/4 text-xs text-slate-500">Signature & Stamp</p>
@@ -589,7 +590,7 @@ const HudhaForms: React.FC<HudhaFormsProps> = ({ systemConfig, currentUser, requ
                         onClick={handlePrint}
                         className="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-slate-900 transition-colors"
                     >
-                        <Printer size={16} /> Print Form
+                        <Printer size={16} /> {t('print_form')}
                     </button>
                 </div>
              </div>

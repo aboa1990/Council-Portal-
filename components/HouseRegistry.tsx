@@ -1,6 +1,8 @@
+
 import React, { useState } from 'react';
 import { House, RegistryType } from '../types';
 import { Search, Home, Plus, MapPin, Users, Phone, FileCheck, AlertTriangle, Clock, X, FileText, Hash } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface HouseRegistryProps {
     houses: House[];
@@ -8,6 +10,7 @@ interface HouseRegistryProps {
 }
 
 const HouseRegistry: React.FC<HouseRegistryProps> = ({ houses, onAddHouse }) => {
+    const { t, isRTL } = useLanguage();
     const [searchTerm, setSearchTerm] = useState('');
     const [isAdding, setIsAdding] = useState(false);
     
@@ -78,27 +81,27 @@ const HouseRegistry: React.FC<HouseRegistryProps> = ({ houses, onAddHouse }) => 
         <div className="space-y-6 animate-fade-in pb-10">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h2 className="text-xl font-bold text-slate-900">House Registry</h2>
-                    <p className="text-sm text-slate-500">Manage island residency, land permits and plots.</p>
+                    <h2 className="text-xl font-bold text-slate-900">{t('house_registry_title')}</h2>
+                    <p className="text-sm text-slate-500">{t('house_registry_subtitle')}</p>
                 </div>
                 <button 
                     onClick={() => setIsAdding(true)}
                     className="bg-teal-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-teal-700 transition-colors flex items-center gap-2 shadow-sm"
                 >
                     <Plus size={16} />
-                    Register House
+                    {t('register_house')}
                 </button>
             </div>
 
             {/* Filters */}
              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <div className={`absolute inset-y-0 ${isRTL ? 'right-0 pr-3' : 'left-0 pl-3'} flex items-center pointer-events-none`}>
                     <Search className="h-5 w-5 text-slate-400" />
                 </div>
                 <input 
                     type="text" 
-                    placeholder="Search by House Name, Registry No, Owner, or Address..." 
-                    className="block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-lg leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 sm:text-sm shadow-sm"
+                    placeholder={t('search_house_placeholder')} 
+                    className={`block w-full ${isRTL ? 'pr-10 pl-3' : 'pl-10 pr-3'} py-3 border border-slate-200 rounded-lg leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 sm:text-sm shadow-sm`}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -109,14 +112,14 @@ const HouseRegistry: React.FC<HouseRegistryProps> = ({ houses, onAddHouse }) => 
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
                      <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                         <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-                            <h3 className="font-bold text-lg text-slate-800">Register New House/Plot</h3>
+                            <h3 className="font-bold text-lg text-slate-800">{t('register_new_house')}</h3>
                             <button onClick={() => setIsAdding(false)} className="text-slate-400 hover:text-slate-600"><X size={20}/></button>
                         </div>
                         <form onSubmit={handleAddSubmit} className="p-6 space-y-4">
                              
                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Registry Type</label>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('label_reg_type')}</label>
                                     <select 
                                         className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:ring-1 focus:ring-teal-500 outline-none"
                                         value={newHouse.registryType}
@@ -130,7 +133,7 @@ const HouseRegistry: React.FC<HouseRegistryProps> = ({ houses, onAddHouse }) => 
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">House Name / Plot Name</label>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('label_house_name')}</label>
                                     <input required type="text" className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:ring-1 focus:ring-teal-500 outline-none" 
                                         value={newHouse.houseName} onChange={e => setNewHouse({...newHouse, houseName: e.target.value})} />
                                 </div>
@@ -138,26 +141,26 @@ const HouseRegistry: React.FC<HouseRegistryProps> = ({ houses, onAddHouse }) => 
 
                              <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Registry Number</label>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('label_registry_no')}</label>
                                     <input required type="text" className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:ring-1 focus:ring-teal-500 outline-none font-mono" placeholder="e.g. R-1001"
                                         value={newHouse.registryNumber} onChange={e => setNewHouse({...newHouse, registryNumber: e.target.value})} />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">House Order Number</label>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('label_order_no')}</label>
                                     <input required type="text" className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:ring-1 focus:ring-teal-500 outline-none font-mono" placeholder="e.g. 055"
                                         value={newHouse.houseOrderNumber} onChange={e => setNewHouse({...newHouse, houseOrderNumber: e.target.value})} />
                                 </div>
                              </div>
 
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Owner Full Name</label>
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('label_owner_fullname')}</label>
                                 <input required type="text" className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:ring-1 focus:ring-teal-500 outline-none" 
                                     value={newHouse.ownerName} onChange={e => setNewHouse({...newHouse, ownerName: e.target.value})} />
                             </div>
 
                              <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Island Zone</label>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('label_island_zone')}</label>
                                     <select className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:ring-1 focus:ring-teal-500 outline-none"
                                         value={newHouse.islandZone} onChange={e => setNewHouse({...newHouse, islandZone: e.target.value})}>
                                         <option>North</option>
@@ -168,7 +171,7 @@ const HouseRegistry: React.FC<HouseRegistryProps> = ({ houses, onAddHouse }) => 
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Inhabitants</label>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('label_inhabitants')}</label>
                                     <input required type="number" className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:ring-1 focus:ring-teal-500 outline-none" 
                                         value={newHouse.inhabitants} onChange={e => setNewHouse({...newHouse, inhabitants: Number(e.target.value)})} />
                                 </div>
@@ -176,12 +179,12 @@ const HouseRegistry: React.FC<HouseRegistryProps> = ({ houses, onAddHouse }) => 
 
                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Address / Street</label>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('label_address_street')}</label>
                                     <input required type="text" className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:ring-1 focus:ring-teal-500 outline-none" 
                                         value={newHouse.address} onChange={e => setNewHouse({...newHouse, address: e.target.value})} />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Plot Location (Details)</label>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('label_plot_location')}</label>
                                     <input required type="text" className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:ring-1 focus:ring-teal-500 outline-none" placeholder="e.g. Block 4, Plot 12"
                                         value={newHouse.plotLocation} onChange={e => setNewHouse({...newHouse, plotLocation: e.target.value})} />
                                 </div>
@@ -189,7 +192,7 @@ const HouseRegistry: React.FC<HouseRegistryProps> = ({ houses, onAddHouse }) => 
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Permit Status</label>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('label_permit_status')}</label>
                                     <select className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:ring-1 focus:ring-teal-500 outline-none"
                                         value={newHouse.permitStatus} onChange={e => setNewHouse({...newHouse, permitStatus: e.target.value as any})}>
                                         <option>Valid</option>
@@ -198,15 +201,15 @@ const HouseRegistry: React.FC<HouseRegistryProps> = ({ houses, onAddHouse }) => 
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Contact No</label>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('label_contact_no')}</label>
                                     <input required type="text" className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:ring-1 focus:ring-teal-500 outline-none" 
                                         value={newHouse.contactNumber} onChange={e => setNewHouse({...newHouse, contactNumber: e.target.value})} />
                                 </div>
                              </div>
 
                             <div className="pt-4 flex justify-end gap-2">
-                                <button type="button" onClick={() => setIsAdding(false)} className="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 rounded hover:bg-slate-200">Cancel</button>
-                                <button type="submit" className="px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded hover:bg-teal-700">Register</button>
+                                <button type="button" onClick={() => setIsAdding(false)} className="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 rounded hover:bg-slate-200">{t('cancel')}</button>
+                                <button type="submit" className="px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded hover:bg-teal-700">{t('register_house')}</button>
                             </div>
                         </form>
                      </div>
@@ -219,12 +222,12 @@ const HouseRegistry: React.FC<HouseRegistryProps> = ({ houses, onAddHouse }) => 
                      <table className="min-w-full divide-y divide-slate-200">
                         <thead className="bg-slate-50">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">House/Plot</th>
-                                <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Type / Registry</th>
-                                <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Owner</th>
-                                <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Location</th>
-                                <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Zone</th>
-                                <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Permit</th>
+                                <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-bold text-slate-500 uppercase tracking-wider`}>{t('th_house_plot')}</th>
+                                <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-bold text-slate-500 uppercase tracking-wider`}>{t('th_reg_type')}</th>
+                                <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-bold text-slate-500 uppercase tracking-wider`}>{t('th_owner')}</th>
+                                <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-bold text-slate-500 uppercase tracking-wider`}>{t('th_house_location')}</th>
+                                <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-bold text-slate-500 uppercase tracking-wider`}>{t('th_zone')}</th>
+                                <th className={`px-6 py-3 ${isRTL ? 'text-right' : 'text-left'} text-xs font-bold text-slate-500 uppercase tracking-wider`}>{t('th_permit')}</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-slate-200">
@@ -283,7 +286,7 @@ const HouseRegistry: React.FC<HouseRegistryProps> = ({ houses, onAddHouse }) => 
                              {filteredHouses.length === 0 && (
                                 <tr>
                                     <td colSpan={6} className="px-6 py-10 text-center text-slate-500 italic">
-                                        No houses found matching your search.
+                                        {t('no_houses')}
                                     </td>
                                 </tr>
                             )}
