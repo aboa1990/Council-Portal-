@@ -1,5 +1,4 @@
 
-
 import React, { useState } from 'react';
 import { User, UserRole, SystemConfig } from '../types';
 import { Building2, Lock, ArrowRight, UserCircle2, ShieldCheck, Hexagon, AlertCircle } from 'lucide-react';
@@ -70,7 +69,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, systemConfig, staffList }) => {
         <div className="relative z-10 p-12 text-white max-w-lg">
            <div className="mb-8 inline-block p-4 rounded-3xl bg-white/10 backdrop-blur-md border border-white/20 shadow-xl overflow-hidden">
                {systemConfig.councilLogo ? (
-                   <img src={systemConfig.councilLogo} alt="Logo" className="w-12 h-12 object-contain" />
+                   <img src={systemConfig.councilLogo} alt="Logo" className="w-auto h-20 object-contain" />
                ) : (
                    <Building2 size={48} className="text-emerald-300" />
                )}
@@ -104,9 +103,9 @@ const Login: React.FC<LoginProps> = ({ onLogin, systemConfig, staffList }) => {
       <div className="w-full lg:w-1/2 flex items-center justify-center p-6 lg:p-12 relative">
          <div className="w-full max-w-md space-y-8 animate-fade-in flex flex-col min-h-[500px]">
             <div className={`text-center ${isRTL ? 'lg:text-right' : 'lg:text-left'}`}>
-                <div className="lg:hidden inline-flex items-center justify-center w-16 h-16 rounded-full bg-teal-100 text-teal-700 mb-6 overflow-hidden">
+                <div className="lg:hidden inline-flex items-center justify-center w-20 h-20 rounded-full bg-teal-100 text-teal-700 mb-6 overflow-hidden p-2">
                      {systemConfig.councilLogo ? (
-                        <img src={systemConfig.councilLogo} alt="Logo" className="w-full h-full object-contain p-2" />
+                        <img src={systemConfig.councilLogo} alt="Logo" className="w-full h-full object-contain" />
                     ) : (
                         <Building2 size={32} />
                     )}

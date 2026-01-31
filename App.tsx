@@ -433,7 +433,11 @@ const AppContent: React.FC = () => {
       <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${isRTL ? 'md:mr-64' : 'md:ml-64'}`}>
         <header className="md:hidden bg-white border-b border-slate-200 p-4 flex items-center justify-between sticky top-0 z-10 shadow-sm">
           <div className="flex items-center gap-2">
-             <div className="bg-teal-700 w-8 h-8 rounded flex items-center justify-center text-white font-bold">H</div>
+             {systemConfig.councilLogo ? (
+                 <img src={systemConfig.councilLogo} alt="Logo" className="w-8 h-8 object-contain" />
+             ) : (
+                 <div className="bg-teal-700 w-8 h-8 rounded flex items-center justify-center text-white font-bold">H</div>
+             )}
              <h1 className="font-bold text-lg text-slate-900">{systemConfig.councilName}</h1>
           </div>
           <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 text-slate-600 hover:bg-slate-50 rounded">
