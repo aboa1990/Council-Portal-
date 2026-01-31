@@ -316,6 +316,7 @@ const AssetRegistry: React.FC<AssetRegistryProps> = ({ currentUser, assets, cate
 
   // Specific check for the Land category
   const isLandAsset = formData.category?.toLowerCase().includes('land') || formData.category?.toLowerCase().includes('building');
+  const isFurniture = formData.category?.toLowerCase().includes('furniture');
   
   // Find selected category object to get Dhivehi name
   const selectedCategoryObj = categories.find(c => c.name === formData.category);
@@ -631,7 +632,7 @@ const AssetRegistry: React.FC<AssetRegistryProps> = ({ currentUser, assets, cate
                                             value={formData.constructedDate || ''} onChange={e => setFormData({...formData, constructedDate: e.target.value})} />
                                     </div>
                                 </>
-                            ) : (
+                            ) : !isFurniture && (
                                 <>
                                     <div>
                                         <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('model_number')}</label>
