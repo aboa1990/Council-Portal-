@@ -1,5 +1,4 @@
 
-
 import React, { useState, useRef, useEffect } from 'react';
 import { User, UserRole, AssetCategory, AssetStatusConfig, SystemConfig, TemplateFieldPos, AccessLog } from '../types';
 import { 
@@ -9,7 +8,7 @@ import {
   UserPlus, Search, Phone, MapPin, BadgeCheck, Fingerprint, Users, Pencil, 
   Hash, ShieldAlert, ShieldCheck, CheckCircle2, User as UserIcon, Database, 
   Download, RefreshCw, FileJson, Cloud, CloudOff, PlugZap, PlayCircle, 
-  Loader2, Building2, XCircle, AlignLeft, AlignCenter, AlignRight, ListTree, Tag, Palette
+  Loader2, Building2, XCircle, AlignLeft, AlignCenter, AlignRight, ListTree, Tag, Palette, AlertTriangle
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { isSupabaseConfigured, testConnection } from '../services/supabaseService';
@@ -214,6 +213,7 @@ const Settings: React.FC<SettingsProps> = ({
               canvas.height = height;
               ctx?.drawImage(img, 0, 0, width, height);
               
+              // Ensure we use high quality JPEG compression to keep DB size down
               const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
               
               setLocalSystemConfig(prev => ({
@@ -533,6 +533,7 @@ const Settings: React.FC<SettingsProps> = ({
                 </div>
             )}
 
+            {/* General Settings Tab content ... */}
             {activeTab === 'general' && (
                 <div className="space-y-8 animate-fade-in">
                     <div className="flex justify-between items-start border-b border-slate-100 pb-4">
@@ -619,6 +620,7 @@ const Settings: React.FC<SettingsProps> = ({
 
             {activeTab === 'config' && (
                 <div className="space-y-8 animate-fade-in">
+                     {/* ... config content remains the same ... */}
                      <div className="flex justify-between items-start border-b border-slate-100 pb-4">
                         <div>
                             <h2 className="text-xl font-bold text-slate-900">{t('tab_config') || "Asset Configuration"}</h2>
@@ -758,6 +760,7 @@ const Settings: React.FC<SettingsProps> = ({
                 </div>
             )}
 
+            {/* Staff Tab content... */}
             {activeTab === 'staff' && (
                 <div className="space-y-6 animate-fade-in">
                     <div className="flex justify-between items-start border-b border-slate-100 pb-4">
@@ -810,6 +813,7 @@ const Settings: React.FC<SettingsProps> = ({
 
             {activeTab === 'logs' && (
                 <div className="space-y-6 animate-fade-in">
+                    {/* ... log content remains the same ... */}
                     <div className="flex justify-between items-start border-b border-slate-100 pb-4">
                         <div>
                             <h2 className="text-xl font-bold text-slate-900">System Access Logs</h2>
@@ -875,6 +879,21 @@ const Settings: React.FC<SettingsProps> = ({
                             </button>
                         </div>
                     </div>
+
+                    {/* Warning if in Local Mode */}
+                    {!isCloudActive && (
+                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+                            <div className="p-2 bg-amber-100 rounded-full text-amber-700"><AlertTriangle size={18} /></div>
+                            <div>
+                                <h4 className="text-sm font-bold text-amber-800">Local Mode Detected</h4>
+                                <p className="text-xs text-amber-700 mt-1 leading-relaxed">
+                                    You are currently saving changes to this browser's local storage. 
+                                    Templates created here <strong>will not appear on other computers</strong>. 
+                                    To sync templates across devices, please configure a Supabase database connection.
+                                </p>
+                            </div>
+                        </div>
+                    )}
 
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                         {/* Editor Canvas */}

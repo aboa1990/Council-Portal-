@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect, useRef } from 'react';
 import { ViewState, CitizenRequest, RequestStatus, Asset, User, UserRole, House, AssetCategory, AssetStatusConfig, SystemConfig, GaragePermit, TemplateFieldPos, AccessLog, RequisitionForm } from './types';
 import { MOCK_REQUESTS, MOCK_ASSETS, MOCK_HOUSES, DEFAULT_ASSET_CATEGORIES, DEFAULT_ASSET_STATUSES, MOCK_GARAGE_PERMITS, MOCK_STAFF, DEFAULT_FIELD_POSITIONS } from './constants';
@@ -30,6 +29,9 @@ const STORAGE_KEYS = {
   LOGS: 'civicpulse_logs',
   USER: 'civicpulse_current_user'
 };
+
+// CONSTANT KEY for Database Syncing - Ensures all PCs look at the same record
+const DB_SYNC_KEY = 'OFFICIAL_PORTAL_STATE';
 
 const AppContent: React.FC = () => {
   const loadLocal = <T,>(key: string, fallback: T): T => {
@@ -118,53 +120,20 @@ const AppContent: React.FC = () => {
         }
         
         // Comprehensive Style Injection for Custom Font
-        // We use the ID #civic-portal-root for high specificity to override Tailwind and other styles
         styleTag.innerHTML = `
             @font-face {
                 font-family: 'CustomDhivehiFont';
                 src: url('${systemConfig.customDhivehiFont}');
                 font-display: swap;
             }
-            
-            /* Universal Override for RTL Context */
             #civic-portal-root[dir="rtl"],
             #civic-portal-root[dir="rtl"] * {
                 font-family: 'CustomDhivehiFont', 'Noto Sans Thaana', sans-serif !important;
             }
-            
-            /* Explicit Form Elements (Inputs, Textareas, Selects, Buttons) */
             #civic-portal-root[dir="rtl"] input,
             #civic-portal-root[dir="rtl"] textarea,
             #civic-portal-root[dir="rtl"] select,
-            #civic-portal-root[dir="rtl"] button,
-            #civic-portal-root[dir="rtl"] label,
-            #civic-portal-root[dir="rtl"] option,
-            #civic-portal-root[dir="rtl"] optgroup {
-                font-family: 'CustomDhivehiFont', 'Noto Sans Thaana', sans-serif !important;
-            }
-
-            /* Tables and Lists */
-            #civic-portal-root[dir="rtl"] table,
-            #civic-portal-root[dir="rtl"] th,
-            #civic-portal-root[dir="rtl"] td,
-            #civic-portal-root[dir="rtl"] tr,
-            #civic-portal-root[dir="rtl"] ul,
-            #civic-portal-root[dir="rtl"] ol,
-            #civic-portal-root[dir="rtl"] li {
-                font-family: 'CustomDhivehiFont', 'Noto Sans Thaana', sans-serif !important;
-            }
-
-            /* Placeholders */
-            #civic-portal-root[dir="rtl"] input::placeholder,
-            #civic-portal-root[dir="rtl"] textarea::placeholder {
-                font-family: 'CustomDhivehiFont', 'Noto Sans Thaana', sans-serif !important;
-                opacity: 0.7;
-            }
-
-            /* Specific Override for Tailwind classes that might force other fonts */
-            #civic-portal-root[dir="rtl"] .font-mono,
-            #civic-portal-root[dir="rtl"] .font-sans,
-            #civic-portal-root[dir="rtl"] .font-serif {
+            #civic-portal-root[dir="rtl"] button {
                 font-family: 'CustomDhivehiFont', 'Noto Sans Thaana', sans-serif !important;
             }
         `;
@@ -187,7 +156,8 @@ const AppContent: React.FC = () => {
         }
 
         setSyncStatus('syncing');
-        const cloudData = await fetchPortalState(systemConfig.councilName);
+        // Use CONSTANT Key
+        const cloudData = await fetchPortalState(DB_SYNC_KEY);
         if (cloudData) {
           if (cloudData.requests) setRequests(cloudData.requests);
           if (cloudData.assets) setAssets(cloudData.assets);
@@ -222,7 +192,8 @@ const AppContent: React.FC = () => {
     if (!isInitialLoad.current && isSupabaseConfigured() && !dbConnectionError) {
       const syncToCloud = async () => {
         setSyncStatus('syncing');
-        const success = await savePortalState(systemConfig.councilName, {
+        // Use CONSTANT Key
+        const success = await savePortalState(DB_SYNC_KEY, {
           requests, assets, houses, garagePermits, requisitionForms, staffMembers, systemConfig, accessLogs
         });
         setSyncStatus(success ? 'synced' : 'error');
