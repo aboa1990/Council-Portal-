@@ -361,141 +361,143 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
 
             {/* Add/Edit Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl my-8">
-                         <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-xl">
-                            <h3 className="font-bold text-lg text-slate-800">{editingPermit ? 'Update Permit' : t('new_permit')}</h3>
-                            <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X size={20}/></button>
-                        </div>
-                        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-                            {/* Standard Form Fields */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="col-span-1"><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('permit_id')}</label><input type="text" className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-slate-100 font-mono font-bold text-slate-700" value={formData.permitId} readOnly /></div>
-                                <div className="col-span-1"><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('issue_date')}</label><input type="date" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white outline-none" value={formData.issueDate} onChange={e => setFormData({...formData, issueDate: e.target.value})} /></div>
+                <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/50 backdrop-blur-sm">
+                    <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+                        <div className="relative transform overflow-hidden rounded-xl bg-white text-left shadow-2xl transition-all sm:my-8 w-full max-w-5xl">
+                             <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                                <h3 className="font-bold text-lg text-slate-800">{editingPermit ? 'Update Permit' : t('new_permit')}</h3>
+                                <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X size={20}/></button>
                             </div>
-                            
-                            {/* Vehicle Details Section */}
-                            <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
-                                <h4 className="text-sm font-bold text-slate-700 flex items-center gap-2 mb-4 border-b border-slate-200 pb-2"><Car size={16} className="text-teal-600"/> {t('vehicle_details')}</h4>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('registry_no')}</label><input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white font-mono" value={formData.vehicleRegistryNumber} onChange={e => setFormData({...formData, vehicleRegistryNumber: e.target.value})} /></div>
-                                    <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('chassis_no')}</label><input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white font-mono" value={formData.vehicleChassisNumber} onChange={e => setFormData({...formData, vehicleChassisNumber: e.target.value})} /></div>
-                                    
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1 flex justify-between">
-                                            {t('owner_id')}
-                                            {activeVehiclePermitsInForm > 0 && (
-                                                <span className="text-amber-600 text-[10px] flex items-center gap-1">
-                                                    <AlertCircle size={10} /> Active Permits: {activeVehiclePermitsInForm}
-                                                </span>
-                                            )}
-                                        </label>
-                                        <input type="text" required className={`w-full border rounded px-3 py-2 text-sm bg-white ${activeVehiclePermitsInForm > 0 ? 'border-amber-300 focus:ring-amber-500' : 'border-slate-300'}`} value={formData.vehicleOwnerId} onChange={e => setFormData({...formData, vehicleOwnerId: e.target.value})} />
-                                    </div>
-                                    
-                                    <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('owner_name')}</label><input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" value={formData.vehicleOwnerName} onChange={e => setFormData({...formData, vehicleOwnerName: e.target.value})} /></div>
-                                    <div className="lg:col-span-2"><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('owner_address')}</label><input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" value={formData.vehicleOwnerAddress} onChange={e => setFormData({...formData, vehicleOwnerAddress: e.target.value})} /></div>
-                                    <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('contact_no')}</label><input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" value={formData.vehicleOwnerContact} onChange={e => setFormData({...formData, vehicleOwnerContact: e.target.value})} /></div>
+                            <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                                {/* Standard Form Fields */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="col-span-1"><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('permit_id')}</label><input type="text" className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-slate-100 font-mono font-bold text-slate-700" value={formData.permitId} readOnly /></div>
+                                    <div className="col-span-1"><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('issue_date')}</label><input type="date" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white outline-none" value={formData.issueDate} onChange={e => setFormData({...formData, issueDate: e.target.value})} /></div>
                                 </div>
-                            </div>
-
-                            {/* Garage Details Section */}
-                            <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
-                                <h4 className="text-sm font-bold text-slate-700 flex items-center gap-2 mb-4 border-b border-slate-200 pb-2"><Home size={16} className="text-teal-600"/> {t('garage_details')}</h4>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('house_reg_no')}</label><input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white font-mono" value={formData.houseRegistryNumber} onChange={e => setFormData({...formData, houseRegistryNumber: e.target.value})} /></div>
-                                    <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('garage_size')}</label><input type="number" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" value={formData.garageSizeSqft} onChange={e => setFormData({...formData, garageSizeSqft: Number(e.target.value)})} /></div>
-                                    <div className="lg:col-span-2"><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('garage_address')}</label><input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" value={formData.garageAddress} onChange={e => setFormData({...formData, garageAddress: e.target.value})} /></div>
-                                    
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1 flex justify-between">
-                                            {t('owner_id')}
-                                            {activeGaragePermitsInForm > 0 && (
-                                                <span className="text-amber-600 text-[10px] flex items-center gap-1">
-                                                    <AlertCircle size={10} /> Active Allocations: {activeGaragePermitsInForm}
-                                                </span>
-                                            )}
-                                        </label>
-                                        <input type="text" required className={`w-full border rounded px-3 py-2 text-sm bg-white ${activeGaragePermitsInForm > 0 ? 'border-amber-300 focus:ring-amber-500' : 'border-slate-300'}`} value={formData.garageOwnerId} onChange={e => setFormData({...formData, garageOwnerId: e.target.value})} />
-                                    </div>
-
-                                    <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('owner_name')}</label><input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" value={formData.garageOwnerName} onChange={e => setFormData({...formData, garageOwnerName: e.target.value})} /></div>
-                                    <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('owner_address')}</label><input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" value={formData.garageOwnerAddress} onChange={e => setFormData({...formData, garageOwnerAddress: e.target.value})} /></div>
-                                    <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('contact_no')}</label><input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" value={formData.garageOwnerContact} onChange={e => setFormData({...formData, garageOwnerContact: e.target.value})} /></div>
-                                </div>
-                            </div>
-                            
-                            {/* Signed Permit Upload Section - Only when editing */}
-                            {editingPermit && (
-                                <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
-                                    <h4 className="text-sm font-bold text-blue-800 flex items-center gap-2 mb-4 border-b border-blue-200 pb-2">
-                                        <FileCheck size={16} className="text-blue-600"/> Signed Permit Record
-                                    </h4>
-                                    <div className="flex items-center gap-4">
-                                        <div className="flex-1">
-                                            <p className="text-xs text-blue-700 mb-2">Upload the scanned/signed copy of this permit for digital archiving.</p>
-                                            <div className="flex items-center gap-2">
-                                                <button 
-                                                    type="button"
-                                                    onClick={() => fileInputRef.current?.click()}
-                                                    className="bg-white border border-blue-300 text-blue-700 px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-50 transition-colors flex items-center gap-2 shadow-sm"
-                                                >
-                                                    <Upload size={16} />
-                                                    {formData.signedPermitData ? 'Replace Document' : 'Upload Signed Copy'}
-                                                </button>
-                                                <input 
-                                                    type="file" 
-                                                    ref={fileInputRef}
-                                                    onChange={handleFileUpload}
-                                                    className="hidden"
-                                                    accept="image/*,application/pdf"
-                                                />
-                                                {formData.signedPermitData && (
-                                                     <span className="text-xs font-bold text-emerald-600 flex items-center gap-1">
-                                                         <CheckCircle size={14} /> Document Attached
-                                                     </span>
+                                
+                                {/* Vehicle Details Section */}
+                                <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
+                                    <h4 className="text-sm font-bold text-slate-700 flex items-center gap-2 mb-4 border-b border-slate-200 pb-2"><Car size={16} className="text-teal-600"/> {t('vehicle_details')}</h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('registry_no')}</label><input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white font-mono" value={formData.vehicleRegistryNumber} onChange={e => setFormData({...formData, vehicleRegistryNumber: e.target.value})} /></div>
+                                        <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('chassis_no')}</label><input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white font-mono" value={formData.vehicleChassisNumber} onChange={e => setFormData({...formData, vehicleChassisNumber: e.target.value})} /></div>
+                                        
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1 flex justify-between">
+                                                {t('owner_id')}
+                                                {activeVehiclePermitsInForm > 0 && (
+                                                    <span className="text-amber-600 text-[10px] flex items-center gap-1">
+                                                        <AlertCircle size={10} /> Active Permits: {activeVehiclePermitsInForm}
+                                                    </span>
                                                 )}
+                                            </label>
+                                            <input type="text" required className={`w-full border rounded px-3 py-2 text-sm bg-white ${activeVehiclePermitsInForm > 0 ? 'border-amber-300 focus:ring-amber-500' : 'border-slate-300'}`} value={formData.vehicleOwnerId} onChange={e => setFormData({...formData, vehicleOwnerId: e.target.value})} />
+                                        </div>
+                                        
+                                        <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('owner_name')}</label><input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" value={formData.vehicleOwnerName} onChange={e => setFormData({...formData, vehicleOwnerName: e.target.value})} /></div>
+                                        <div className="lg:col-span-2"><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('owner_address')}</label><input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" value={formData.vehicleOwnerAddress} onChange={e => setFormData({...formData, vehicleOwnerAddress: e.target.value})} /></div>
+                                        <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('contact_no')}</label><input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" value={formData.vehicleOwnerContact} onChange={e => setFormData({...formData, vehicleOwnerContact: e.target.value})} /></div>
+                                    </div>
+                                </div>
+
+                                {/* Garage Details Section */}
+                                <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
+                                    <h4 className="text-sm font-bold text-slate-700 flex items-center gap-2 mb-4 border-b border-slate-200 pb-2"><Home size={16} className="text-teal-600"/> {t('garage_details')}</h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('house_reg_no')}</label><input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white font-mono" value={formData.houseRegistryNumber} onChange={e => setFormData({...formData, houseRegistryNumber: e.target.value})} /></div>
+                                        <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('garage_size')}</label><input type="number" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" value={formData.garageSizeSqft} onChange={e => setFormData({...formData, garageSizeSqft: Number(e.target.value)})} /></div>
+                                        <div className="lg:col-span-2"><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('garage_address')}</label><input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" value={formData.garageAddress} onChange={e => setFormData({...formData, garageAddress: e.target.value})} /></div>
+                                        
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1 flex justify-between">
+                                                {t('owner_id')}
+                                                {activeGaragePermitsInForm > 0 && (
+                                                    <span className="text-amber-600 text-[10px] flex items-center gap-1">
+                                                        <AlertCircle size={10} /> Active Allocations: {activeGaragePermitsInForm}
+                                                    </span>
+                                                )}
+                                            </label>
+                                            <input type="text" required className={`w-full border rounded px-3 py-2 text-sm bg-white ${activeGaragePermitsInForm > 0 ? 'border-amber-300 focus:ring-amber-500' : 'border-slate-300'}`} value={formData.garageOwnerId} onChange={e => setFormData({...formData, garageOwnerId: e.target.value})} />
+                                        </div>
+
+                                        <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('owner_name')}</label><input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" value={formData.garageOwnerName} onChange={e => setFormData({...formData, garageOwnerName: e.target.value})} /></div>
+                                        <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('owner_address')}</label><input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" value={formData.garageOwnerAddress} onChange={e => setFormData({...formData, garageOwnerAddress: e.target.value})} /></div>
+                                        <div><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('contact_no')}</label><input type="text" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" value={formData.garageOwnerContact} onChange={e => setFormData({...formData, garageOwnerContact: e.target.value})} /></div>
+                                    </div>
+                                </div>
+                                
+                                {/* Signed Permit Upload Section - Only when editing */}
+                                {editingPermit && (
+                                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                                        <h4 className="text-sm font-bold text-blue-800 flex items-center gap-2 mb-4 border-b border-blue-200 pb-2">
+                                            <FileCheck size={16} className="text-blue-600"/> Signed Permit Record
+                                        </h4>
+                                        <div className="flex items-center gap-4">
+                                            <div className="flex-1">
+                                                <p className="text-xs text-blue-700 mb-2">Upload the scanned/signed copy of this permit for digital archiving.</p>
+                                                <div className="flex items-center gap-2">
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => fileInputRef.current?.click()}
+                                                        className="bg-white border border-blue-300 text-blue-700 px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-50 transition-colors flex items-center gap-2 shadow-sm"
+                                                    >
+                                                        <Upload size={16} />
+                                                        {formData.signedPermitData ? 'Replace Document' : 'Upload Signed Copy'}
+                                                    </button>
+                                                    <input 
+                                                        type="file" 
+                                                        ref={fileInputRef}
+                                                        onChange={handleFileUpload}
+                                                        className="hidden"
+                                                        accept="image/*,application/pdf"
+                                                    />
+                                                    {formData.signedPermitData && (
+                                                         <span className="text-xs font-bold text-emerald-600 flex items-center gap-1">
+                                                             <CheckCircle size={14} /> Document Attached
+                                                         </span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
 
-                            {/* Access Log Section - ONLY when editing */}
-                            {editingPermit && (
-                                <div className="mt-8 pt-6 border-t border-slate-200">
-                                    <h4 className="text-sm font-bold text-slate-800 flex items-center gap-2 mb-4">
-                                        <History size={16} className="text-slate-500" />
-                                        Audit Log
-                                    </h4>
-                                    <div className="bg-slate-50 rounded-lg border border-slate-200 overflow-hidden max-h-48 overflow-y-auto">
-                                        <table className="min-w-full text-xs">
-                                            <thead className="bg-slate-100 text-slate-500 font-medium">
-                                                <tr>
-                                                    <th className="px-3 py-2 text-left sticky top-0 bg-slate-100">Date</th>
-                                                    <th className="px-3 py-2 text-left sticky top-0 bg-slate-100">User</th>
-                                                    <th className="px-3 py-2 text-left sticky top-0 bg-slate-100">Action</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-slate-200 text-slate-600">
-                                                {editingPermit.logs?.map((log) => (
-                                                    <tr key={log.id}>
-                                                        <td className="px-3 py-2">{new Date(log.timestamp).toLocaleString()}</td>
-                                                        <td className="px-3 py-2">{log.userName}</td>
-                                                        <td className="px-3 py-2">{log.action}</td>
+                                {/* Access Log Section - ONLY when editing */}
+                                {editingPermit && (
+                                    <div className="mt-8 pt-6 border-t border-slate-200">
+                                        <h4 className="text-sm font-bold text-slate-800 flex items-center gap-2 mb-4">
+                                            <History size={16} className="text-slate-500" />
+                                            Audit Log
+                                        </h4>
+                                        <div className="bg-slate-50 rounded-lg border border-slate-200 overflow-hidden max-h-48 overflow-y-auto">
+                                            <table className="min-w-full text-xs">
+                                                <thead className="bg-slate-100 text-slate-500 font-medium">
+                                                    <tr>
+                                                        <th className="px-3 py-2 text-left sticky top-0 bg-slate-100">Date</th>
+                                                        <th className="px-3 py-2 text-left sticky top-0 bg-slate-100">User</th>
+                                                        <th className="px-3 py-2 text-left sticky top-0 bg-slate-100">Action</th>
                                                     </tr>
-                                                )) || <tr><td colSpan={3} className="px-3 py-2 text-center italic">No logs available</td></tr>}
-                                            </tbody>
-                                        </table>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-200 text-slate-600">
+                                                    {editingPermit.logs?.map((log) => (
+                                                        <tr key={log.id}>
+                                                            <td className="px-3 py-2">{new Date(log.timestamp).toLocaleString()}</td>
+                                                            <td className="px-3 py-2">{log.userName}</td>
+                                                            <td className="px-3 py-2">{log.action}</td>
+                                                        </tr>
+                                                    )) || <tr><td colSpan={3} className="px-3 py-2 text-center italic">No logs available</td></tr>}
+                                                </tbody>
+                                            </table>
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
 
-                            <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 rounded hover:bg-slate-200">{t('cancel')}</button>
-                                <button type="submit" className="px-6 py-2 text-sm font-bold text-white bg-teal-600 rounded hover:bg-teal-700 shadow-sm">{editingPermit ? 'Update Permit' : t('issue_permit_btn')}</button>
-                            </div>
-                        </form>
+                                <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                                    <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 rounded hover:bg-slate-200">{t('cancel')}</button>
+                                    <button type="submit" className="px-6 py-2 text-sm font-bold text-white bg-teal-600 rounded hover:bg-teal-700 shadow-sm">{editingPermit ? 'Update Permit' : t('issue_permit_btn')}</button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
             )}
