@@ -107,6 +107,21 @@ const AppContent: React.FC = () => {
   const { t, isRTL } = useLanguage();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // LIVE PERMISSION SYNC: Ensure currentUser stays in sync with staffMembers registry
+  useEffect(() => {
+    if (currentUser) {
+        const freshUserRecord = staffMembers.find(s => s.id === currentUser.id);
+        if (freshUserRecord) {
+            // Check if vital data (permissions, role, details) changed
+            // Using stringify for deep comparison of the object
+            if (JSON.stringify(freshUserRecord) !== JSON.stringify(currentUser)) {
+                console.log('Syncing current user profile with latest staff registry data...');
+                setCurrentUser(freshUserRecord);
+            }
+        }
+    }
+  }, [staffMembers, currentUser]);
+
   // Apply Custom Font Effect
   useEffect(() => {
     const styleId = 'custom-dhivehi-font-style';
@@ -470,6 +485,7 @@ const AppContent: React.FC = () => {
             setSelectedAsset(null);
         }}
         userRole={currentUser.role}
+        currentUser={currentUser}
         onLogout={handleLogout}
         systemConfig={systemConfig}
         syncStatus={syncStatus}
