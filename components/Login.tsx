@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { User, UserRole, SystemConfig } from '../types';
 import { Building2, Lock, ArrowRight, UserCircle2, ShieldCheck, Hexagon, AlertCircle } from 'lucide-react';
@@ -133,7 +134,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, systemConfig, staffList }) => {
                         <input 
                             type="text" 
                             required
-                            className={`block w-full ${isRTL ? 'pr-10 pl-4' : 'pl-10 pr-4'} py-3 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all bg-slate-50 focus:bg-white`}
+                            className={`block w-full ${isRTL ? 'pr-10 pl-4' : 'pl-10 pr-4'} py-3 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all bg-white`}
                             placeholder="Staff Name or Email"
                             value={username}
                             onChange={e => setUsername(e.target.value)}
@@ -153,7 +154,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, systemConfig, staffList }) => {
                         <input 
                             type="password" 
                             required
-                            className={`block w-full ${isRTL ? 'pr-10 pl-4' : 'pl-10 pr-4'} py-3 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all bg-slate-50 focus:bg-white`}
+                            className={`block w-full ${isRTL ? 'pr-10 pl-4' : 'pl-10 pr-4'} py-3 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all bg-white`}
                             placeholder="••••••••"
                             value={password}
                             onChange={e => setPassword(e.target.value)}

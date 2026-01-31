@@ -1,4 +1,5 @@
 
+
 import React, { useState, useRef, useEffect } from 'react';
 import { User, UserRole, AssetCategory, AssetStatusConfig, SystemConfig, TemplateFieldPos, AccessLog } from '../types';
 import { 
@@ -8,7 +9,7 @@ import {
   UserPlus, Search, Phone, MapPin, BadgeCheck, Fingerprint, Users, Pencil, 
   Hash, ShieldAlert, ShieldCheck, CheckCircle2, User as UserIcon, Database, 
   Download, RefreshCw, FileJson, Cloud, CloudOff, PlugZap, PlayCircle, 
-  Loader2, Building2, XCircle, AlignLeft, AlignCenter, AlignRight 
+  Loader2, Building2, XCircle, AlignLeft, AlignCenter, AlignRight, ListTree, Tag, Palette
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { isSupabaseConfigured, testConnection } from '../services/supabaseService';
@@ -44,7 +45,7 @@ const Settings: React.FC<SettingsProps> = ({
     onUpdateSystemConfig 
 }) => {
   const { t, isRTL } = useLanguage();
-  const [activeTab, setActiveTab] = useState<'general' | 'profile' | 'staff' | 'logs' | 'permit-template' | 'data'>('profile');
+  const [activeTab, setActiveTab] = useState<'general' | 'profile' | 'staff' | 'logs' | 'permit-template' | 'data' | 'config'>('profile');
   
   // Profile State
   const [name, setName] = useState(currentUser.name);
@@ -81,6 +82,7 @@ const Settings: React.FC<SettingsProps> = ({
       const baseConfig = systemConfig || { 
         councilName: '', 
         secretariatName: '',
+        inventoryPrefix: '258',
         garagePermitTemplate: {
           title: 'GARAGE UTILIZATION PERMIT',
           header: '',
@@ -414,6 +416,15 @@ const Settings: React.FC<SettingsProps> = ({
                     {t('tab_general')}
                 </button>
             )}
+             {(currentUser.role === 'Admin' || currentUser.role === 'Executive') && (
+                <button 
+                onClick={() => setActiveTab('config')}
+                className={`px-6 py-4 text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === 'config' ? 'border-teal-600 text-teal-700 bg-teal-50/30' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
+                >
+                <ListTree size={18} />
+                {t('tab_config') || "Asset Config"}
+                </button>
+            )}
             {(currentUser.role === 'Admin' || currentUser.role === 'Executive') && (
                  <button 
                     onClick={() => setActiveTab('permit-template')}
@@ -474,14 +485,14 @@ const Settings: React.FC<SettingsProps> = ({
                                         <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Full Name</label>
                                         <div className="relative">
                                             <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                            <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full border border-slate-300 rounded-xl pl-10 pr-4 py-3 focus:ring-2 focus:ring-teal-500 outline-none bg-slate-50 focus:bg-white transition-all" />
+                                            <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full border border-slate-300 rounded-xl pl-10 pr-4 py-3 focus:ring-2 focus:ring-teal-500 outline-none bg-white transition-all" />
                                         </div>
                                     </div>
                                     <div>
                                         <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Email Address</label>
                                         <div className="relative">
                                             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                            <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full border border-slate-300 rounded-xl pl-10 pr-4 py-3 focus:ring-2 focus:ring-teal-500 outline-none bg-slate-50 focus:bg-white transition-all" />
+                                            <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full border border-slate-300 rounded-xl pl-10 pr-4 py-3 focus:ring-2 focus:ring-teal-500 outline-none bg-white transition-all" />
                                         </div>
                                     </div>
                                     <div>
@@ -518,11 +529,11 @@ const Settings: React.FC<SettingsProps> = ({
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">{t('council_name_label')}</label>
-                                <input type="text" value={localSystemConfig.councilName} onChange={(e) => setLocalSystemConfig({...localSystemConfig, councilName: e.target.value})} className="w-full border border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-teal-500 outline-none bg-slate-50 focus:bg-white" />
+                                <input type="text" value={localSystemConfig.councilName} onChange={(e) => setLocalSystemConfig({...localSystemConfig, councilName: e.target.value})} className="w-full border border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-teal-500 outline-none bg-white" />
                             </div>
                             <div>
                                 <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">{t('secretariat_label')}</label>
-                                <input type="text" value={localSystemConfig.secretariatName} onChange={(e) => setLocalSystemConfig({...localSystemConfig, secretariatName: e.target.value})} className="w-full border border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-teal-500 outline-none bg-slate-50 focus:bg-white" />
+                                <input type="text" value={localSystemConfig.secretariatName} onChange={(e) => setLocalSystemConfig({...localSystemConfig, secretariatName: e.target.value})} className="w-full border border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-teal-500 outline-none bg-white" />
                             </div>
                             <div className="md:col-span-2 border-t border-slate-100 pt-6 mt-2">
                                 <h3 className="font-bold text-slate-800 mb-4">Login Screen Branding</h3>
@@ -549,16 +560,16 @@ const Settings: React.FC<SettingsProps> = ({
                                     <div className="space-y-4">
                                         <div>
                                             <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">App Name / Title</label>
-                                            <input type="text" placeholder="Digital Governance" value={localSystemConfig.loginTitle || ''} onChange={(e) => setLocalSystemConfig({...localSystemConfig, loginTitle: e.target.value})} className="w-full border border-slate-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-teal-500 outline-none bg-slate-50 focus:bg-white" />
+                                            <input type="text" placeholder="Digital Governance" value={localSystemConfig.loginTitle || ''} onChange={(e) => setLocalSystemConfig({...localSystemConfig, loginTitle: e.target.value})} className="w-full border border-slate-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-teal-500 outline-none bg-white" />
                                         </div>
                                         <div>
                                             <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Title Highlight (Colored)</label>
-                                            <input type="text" placeholder="Reimagined." value={localSystemConfig.loginHighlight || ''} onChange={(e) => setLocalSystemConfig({...localSystemConfig, loginHighlight: e.target.value})} className="w-full border border-slate-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-teal-500 outline-none bg-slate-50 focus:bg-white" />
+                                            <input type="text" placeholder="Reimagined." value={localSystemConfig.loginHighlight || ''} onChange={(e) => setLocalSystemConfig({...localSystemConfig, loginHighlight: e.target.value})} className="w-full border border-slate-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-teal-500 outline-none bg-white" />
                                         </div>
                                     </div>
                                     <div className="md:col-span-2">
                                         <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Subtitle / Welcome Message</label>
-                                        <textarea value={localSystemConfig.loginSubtitle || ''} onChange={(e) => setLocalSystemConfig({...localSystemConfig, loginSubtitle: e.target.value})} className="w-full border border-slate-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-teal-500 outline-none bg-slate-50 focus:bg-white resize-none h-20" placeholder="Welcome to the official Council Portal..." />
+                                        <textarea value={localSystemConfig.loginSubtitle || ''} onChange={(e) => setLocalSystemConfig({...localSystemConfig, loginSubtitle: e.target.value})} className="w-full border border-slate-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-teal-500 outline-none bg-white resize-none h-20" placeholder="Welcome to the official Council Portal..." />
                                     </div>
                                 </div>
                             </div>
@@ -569,6 +580,147 @@ const Settings: React.FC<SettingsProps> = ({
                             </button>
                         </div>
                     </form>
+                </div>
+            )}
+
+            {activeTab === 'config' && (
+                <div className="space-y-8 animate-fade-in">
+                     <div className="flex justify-between items-start border-b border-slate-100 pb-4">
+                        <div>
+                            <h2 className="text-xl font-bold text-slate-900">{t('tab_config') || "Asset Configuration"}</h2>
+                            <p className="text-sm text-slate-500">{t('config_subtitle') || "Manage system codes and categories."}</p>
+                        </div>
+                    </div>
+
+                    {/* Inventory Prefix Section */}
+                    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                         <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                            <Tag size={18} className="text-teal-600" />
+                            Global Inventory Settings
+                         </h3>
+                         <div className="max-w-md">
+                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Office / Inventory Group Prefix</label>
+                            <div className="flex gap-2">
+                                <input 
+                                    type="text" 
+                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 outline-none font-mono bg-white"
+                                    value={localSystemConfig.inventoryPrefix || '258'}
+                                    onChange={(e) => setLocalSystemConfig({...localSystemConfig, inventoryPrefix: e.target.value})}
+                                />
+                                <button onClick={handleSaveGeneral} className="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-teal-700">Update</button>
+                            </div>
+                            <p className="text-xs text-slate-400 mt-2">This code (e.g., 258) is used as the prefix for all asset IDs (e.g., 258-2024-01-001).</p>
+                         </div>
+                    </div>
+
+                    {/* Categories Section */}
+                    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                                <Layers size={18} className="text-teal-600" />
+                                Asset Categories & Codes
+                            </h3>
+                            <button 
+                                onClick={() => {
+                                    if(onUpdateCategories) onUpdateCategories([...assetCategories, { id: `cat_${Date.now()}`, name: 'New Category', code: '99' }]);
+                                }}
+                                className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg font-bold flex items-center gap-1"
+                            >
+                                <Plus size={12}/> Add Category
+                            </button>
+                        </div>
+                        <div className="space-y-2">
+                            {assetCategories.map((cat, idx) => (
+                                <div key={cat.id} className="flex items-center gap-3">
+                                    <input 
+                                        type="text" 
+                                        value={cat.name} 
+                                        onChange={(e) => {
+                                            const newCats = [...assetCategories];
+                                            newCats[idx].name = e.target.value;
+                                            if(onUpdateCategories) onUpdateCategories(newCats);
+                                        }}
+                                        className="flex-1 border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 outline-none bg-white"
+                                        placeholder="Category Name"
+                                    />
+                                    <input 
+                                        type="text" 
+                                        value={cat.code} 
+                                        onChange={(e) => {
+                                            const newCats = [...assetCategories];
+                                            newCats[idx].code = e.target.value;
+                                            if(onUpdateCategories) onUpdateCategories(newCats);
+                                        }}
+                                        className="w-24 border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 outline-none font-mono text-center bg-white"
+                                        placeholder="Code"
+                                    />
+                                    <button 
+                                        onClick={() => {
+                                             if(onUpdateCategories) onUpdateCategories(assetCategories.filter(c => c.id !== cat.id));
+                                        }}
+                                        className="p-2 text-slate-400 hover:text-red-600"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                     {/* Statuses Section */}
+                    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                                <Palette size={18} className="text-teal-600" />
+                                Asset Statuses
+                            </h3>
+                            <button 
+                                onClick={() => {
+                                    if(onUpdateStatuses) onUpdateStatuses([...assetStatuses, { id: `sts_${Date.now()}`, name: 'New Status', color: 'bg-slate-100 text-slate-800 border-slate-200' }]);
+                                }}
+                                className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg font-bold flex items-center gap-1"
+                            >
+                                <Plus size={12}/> Add Status
+                            </button>
+                        </div>
+                        <div className="space-y-2">
+                            {assetStatuses.map((sts, idx) => (
+                                <div key={sts.id} className="flex items-center gap-3">
+                                    <input 
+                                        type="text" 
+                                        value={sts.name} 
+                                        onChange={(e) => {
+                                            const newSts = [...assetStatuses];
+                                            newSts[idx].name = e.target.value;
+                                            if(onUpdateStatuses) onUpdateStatuses(newSts);
+                                        }}
+                                        className="flex-1 border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 outline-none bg-white"
+                                        placeholder="Status Name"
+                                    />
+                                    <input 
+                                        type="text" 
+                                        value={sts.color} 
+                                        onChange={(e) => {
+                                            const newSts = [...assetStatuses];
+                                            newSts[idx].color = e.target.value;
+                                            if(onUpdateStatuses) onUpdateStatuses(newSts);
+                                        }}
+                                        className="flex-1 border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 outline-none font-mono text-xs bg-white"
+                                        placeholder="Tailwind Classes"
+                                    />
+                                    <div className={`px-3 py-1 rounded text-xs border ${sts.color}`}>Preview</div>
+                                    <button 
+                                        onClick={() => {
+                                             if(onUpdateStatuses) onUpdateStatuses(assetStatuses.filter(s => s.id !== sts.id));
+                                        }}
+                                        className="p-2 text-slate-400 hover:text-red-600"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -586,7 +738,7 @@ const Settings: React.FC<SettingsProps> = ({
 
                     <div className="relative">
                         <Search className="absolute left-4 top-3.5 text-slate-400" size={18} />
-                        <input type="text" placeholder="Search staff members..." className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none" value={staffSearch} onChange={e => setStaffSearch(e.target.value)} />
+                        <input type="text" placeholder="Search staff members..." className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none" value={staffSearch} onChange={e => setStaffSearch(e.target.value)} />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

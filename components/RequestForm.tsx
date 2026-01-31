@@ -1,3 +1,5 @@
+
+
 import React, { useState } from 'react';
 import { RequestPriority, CitizenRequest, RequestStatus } from '../types';
 import { X, Save, Sparkles, Loader2 } from 'lucide-react';
@@ -63,7 +65,7 @@ const RequestForm: React.FC<RequestFormProps> = ({ onClose, onSubmit }) => {
             <input 
               required
               type="text" 
-              className="w-full bg-slate-50 border border-slate-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-600 outline-none"
+              className="w-full bg-white border border-slate-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-600 outline-none"
               placeholder="e.g. Broken streetlight on 5th"
               value={formData.title}
               onChange={e => setFormData({...formData, title: e.target.value})}
@@ -75,7 +77,7 @@ const RequestForm: React.FC<RequestFormProps> = ({ onClose, onSubmit }) => {
             <input 
               required
               type="text" 
-              className="w-full bg-slate-50 border border-slate-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-600 outline-none"
+              className="w-full bg-white border border-slate-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-600 outline-none"
               placeholder="e.g. John Doe"
               value={formData.citizenName}
               onChange={e => setFormData({...formData, citizenName: e.target.value})}
@@ -87,7 +89,7 @@ const RequestForm: React.FC<RequestFormProps> = ({ onClose, onSubmit }) => {
             <input 
               required
               type="text" 
-              className="w-full bg-slate-50 border border-slate-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-600 outline-none"
+              className="w-full bg-white border border-slate-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-600 outline-none"
               placeholder="e.g. 123 Main St"
               value={formData.location}
               onChange={e => setFormData({...formData, location: e.target.value})}
@@ -97,7 +99,7 @@ const RequestForm: React.FC<RequestFormProps> = ({ onClose, onSubmit }) => {
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Category</label>
             <select 
-              className="w-full bg-slate-50 border border-slate-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-600 outline-none"
+              className="w-full bg-white border border-slate-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-600 outline-none"
               value={formData.category}
               onChange={e => setFormData({...formData, category: e.target.value})}
             >
@@ -115,7 +117,7 @@ const RequestForm: React.FC<RequestFormProps> = ({ onClose, onSubmit }) => {
                 {analyzing && <span className="text-purple-600 flex items-center gap-1 normal-case"><Loader2 className="animate-spin" size={10} /> AI Analyzing...</span>}
             </label>
             <select 
-              className="w-full bg-slate-50 border border-slate-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-600 outline-none"
+              className="w-full bg-white border border-slate-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-600 outline-none"
               value={formData.priority}
               onChange={e => setFormData({...formData, priority: e.target.value as RequestPriority})}
             >
@@ -139,7 +141,7 @@ const RequestForm: React.FC<RequestFormProps> = ({ onClose, onSubmit }) => {
             </div>
             <textarea 
               required
-              className="w-full bg-slate-50 border border-slate-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-600 outline-none h-24 resize-none"
+              className="w-full bg-white border border-slate-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-600 outline-none h-24 resize-none"
               placeholder="Describe the issue in detail..."
               value={formData.description}
               onChange={e => setFormData({...formData, description: e.target.value})}

@@ -172,6 +172,7 @@ export interface User {
 export interface SystemConfig {
   councilName: string;
   secretariatName: string;
+  inventoryPrefix?: string;
   garagePermitTemplate: GaragePermitTemplate;
   // Branding
   councilLogo?: string;

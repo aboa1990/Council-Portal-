@@ -1,6 +1,7 @@
 
+
 import React, { useRef, useState, useEffect } from 'react';
-import { Asset, AssetCategory, AssetStatusConfig, AccessLog, User } from '../types';
+import { Asset, AssetCategory, AssetStatusConfig, AccessLog, User, SystemConfig } from '../types';
 import { Search, MapPin, Truck, Monitor, Armchair, Hammer, CheckCircle, Upload, Plus, X, Filter, Printer, FileText, Layers, QrCode, FileDown, FileSpreadsheet, Pencil, Trash2 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import QRCode from "react-qr-code";
@@ -14,12 +15,10 @@ interface AssetRegistryProps {
   onImportAssets: (assets: Asset[]) => void;
   onUpdateAsset: (asset: Asset) => void;
   onDeleteAsset: (assetId: string) => void;
+  systemConfig: SystemConfig;
 }
 
-// Configuration Constants
-const OFFICE_CODE = "258";
-
-const AssetRegistry: React.FC<AssetRegistryProps> = ({ currentUser, assets, categories, statuses, onSelectAsset, onImportAssets, onUpdateAsset, onDeleteAsset }) => {
+const AssetRegistry: React.FC<AssetRegistryProps> = ({ currentUser, assets, categories, statuses, onSelectAsset, onImportAssets, onUpdateAsset, onDeleteAsset, systemConfig }) => {
   const { t, isRTL } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('All');
@@ -28,6 +27,9 @@ const AssetRegistry: React.FC<AssetRegistryProps> = ({ currentUser, assets, cate
   const [editingAssetId, setEditingAssetId] = useState<string | null>(null);
   const [showReport, setShowReport] = useState(false);
   
+  // Use the prefix from system config or default to 258
+  const officeCode = systemConfig.inventoryPrefix || "258";
+
   // Default to first category or Furniture if available
   const initialCategory = categories.find(c => c.name === 'Furniture') || categories[0];
   const initialStatus = statuses.find(s => s.name === 'Operational') || statuses[0];
@@ -64,7 +66,7 @@ const AssetRegistry: React.FC<AssetRegistryProps> = ({ currentUser, assets, cate
       const catCode = foundCat ? foundCat.code : '99';
       
       // The Group Code: 258-2026-02
-      const groupCode = `${OFFICE_CODE}-${year}-${catCode}`;
+      const groupCode = `${officeCode}-${year}-${catCode}`;
       
       // Calculate Sequence
       // Find all assets starting with this group code

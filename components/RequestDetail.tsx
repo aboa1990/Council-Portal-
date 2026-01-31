@@ -1,3 +1,5 @@
+
+
 import React, { useState } from 'react';
 import { CitizenRequest, RequestStatus } from '../types';
 import { analyzeRequestPriority, generateOfficialResponse } from '../services/geminiService';
@@ -60,7 +62,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ request, onBack, onUpdate
             <select 
               value={request.status} 
               onChange={(e) => onUpdateStatus(request.id, e.target.value as RequestStatus)}
-              className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none"
+              className="bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none"
             >
               {Object.values(RequestStatus).map(s => <option key={s} value={s}>{s}</option>)}
             </select>
@@ -138,7 +140,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ request, onBack, onUpdate
           {generatedResponse ? (
             <div className="flex-1 flex flex-col animate-in fade-in slide-in-from-bottom-2 duration-300">
                <textarea 
-                className="w-full flex-1 p-3 text-sm text-slate-700 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none bg-slate-50"
+                className="w-full flex-1 p-3 text-sm text-slate-700 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none bg-white"
                 value={generatedResponse}
                 onChange={(e) => setGeneratedResponse(e.target.value)}
               />
@@ -158,7 +160,7 @@ const RequestDetail: React.FC<RequestDetailProps> = ({ request, onBack, onUpdate
           ) : (
              <div className="flex-1 flex flex-col">
                <textarea 
-                  className="w-full flex-1 p-3 text-sm text-slate-700 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                  className="w-full flex-1 p-3 text-sm text-slate-700 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none bg-white"
                   placeholder="Type manual response or use AI to draft..."
                   value={draftNote}
                   onChange={(e) => setDraftNote(e.target.value)}

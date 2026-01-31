@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useRef } from 'react';
 import { ViewState, CitizenRequest, RequestStatus, Asset, User, UserRole, House, AssetCategory, AssetStatusConfig, SystemConfig, GaragePermit, TemplateFieldPos, AccessLog, RequisitionForm } from './types';
 import { MOCK_REQUESTS, MOCK_ASSETS, MOCK_HOUSES, DEFAULT_ASSET_CATEGORIES, DEFAULT_ASSET_STATUSES, MOCK_GARAGE_PERMITS, MOCK_STAFF, DEFAULT_FIELD_POSITIONS } from './constants';
@@ -67,6 +68,7 @@ const AppContent: React.FC = () => {
       const defaults: SystemConfig = {
           councilName: 'Hanimaadhoo Council',
           secretariatName: 'Secretariat of',
+          inventoryPrefix: '258',
           garagePermitTemplate: {
               title: 'GARAGE UTILIZATION PERMIT',
               header: 'SECRETARIAT OF THE HANIMAADHOO COUNCIL\nNORTH THILADHUNMATHI, MALDIVES',
@@ -349,6 +351,7 @@ const AppContent: React.FC = () => {
                 onImportAssets={handleImportAssets}
                 onUpdateAsset={handleUpdateAsset}
                 onDeleteAsset={handleDeleteAsset}
+                systemConfig={systemConfig}
             />
         );
       case 'garage':
@@ -399,8 +402,7 @@ const AppContent: React.FC = () => {
   return (
     <div 
         className={`flex min-h-screen bg-slate-50 text-slate-900 ${isRTL ? 'font-thaana' : 'font-sans'}`}
-        dir={isRTL ? 'rtl' : 'ltr'}
-    >
+        dir={isRTL ? 'rtl' : 'ltr'}>
       
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-30 md:hidden bg-slate-900/50 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)}>
