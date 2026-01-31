@@ -24,11 +24,27 @@ const Login: React.FC<LoginProps> = ({ onLogin, systemConfig, staffList }) => {
     
     // Simulate API delay and check credentials
     setTimeout(() => {
-      // Find staff member by email or name
-      const staffMember = staffList.find(s => 
+      // 1. Check against the managed staff list (from LocalStorage or DB)
+      let staffMember = staffList.find(s => 
         (s.email.toLowerCase() === username.toLowerCase() || s.name.toLowerCase() === username.toLowerCase()) && 
         (s.password === password || (!s.password && password === 'password123'))
       );
+
+      // 2. FAILSAFE / RECOVERY LOGIN
+      // This ensures that even if the database is disconnected or local storage is empty on a new device,
+      // the administrator can always log in with the default credentials.
+      if (!staffMember && (username.toLowerCase() === 'admin' || username.toLowerCase() === 'admin@hanimaadhoo.gov.mv') && password === 'admin') {
+          staffMember = {
+            id: 'MASTER-ADMIN',
+            name: 'System Administrator',
+            role: 'Admin',
+            email: 'admin@hanimaadhoo.gov.mv',
+            designation: 'Recovery Access',
+            rcNo: 'MASTER',
+            address: 'System Root',
+            joinedDate: new Date().toISOString()
+          };
+      }
 
       if (staffMember) {
         onLogin(staffMember);
