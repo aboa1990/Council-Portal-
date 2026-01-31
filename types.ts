@@ -1,5 +1,4 @@
 
-
 export enum RequestStatus {
   NEW = 'New',
   IN_PROGRESS = 'In Progress',
@@ -90,6 +89,7 @@ export interface House {
 
 export interface GaragePermit {
   permitId: string;
+  gemsEntryNumber?: string; // New GEMS Entry No field
   issueDate: string;
   status: 'Issued' | 'Void' | 'Pending Upload';
   

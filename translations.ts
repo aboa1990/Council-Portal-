@@ -1,5 +1,4 @@
 
-
 export const translations = {
   en: {
     // General
@@ -165,6 +164,7 @@ export const translations = {
     view_logs: "View Logs",
     extra_notes: "Extra Notes",
     garage_owner_permits: "Garage Owner Permit Count",
+    gems_entry_no: "GEMS Entry No",
 
     // House Registry
     house_registry_title: "House Registry",
@@ -387,6 +387,7 @@ export const translations = {
     view_logs: "ލޮގް ބައްލަވާ",
     extra_notes: "އިތުރު ނޯޓްސް",
     garage_owner_permits: "ގަރާޖު ވެރިފަރާތުގެ ހުއްދަތަކުގެ އަދަދު",
+    gems_entry_no: "ޖެމްސް އެންޓްރީ ނަންބަރު",
 
     // House Registry
     house_registry_title: "ގޭގެ ރަޖިސްޓްރީ",

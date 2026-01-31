@@ -50,6 +50,7 @@ const PermitPaper: React.FC<{ permit: GaragePermit, systemConfig: SystemConfig, 
                         alt="Permit Template"
                     />
                     <div style={{ position: 'absolute', inset: 0, zIndex: 10 }}>
+                        {renderField('gemsEntryNumber', permit.gemsEntryNumber || '')}
                         {renderField('permitId', permit.permitId)}
                         {renderField('issueDate', new Date(permit.issueDate).toLocaleDateString())}
                         {renderField('vehicleChassis', permit.vehicleChassisNumber)}
@@ -86,6 +87,9 @@ const PermitPaper: React.FC<{ permit: GaragePermit, systemConfig: SystemConfig, 
                     <div className="relative z-10 flex-1 py-8 flex flex-col justify-start gap-10">
                         <div className="flex justify-between items-end px-4">
                             <div>
+                                {permit.gemsEntryNumber && (
+                                    <p className="text-xs font-mono font-bold text-slate-500 mb-1">GEMS: {permit.gemsEntryNumber}</p>
+                                )}
                                 <p className="text-xs font-bold uppercase text-slate-500 mb-1">Permit Number</p>
                                 <p className="text-xl font-mono font-bold text-slate-900">{permit.permitId}</p>
                             </div>
@@ -122,7 +126,7 @@ const PermitPaper: React.FC<{ permit: GaragePermit, systemConfig: SystemConfig, 
                     <div className="relative z-10 mt-auto pt-8 border-t-2 border-slate-900">
                         <div className="grid grid-cols-2 gap-16">
                             <div className="text-center"><div className="h-16 flex items-end justify-center pb-2"><span className="font-script text-2xl text-slate-800">{permit.checkedBy}</span></div><div className="border-t border-slate-400 pt-2"><p className="text-xs font-bold uppercase text-slate-500">Checked By</p></div></div>
-                            <div className="text-center"><div className="h-16 flex items-end justify-center pb-2"></div><div className="border-t border-slate-400 pt-2"><p className="text-xs font-bold uppercase text-slate-500">Authorized Signature</p></div></div>
+                            <div className="text-center"><div className="h-16 flex items-end justify-center pb-2"><span className="font-script text-2xl text-slate-800">{permit.authorizedBy}</span></div><div className="border-t border-slate-400 pt-2"><p className="text-xs font-bold uppercase text-slate-500">Authorized Signature</p></div></div>
                         </div>
                     </div>
                 </div>
@@ -153,6 +157,7 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
 
     const initialFormState: Partial<GaragePermit> = {
         permitId: '',
+        gemsEntryNumber: '',
         issueDate: new Date().toISOString().split('T')[0],
         status: 'Pending Upload',
         vehicleChassisNumber: '',
@@ -168,6 +173,8 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
         garageOwnerAddress: '',
         garageOwnerId: '',
         garageOwnerContact: '',
+        checkedBy: '',
+        authorizedBy: '',
         notes: '',
         signedPermitData: ''
     };
@@ -206,7 +213,7 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
         const year = new Date().getFullYear();
         const count = permits.filter(p => p.issueDate.startsWith(String(year))).length + 1;
         const newId = `${OFFICE_CODE}/${year}/${String(count).padStart(2, '0')}`;
-        setFormData({ ...initialFormState, permitId: newId });
+        setFormData({ ...initialFormState, permitId: newId, checkedBy: currentUser.name });
         setIsModalOpen(true);
     };
 
@@ -249,8 +256,6 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
             const newPermit: GaragePermit = { 
                 ...formData as GaragePermit, 
                 status: currentStatus as 'Issued' | 'Void' | 'Pending Upload',
-                checkedBy: currentUser.name, 
-                authorizedBy: '', 
                 logs: [logEntry] 
             };
             onAddPermit(newPermit);
@@ -359,7 +364,16 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                         <tbody className="bg-white divide-y divide-slate-200">
                             {filteredPermits.map((permit) => (
                                 <tr key={permit.permitId} className="hover:bg-slate-50 transition-colors">
-                                    <td className="px-6 py-4 whitespace-nowrap"><div className="flex items-center gap-3"><div className="bg-indigo-50 p-2 rounded-lg text-indigo-600"><FileText size={20} /></div><div><div className="text-sm font-bold text-slate-900 font-mono">{permit.permitId}</div><div className="text-xs text-slate-500">{new Date(permit.issueDate).toLocaleDateString()}</div></div></div></td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="flex items-center gap-3">
+                                            <div className="bg-indigo-50 p-2 rounded-lg text-indigo-600"><FileText size={20} /></div>
+                                            <div>
+                                                <div className="text-sm font-bold text-slate-900 font-mono">{permit.permitId}</div>
+                                                <div className="text-xs text-slate-500">{new Date(permit.issueDate).toLocaleDateString()}</div>
+                                                {permit.gemsEntryNumber && <div className="text-[10px] text-teal-600 font-bold bg-teal-50 px-1 rounded border border-teal-100 mt-1 inline-block">{permit.gemsEntryNumber}</div>}
+                                            </div>
+                                        </div>
+                                    </td>
                                     <td className="px-6 py-4 whitespace-nowrap"><div className="flex flex-col"><div className="flex items-center gap-2 text-sm font-bold text-slate-700"><Car size={14} className="text-slate-400"/> {permit.vehicleRegistryNumber}</div><div className="text-xs text-slate-500 font-mono">Chassis: {permit.vehicleChassisNumber}</div></div></td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex flex-col">
@@ -521,8 +535,16 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                                 <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X size={20}/></button>
                             </div>
                             <form onSubmit={handleSubmit} className="p-6 space-y-6">
-                                {/* Standard Form Fields */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Header Fields */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <div className="col-span-1">
+                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('gems_entry_no')}</label>
+                                        <input type="text" className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white font-mono text-slate-700" 
+                                            value={formData.gemsEntryNumber || ''} 
+                                            onChange={e => setFormData({...formData, gemsEntryNumber: e.target.value})} 
+                                            placeholder="e.g. GEMS-2024-001"
+                                        />
+                                    </div>
                                     <div className="col-span-1"><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('permit_id')}</label><input type="text" className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-slate-100 font-mono font-bold text-slate-700" value={formData.permitId} readOnly /></div>
                                     <div className="col-span-1"><label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('issue_date')}</label><input type="date" required className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white outline-none" value={formData.issueDate} onChange={e => setFormData({...formData, issueDate: e.target.value})} /></div>
                                 </div>
@@ -587,6 +609,33 @@ const GaragePermitRegistry: React.FC<GaragePermitRegistryProps> = ({ currentUser
                                         value={formData.notes || ''}
                                         onChange={e => setFormData({...formData, notes: e.target.value})}
                                     />
+                                </div>
+
+                                {/* Official Authorization Section */}
+                                <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
+                                    <h4 className="text-sm font-bold text-slate-700 flex items-center gap-2 mb-4 border-b border-slate-200 pb-2">
+                                        <BadgeCheck size={16} className="text-teal-600"/> Authorization
+                                    </h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('garage_checked_by')}</label>
+                                            <input 
+                                                type="text" 
+                                                className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" 
+                                                value={formData.checkedBy || ''} 
+                                                onChange={e => setFormData({...formData, checkedBy: e.target.value})}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">{t('authorized_by')}</label>
+                                            <input 
+                                                type="text" 
+                                                className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" 
+                                                value={formData.authorizedBy || ''} 
+                                                onChange={e => setFormData({...formData, authorizedBy: e.target.value})}
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
                                 
                                 {/* Signed Permit Upload Section - Only when editing */}

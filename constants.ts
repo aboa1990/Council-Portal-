@@ -1,5 +1,4 @@
 
-
 import { CitizenRequest, RequestPriority, RequestStatus, Asset, House, AssetCategory, AssetStatusConfig, GaragePermit, User, TemplateFieldPos } from './types';
 
 export const DEFAULT_ASSET_CATEGORIES: AssetCategory[] = [
@@ -16,7 +15,7 @@ export const DEFAULT_ASSET_CATEGORIES: AssetCategory[] = [
 export const DEFAULT_ASSET_STATUSES: AssetStatusConfig[] = [
   { id: 'sts_op', name: 'Operational', color: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
   { id: 'sts_maint', name: 'Maintenance', color: 'bg-amber-100 text-amber-800 border-amber-200' },
-  { id: 'sts_rep', name: 'Repair Needed', color: 'bg-red-100 text-red-800 border-red-200' },
+  { id: 'sts_rep', name: 'Repair Needed', color: 'bg-red-100 text-red-700 border-red-200' },
   { id: 'sts_ret', name: 'Retired', color: 'bg-slate-100 text-slate-800 border-slate-200' },
   { id: 'sts_sold', name: 'Sold', color: 'bg-blue-100 text-blue-800 border-blue-200' },
 ];
@@ -68,6 +67,7 @@ export const MOCK_HOUSES: House[] = [];
 export const MOCK_GARAGE_PERMITS: GaragePermit[] = [
   {
     permitId: '258/2024/01',
+    gemsEntryNumber: 'GEMS-24/005',
     issueDate: '2024-01-15',
     status: 'Issued',
     vehicleChassisNumber: 'CHS-99887766',
@@ -92,6 +92,7 @@ export const MOCK_GARAGE_PERMITS: GaragePermit[] = [
 ];
 
 export const DEFAULT_FIELD_POSITIONS: Record<string, TemplateFieldPos> = {
+  gemsEntryNumber: { top: 12, left: 15, fontSize: 12, visible: true, fontWeight: 'bold', textAlign: 'left' },
   permitId: { top: 12, left: 75, fontSize: 14, visible: true, fontWeight: 'bold', textAlign: 'right' },
   issueDate: { top: 16, left: 75, fontSize: 12, visible: true, textAlign: 'right' },
   vehicleChassis: { top: 25, left: 15, fontSize: 12, visible: true, textAlign: 'right' },
