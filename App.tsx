@@ -34,6 +34,7 @@ const AppContent: React.FC = () => {
   const loadLocal = <T,>(key: string, fallback: T): T => {
     try {
       const saved = localStorage.getItem(key);
+      if (saved === 'null' || saved === 'undefined') return fallback;
       return saved ? JSON.parse(saved) : fallback;
     } catch (e) {
       console.error(`Error loading ${key}`, e);
@@ -60,18 +61,38 @@ const AppContent: React.FC = () => {
   const [assetCategories, setAssetCategories] = useState<AssetCategory[]>(DEFAULT_ASSET_CATEGORIES);
   const [assetStatuses, setAssetStatuses] = useState<AssetStatusConfig[]>(DEFAULT_ASSET_STATUSES);
 
-  const [systemConfig, setSystemConfig] = useState<SystemConfig>(() => loadLocal<SystemConfig>(STORAGE_KEYS.CONFIG, {
-      councilName: 'Hanimaadhoo Council',
-      secretariatName: 'Secretariat of',
-      garagePermitTemplate: {
-          title: 'GARAGE UTILIZATION PERMIT',
-          header: 'SECRETARIAT OF THE HANIMAADHOO COUNCIL\nNORTH THILADHUNMATHI, MALDIVES',
-          footer: 'This permit is issued in accordance with the Land Management Regulations. Any alterations to the registered garage space or vehicle must be reported within 7 days.',
-          declaration: 'This document serves as an official confirmation that the following vehicle is authorized to utilize the designated garage space as registered with the Council records.',
-          useCustomTemplate: false,
-          fieldPositions: DEFAULT_FIELD_POSITIONS
-      }
-  }));
+  // Robust System Config Initialization with Deep Merge
+  const [systemConfig, setSystemConfig] = useState<SystemConfig>(() => {
+      const saved = loadLocal<SystemConfig | null>(STORAGE_KEYS.CONFIG, null);
+      const defaults: SystemConfig = {
+          councilName: 'Hanimaadhoo Council',
+          secretariatName: 'Secretariat of',
+          garagePermitTemplate: {
+              title: 'GARAGE UTILIZATION PERMIT',
+              header: 'SECRETARIAT OF THE HANIMAADHOO COUNCIL\nNORTH THILADHUNMATHI, MALDIVES',
+              footer: 'This permit is issued in accordance with the Land Management Regulations. Any alterations to the registered garage space or vehicle must be reported within 7 days.',
+              declaration: 'This document serves as an official confirmation that the following vehicle is authorized to utilize the designated garage space as registered with the Council records.',
+              useCustomTemplate: false,
+              fieldPositions: DEFAULT_FIELD_POSITIONS
+          }
+      };
+
+      if (!saved) return defaults;
+
+      // Ensure critical nested structures exist
+      return {
+          ...defaults,
+          ...saved,
+          garagePermitTemplate: {
+              ...defaults.garagePermitTemplate,
+              ...(saved.garagePermitTemplate || {}),
+              fieldPositions: {
+                  ...defaults.garagePermitTemplate.fieldPositions,
+                  ...(saved.garagePermitTemplate?.fieldPositions || {})
+              }
+          }
+      };
+  });
 
   // DB Sync States
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'error' | 'local'>(isSupabaseConfigured() ? 'idle' : 'local');
@@ -86,7 +107,6 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     if (isSupabaseConfigured()) {
       const initCloud = async () => {
-        // 1. Check connection and table existence
         const connection = await testConnection();
         if (!connection.success) {
             setDbConnectionError(connection.message);
@@ -94,7 +114,6 @@ const AppContent: React.FC = () => {
             return;
         }
 
-        // 2. Fetch data if connection is good
         setSyncStatus('syncing');
         const cloudData = await fetchPortalState(systemConfig.councilName);
         if (cloudData) {
@@ -108,7 +127,6 @@ const AppContent: React.FC = () => {
           if (cloudData.accessLogs) setAccessLogs(cloudData.accessLogs);
           setSyncStatus('synced');
         } else {
-          // If no data exists in cloud yet, we remain in local but idle state (ready to push)
           setSyncStatus('idle');
         }
         isInitialLoad.current = false;
@@ -129,7 +147,6 @@ const AppContent: React.FC = () => {
     localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(accessLogs));
     localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(currentUser));
 
-    // Cloud Sync Debounce/Throttle
     if (!isInitialLoad.current && isSupabaseConfigured() && !dbConnectionError) {
       const syncToCloud = async () => {
         setSyncStatus('syncing');
@@ -138,7 +155,7 @@ const AppContent: React.FC = () => {
         });
         setSyncStatus(success ? 'synced' : 'error');
       };
-      const timer = setTimeout(syncToCloud, 2000); // 2-second debounce for cloud sync
+      const timer = setTimeout(syncToCloud, 2000);
       return () => clearTimeout(timer);
     }
   }, [requests, assets, houses, garagePermits, requisitionForms, staffMembers, systemConfig, accessLogs, currentUser, dbConnectionError]);
@@ -440,7 +457,7 @@ const AppContent: React.FC = () => {
                 </div>
             )}
 
-            {/* DATABASE CONNECTION ERROR (e.g. Missing Table) */}
+            {/* DATABASE CONNECTION ERROR */}
             {dbConnectionError && (
                  <div className="bg-red-50 border border-red-200 p-4 mb-6 rounded-lg flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-top-2">
                     <div className="flex-shrink-0 mt-0.5">

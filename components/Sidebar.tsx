@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { LayoutDashboard, FileText, BarChart3, Settings, Building2, LogOut, Box, Users, Home, Globe, Hexagon, Car, Database, Cloud, CloudOff, RefreshCw, ClipboardList } from 'lucide-react';
 import { ViewState, UserRole, SystemConfig } from '../types';
@@ -49,8 +50,12 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, userRole, 
   return (
     <div className={`w-64 bg-teal-900 text-teal-100 flex flex-col h-screen fixed top-0 z-20 hidden md:flex shadow-2xl transition-all duration-300 ${isRTL ? 'right-0' : 'left-0'}`}>
       <div className={`h-24 flex items-center gap-4 px-6 bg-teal-950 border-b border-teal-800 ${isRTL ? 'flex-row-reverse text-right' : 'flex-row text-left'}`}>
-        <div className="bg-white p-2 rounded-lg border-2 border-emerald-500 shadow-lg shadow-teal-900/50 flex-shrink-0">
-           <Building2 size={32} className="text-teal-700" />
+        <div className="bg-white p-2 rounded-lg border-2 border-emerald-500 shadow-lg shadow-teal-900/50 flex-shrink-0 w-12 h-12 flex items-center justify-center overflow-hidden">
+           {systemConfig.councilLogo ? (
+               <img src={systemConfig.councilLogo} alt="Logo" className="w-full h-full object-contain" />
+           ) : (
+               <Building2 size={32} className="text-teal-700" />
+           )}
         </div>
         <div className="flex flex-col overflow-hidden">
           <span className="text-[10px] uppercase tracking-wider text-emerald-400 font-bold truncate">{systemConfig.secretariatName}</span>

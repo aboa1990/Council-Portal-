@@ -52,6 +52,7 @@ const Settings: React.FC<SettingsProps> = ({
   const [avatar, setAvatar] = useState(currentUser.avatar || '');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const staffPhotoInputRef = useRef<HTMLInputElement>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
   const templateInputRef = useRef<HTMLInputElement>(null);
   const importDatabaseRef = useRef<HTMLInputElement>(null);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -75,7 +76,7 @@ const Settings: React.FC<SettingsProps> = ({
     idNo: ''
   });
 
-  // General Settings State
+  // General Settings State - Safe Initialization
   const [localSystemConfig, setLocalSystemConfig] = useState<SystemConfig>(() => {
       const baseConfig = systemConfig || { 
         councilName: '', 
@@ -90,13 +91,23 @@ const Settings: React.FC<SettingsProps> = ({
         }
       };
 
+      // Safely access garagePermitTemplate, provide defaults if missing
+      const permitTemplate = baseConfig.garagePermitTemplate || {
+          title: 'GARAGE UTILIZATION PERMIT',
+          header: '',
+          footer: '',
+          declaration: '',
+          useCustomTemplate: false,
+          fieldPositions: DEFAULT_FIELD_POSITIONS
+      };
+
       return {
           ...baseConfig,
           garagePermitTemplate: {
-              ...baseConfig.garagePermitTemplate,
+              ...permitTemplate,
               fieldPositions: {
                   ...DEFAULT_FIELD_POSITIONS,
-                  ...(baseConfig.garagePermitTemplate?.fieldPositions || {})
+                  ...(permitTemplate.fieldPositions || {})
               }
           }
       };
@@ -104,13 +115,22 @@ const Settings: React.FC<SettingsProps> = ({
   
   useEffect(() => {
       if (systemConfig) {
+          const permitTemplate = systemConfig.garagePermitTemplate || {
+              title: 'GARAGE UTILIZATION PERMIT',
+              header: '',
+              footer: '',
+              declaration: '',
+              useCustomTemplate: false,
+              fieldPositions: DEFAULT_FIELD_POSITIONS
+          };
+
           setLocalSystemConfig(prev => ({
               ...systemConfig,
               garagePermitTemplate: {
-                  ...systemConfig.garagePermitTemplate,
+                  ...permitTemplate,
                   fieldPositions: {
                       ...DEFAULT_FIELD_POSITIONS,
-                      ...systemConfig.garagePermitTemplate.fieldPositions
+                      ...permitTemplate.fieldPositions
                   }
               }
           }));
@@ -132,6 +152,14 @@ const Settings: React.FC<SettingsProps> = ({
     if (e.target.files && e.target.files[0]) {
       const reader = new FileReader();
       reader.onload = (event) => setNewStaff(prev => ({ ...prev, avatar: event.target?.result as string }));
+      reader.readAsDataURL(e.target.files[0]);
+    }
+  };
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const reader = new FileReader();
+      reader.onload = (event) => setLocalSystemConfig(prev => ({ ...prev, councilLogo: event.target?.result as string }));
       reader.readAsDataURL(e.target.files[0]);
     }
   };
@@ -495,6 +523,44 @@ const Settings: React.FC<SettingsProps> = ({
                             <div>
                                 <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">{t('secretariat_label')}</label>
                                 <input type="text" value={localSystemConfig.secretariatName} onChange={(e) => setLocalSystemConfig({...localSystemConfig, secretariatName: e.target.value})} className="w-full border border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-teal-500 outline-none bg-slate-50 focus:bg-white" />
+                            </div>
+                            <div className="md:col-span-2 border-t border-slate-100 pt-6 mt-2">
+                                <h3 className="font-bold text-slate-800 mb-4">Login Screen Branding</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Council Logo</label>
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-16 h-16 bg-slate-100 rounded-lg border border-slate-200 flex items-center justify-center overflow-hidden">
+                                                {localSystemConfig.councilLogo ? (
+                                                    <img src={localSystemConfig.councilLogo} alt="Logo" className="w-full h-full object-contain" />
+                                                ) : (
+                                                    <Building2 className="text-slate-300" />
+                                                )}
+                                            </div>
+                                            <div>
+                                                <button type="button" onClick={() => logoInputRef.current?.click()} className="text-sm bg-white border border-slate-300 px-3 py-1.5 rounded-lg font-medium text-slate-700 hover:bg-slate-50">Upload Logo</button>
+                                                <input type="file" ref={logoInputRef} onChange={handleLogoUpload} className="hidden" accept="image/*" />
+                                                {localSystemConfig.councilLogo && (
+                                                    <button type="button" onClick={() => setLocalSystemConfig(p => ({...p, councilLogo: undefined}))} className="ml-2 text-xs text-red-500 hover:text-red-700">Remove</button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">App Name / Title</label>
+                                            <input type="text" placeholder="Digital Governance" value={localSystemConfig.loginTitle || ''} onChange={(e) => setLocalSystemConfig({...localSystemConfig, loginTitle: e.target.value})} className="w-full border border-slate-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-teal-500 outline-none bg-slate-50 focus:bg-white" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Title Highlight (Colored)</label>
+                                            <input type="text" placeholder="Reimagined." value={localSystemConfig.loginHighlight || ''} onChange={(e) => setLocalSystemConfig({...localSystemConfig, loginHighlight: e.target.value})} className="w-full border border-slate-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-teal-500 outline-none bg-slate-50 focus:bg-white" />
+                                        </div>
+                                    </div>
+                                    <div className="md:col-span-2">
+                                        <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Subtitle / Welcome Message</label>
+                                        <textarea value={localSystemConfig.loginSubtitle || ''} onChange={(e) => setLocalSystemConfig({...localSystemConfig, loginSubtitle: e.target.value})} className="w-full border border-slate-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-teal-500 outline-none bg-slate-50 focus:bg-white resize-none h-20" placeholder="Welcome to the official Council Portal..." />
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div className="pt-4">

@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { ShoppingCart, FileText, Printer, Plus, Trash2, CheckCircle2, Eye, ChevronLeft, Calendar } from 'lucide-react';
 import { SystemConfig, User, RequisitionForm, RequisitionItem } from '../types';
@@ -326,8 +327,12 @@ const HudhaForms: React.FC<HudhaFormsProps> = ({ systemConfig, currentUser, requ
                              <div className="grid grid-cols-12 gap-4 mb-8 border-b-2 border-slate-900 pb-4">
                                 <div className="col-span-2 flex items-center justify-center">
                                     {/* Placeholder for Logo if available */}
-                                    <div className="w-16 h-16 border-2 border-slate-900 rounded-full flex items-center justify-center font-bold text-xl">
-                                        {systemConfig.councilName.charAt(0)}
+                                    <div className="w-16 h-16 border-2 border-slate-900 rounded-full flex items-center justify-center font-bold text-xl overflow-hidden">
+                                        {systemConfig.councilLogo ? (
+                                            <img src={systemConfig.councilLogo} alt="Logo" className="w-full h-full object-contain" />
+                                        ) : (
+                                            systemConfig.councilName.charAt(0)
+                                        )}
                                     </div>
                                 </div>
                                 <div className="col-span-8 text-center">

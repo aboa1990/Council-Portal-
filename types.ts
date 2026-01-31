@@ -173,6 +173,11 @@ export interface SystemConfig {
   councilName: string;
   secretariatName: string;
   garagePermitTemplate: GaragePermitTemplate;
+  // Branding
+  councilLogo?: string;
+  loginTitle?: string;
+  loginHighlight?: string;
+  loginSubtitle?: string;
 }
 
 export type ViewState = 'dashboard' | 'requests' | 'assets' | 'houses' | 'garage' | 'analytics' | 'settings' | 'hudha';
