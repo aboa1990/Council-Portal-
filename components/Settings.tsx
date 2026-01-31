@@ -50,6 +50,12 @@ const Settings: React.FC<SettingsProps> = ({
   const [name, setName] = useState(currentUser.name);
   const [email, setEmail] = useState(currentUser.email || '');
   const [avatar, setAvatar] = useState(currentUser.avatar || '');
+  
+  // Profile Password State
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const staffPhotoInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -251,8 +257,36 @@ const Settings: React.FC<SettingsProps> = ({
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
-    onUpdateUser({ ...currentUser, name, email, avatar });
-    onAddAccessLog?.('Profile Updated', 'User updated their personal profile details.');
+    setPasswordError(null);
+
+    const updatedUser: User = { 
+        ...currentUser, 
+        name, 
+        email, 
+        avatar 
+    };
+
+    if (newPassword) {
+        if (newPassword !== confirmPassword) {
+            setPasswordError("Passwords do not match.");
+            return;
+        }
+        if (newPassword.length < 4) {
+            setPasswordError("Password is too short.");
+            return;
+        }
+        updatedUser.password = newPassword;
+        onAddAccessLog?.('Password Changed', 'User updated their login password.');
+    } else {
+        onAddAccessLog?.('Profile Updated', 'User updated their personal profile details.');
+    }
+
+    onUpdateUser(updatedUser);
+    
+    // Clear password fields on success
+    setNewPassword('');
+    setConfirmPassword('');
+    
     setShowSuccess(true);
     setTimeout(() => setShowSuccess(false), 3000);
   };
@@ -528,6 +562,48 @@ const Settings: React.FC<SettingsProps> = ({
                                     <div>
                                         <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Department</label>
                                         <input readOnly type="text" value="Secretariat" className="w-full border border-slate-200 rounded-xl px-4 py-3 bg-slate-100 text-slate-500 cursor-not-allowed text-sm" />
+                                    </div>
+                                </div>
+
+                                {/* Security Section */}
+                                <div className="pt-6 mt-6 border-t border-slate-100">
+                                    <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-4">
+                                        <Key size={18} className="text-teal-600" /> Security & Password
+                                    </h3>
+                                    
+                                    {passwordError && (
+                                        <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4 flex items-center gap-2">
+                                            <XCircle size={16} /> {passwordError}
+                                        </div>
+                                    )}
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">New Password</label>
+                                            <div className="relative">
+                                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                                <input 
+                                                    type="password" 
+                                                    value={newPassword} 
+                                                    onChange={e => setNewPassword(e.target.value)} 
+                                                    placeholder="Leave blank to keep current"
+                                                    className="w-full border border-slate-300 rounded-xl pl-10 pr-4 py-3 focus:ring-2 focus:ring-teal-500 outline-none bg-white transition-all" 
+                                                />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Confirm Password</label>
+                                            <div className="relative">
+                                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                                <input 
+                                                    type="password" 
+                                                    value={confirmPassword} 
+                                                    onChange={e => setConfirmPassword(e.target.value)} 
+                                                    placeholder="Retype new password"
+                                                    className="w-full border border-slate-300 rounded-xl pl-10 pr-4 py-3 focus:ring-2 focus:ring-teal-500 outline-none bg-white transition-all" 
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
