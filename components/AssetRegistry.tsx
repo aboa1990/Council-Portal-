@@ -1,10 +1,10 @@
 
-
 import React, { useRef, useState, useEffect } from 'react';
 import { Asset, AssetCategory, AssetStatusConfig, AccessLog, User, SystemConfig } from '../types';
 import { Search, MapPin, Truck, Monitor, Armchair, Hammer, CheckCircle, Upload, Plus, X, Filter, Printer, FileText, Layers, QrCode, FileDown, FileSpreadsheet, Pencil, Trash2, Building, Globe, Book, Shield, Cpu } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import QRCode from "react-qr-code";
+import { getPermissionsForRole } from '../constants';
 
 interface AssetRegistryProps {
   currentUser: User;
@@ -310,8 +310,9 @@ const AssetRegistry: React.FC<AssetRegistryProps> = ({ currentUser, assets, cate
   const uniqueCategories = Array.from(new Set(assets.map(a => a.category))).sort();
   const reportAssets = assets.filter(a => new Date(a.entryDate).getFullYear() === reportYear);
 
-  // Fix: Comparison with overlapping types 'Admin' | 'Executive'
-  const canManage = currentUser.role === 'Admin' || currentUser.role === 'Executive';
+  // Permission Check
+  const perms = currentUser.permissions || getPermissionsForRole(currentUser.role);
+  const canDelete = perms.delete_records || currentUser.role === 'Admin';
 
   // Specific check for the Land category
   const isLandAsset = formData.category?.toLowerCase().includes('land') || formData.category?.toLowerCase().includes('building');
@@ -831,7 +832,7 @@ const AssetRegistry: React.FC<AssetRegistryProps> = ({ currentUser, assets, cate
                                      >
                                          <Pencil size={16} />
                                      </button>
-                                     {canManage && (
+                                     {canDelete && (
                                         <button 
                                             onClick={(e) => handleDelete(asset.id, e)}
                                             className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"

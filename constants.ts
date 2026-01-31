@@ -1,5 +1,5 @@
 
-import { CitizenRequest, RequestPriority, RequestStatus, Asset, House, AssetCategory, AssetStatusConfig, GaragePermit, User, TemplateFieldPos } from './types';
+import { CitizenRequest, RequestPriority, RequestStatus, Asset, House, AssetCategory, AssetStatusConfig, GaragePermit, User, TemplateFieldPos, UserPermissions } from './types';
 
 export const DEFAULT_ASSET_CATEGORIES: AssetCategory[] = [
   { id: 'cat_isl', name: 'Inhabited Islands, Coral Reefs & Living Seeds', nameDh: 'މީހުން ދިރިއުޅޭ ރަށްތައް، ފަރުތައް އަދި ދިރޭ ތަކެތި', code: '01' },
@@ -20,6 +20,29 @@ export const DEFAULT_ASSET_STATUSES: AssetStatusConfig[] = [
   { id: 'sts_sold', name: 'Sold', color: 'bg-blue-100 text-blue-800 border-blue-200' },
 ];
 
+// Helper to generate defaults based on legacy role
+export const getPermissionsForRole = (role: string): UserPermissions => {
+    switch(role) {
+        case 'Admin':
+        case 'Executive':
+            return {
+                dashboard: true, requests: true, hudha: true, houses: true, assets: true, garage: true, analytics: true, settings: true,
+                manage_users: role === 'Admin', delete_records: true
+            };
+        case 'Senior Management':
+            return {
+                dashboard: true, requests: true, hudha: true, houses: true, assets: true, garage: true, analytics: false, settings: true,
+                manage_users: false, delete_records: false
+            };
+        case 'Staff':
+        default:
+            return {
+                dashboard: true, requests: true, hudha: true, houses: true, assets: false, garage: true, analytics: false, settings: true,
+                manage_users: false, delete_records: false
+            };
+    }
+};
+
 export const MOCK_STAFF: User[] = [
   {
     id: 'ADM-001',
@@ -31,7 +54,8 @@ export const MOCK_STAFF: User[] = [
     address: 'Council Secretariat',
     idNo: 'A000000',
     joinedDate: '2023-01-01',
-    password: 'admin' // Default password for initial access
+    password: 'admin',
+    permissions: getPermissionsForRole('Admin')
   },
   {
     id: 'USR-001',
@@ -43,7 +67,8 @@ export const MOCK_STAFF: User[] = [
     address: 'H. Noon Villa, Male',
     idNo: 'A101010',
     joinedDate: '2023-01-15',
-    password: 'password123'
+    password: 'password123',
+    permissions: getPermissionsForRole('Senior Management')
   },
   {
     id: 'USR-002',
@@ -55,7 +80,8 @@ export const MOCK_STAFF: User[] = [
     address: 'M. Blue Sky, Male',
     idNo: 'A202020',
     joinedDate: '2022-12-01',
-    password: 'password123'
+    password: 'password123',
+    permissions: getPermissionsForRole('Executive')
   },
   {
     id: 'USR-003',
@@ -67,7 +93,8 @@ export const MOCK_STAFF: User[] = [
     address: 'Rose Garden',
     idNo: 'A303030',
     joinedDate: '2024-01-01',
-    password: 'password123'
+    password: 'password123',
+    permissions: getPermissionsForRole('Staff')
   }
 ];
 

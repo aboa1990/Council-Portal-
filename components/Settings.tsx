@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { User, UserRole, AssetCategory, AssetStatusConfig, SystemConfig, TemplateFieldPos, AccessLog } from '../types';
+import { User, UserRole, AssetCategory, AssetStatusConfig, SystemConfig, TemplateFieldPos, AccessLog, UserPermissions } from '../types';
 import { 
   UserCircle, Upload, Save, Plus, Trash2, Shield, Mail, Check, Camera, X, Layers, 
   Activity, Globe, Key, FileBadge, Briefcase, UserSquare2, FileText, Layout, 
@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { isSupabaseConfigured, testConnection } from '../services/supabaseService';
-import { DEFAULT_FIELD_POSITIONS } from '../constants';
+import { DEFAULT_FIELD_POSITIONS, getPermissionsForRole } from '../constants';
 
 interface SettingsProps {
   currentUser: User;
@@ -61,7 +61,6 @@ const Settings: React.FC<SettingsProps> = ({
   const logoInputRef = useRef<HTMLInputElement>(null);
   const fontInputRef = useRef<HTMLInputElement>(null);
   const templateInputRef = useRef<HTMLInputElement>(null);
-  const importDatabaseRef = useRef<HTMLInputElement>(null);
   const [showSuccess, setShowSuccess] = useState(false);
 
   // Connection Test State
@@ -82,6 +81,8 @@ const Settings: React.FC<SettingsProps> = ({
     rcNo: '',
     idNo: ''
   });
+  // Local state for permissions checkbox editing
+  const [editingPermissions, setEditingPermissions] = useState<UserPermissions>(getPermissionsForRole('Staff'));
 
   // General Settings State - Safe Initialization
   const [localSystemConfig, setLocalSystemConfig] = useState<SystemConfig>(() => {
@@ -146,7 +147,16 @@ const Settings: React.FC<SettingsProps> = ({
   }, [systemConfig]);
 
   const [generalSuccess, setGeneralSuccess] = useState(false);
-  const [selectedField, setSelectedField] = useState<string | null>(null);
+  
+  // Category & Status Editing State
+  const [localCategories, setLocalCategories] = useState<AssetCategory[]>(assetCategories);
+  const [localStatuses, setLocalStatuses] = useState<AssetStatusConfig[]>(assetStatuses);
+
+  // Sync props to local state when tab opens/props change
+  useEffect(() => {
+      setLocalCategories(assetCategories);
+      setLocalStatuses(assetStatuses);
+  }, [assetCategories, assetStatuses]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -219,7 +229,6 @@ const Settings: React.FC<SettingsProps> = ({
               canvas.height = height;
               ctx?.drawImage(img, 0, 0, width, height);
               
-              // Ensure we use high quality JPEG compression to keep DB size down
               const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
               
               setLocalSystemConfig(prev => ({
@@ -282,11 +291,8 @@ const Settings: React.FC<SettingsProps> = ({
     }
 
     onUpdateUser(updatedUser);
-    
-    // Clear password fields on success
     setNewPassword('');
     setConfirmPassword('');
-    
     setShowSuccess(true);
     setTimeout(() => setShowSuccess(false), 3000);
   };
@@ -301,18 +307,20 @@ const Settings: React.FC<SettingsProps> = ({
       }
   };
 
-  const handleTestConnection = async () => {
-      setTestingConnection(true);
-      const result = await testConnection();
-      setConnectionStatus(result);
-      setTestingConnection(false);
-      setTimeout(() => setConnectionStatus(null), 10000);
+  const handleSaveConfig = () => {
+      if (onUpdateCategories) onUpdateCategories(localCategories);
+      if (onUpdateStatuses) onUpdateStatuses(localStatuses);
+      if (onUpdateSystemConfig) onUpdateSystemConfig(localSystemConfig);
+      onAddAccessLog?.('Asset Config Updated', 'Updated asset categories, statuses, or codes.');
+      setGeneralSuccess(true);
+      setTimeout(() => setGeneralSuccess(false), 3000);
   };
 
   const openStaffModal = (staff?: User) => {
     if (staff) {
       setEditingStaffId(staff.id);
       setNewStaff(staff);
+      setEditingPermissions(staff.permissions || getPermissionsForRole(staff.role));
     } else {
       setEditingStaffId(null);
       setNewStaff({
@@ -320,26 +328,38 @@ const Settings: React.FC<SettingsProps> = ({
         designation: '', address: '', rcNo: '', idNo: '', 
         avatar: ''
       });
+      setEditingPermissions(getPermissionsForRole('Staff'));
     }
     setIsStaffModalOpen(true);
+  };
+
+  const handleRoleChange = (role: UserRole) => {
+      setNewStaff({ ...newStaff, role });
+      setEditingPermissions(getPermissionsForRole(role));
+  };
+
+  const handlePermissionToggle = (key: keyof UserPermissions) => {
+      setEditingPermissions(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
   const handleSaveStaff = (e: React.FormEvent) => {
     e.preventDefault();
     if (!onUpdateStaff) return;
 
+    const userWithPermissions = { ...newStaff, permissions: editingPermissions } as User;
+
     if (editingStaffId) {
       const original = staffMembers.find(s => s.id === editingStaffId);
       if (original && original.role !== newStaff.role) {
         onAddAccessLog?.('Role Changed', `Role for ${newStaff.name} updated from ${original.role} to ${newStaff.role}`);
       }
-      onUpdateStaff(staffMembers.map(s => s.id === editingStaffId ? { ...s, ...newStaff } as User : s));
+      onUpdateStaff(staffMembers.map(s => s.id === editingStaffId ? { ...s, ...userWithPermissions } : s));
     } else {
       const staffToAdd: User = {
-        ...newStaff,
+        ...userWithPermissions,
         id: `USR-${Math.floor(Math.random() * 1000)}`,
         joinedDate: new Date().toISOString().split('T')[0]
-      } as User;
+      };
       onUpdateStaff([staffToAdd, ...staffMembers]);
       onAddAccessLog?.('Staff Added', `New staff member ${staffToAdd.name} registered as ${staffToAdd.role}`);
     }
@@ -358,58 +378,11 @@ const Settings: React.FC<SettingsProps> = ({
     }
   };
 
-  const handleExportDatabase = () => {
-      const data = {
-          requests: localStorage.getItem('civicpulse_requests'),
-          assets: localStorage.getItem('civicpulse_assets'),
-          houses: localStorage.getItem('civicpulse_houses'),
-          garage_permits: localStorage.getItem('civicpulse_garage_permits'),
-          staff: localStorage.getItem('civicpulse_staff'),
-          config: localStorage.getItem('civicpulse_config'),
-          logs: localStorage.getItem('civicpulse_logs'),
-          export_date: new Date().toISOString()
-      };
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `civicpulse_backup_${new Date().toISOString().split('T')[0]}.json`;
-      link.click();
-      URL.revokeObjectURL(url);
-      onAddAccessLog?.('Database Exported', 'A full JSON backup of the portal was downloaded.');
-  };
-
-  const handleImportDatabase = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (event) => {
-          try {
-              const data = JSON.parse(event.target?.result as string);
-              if (window.confirm("This will overwrite your current local database with the backup file. Proceed?")) {
-                  if (data.requests) localStorage.setItem('civicpulse_requests', data.requests);
-                  if (data.assets) localStorage.setItem('civicpulse_assets', data.assets);
-                  if (data.houses) localStorage.setItem('civicpulse_houses', data.houses);
-                  if (data.garage_permits) localStorage.setItem('civicpulse_garage_permits', data.garage_permits);
-                  if (data.staff) localStorage.setItem('civicpulse_staff', data.staff);
-                  if (data.config) localStorage.setItem('civicpulse_config', data.config);
-                  if (data.logs) localStorage.setItem('civicpulse_logs', data.logs);
-                  onAddAccessLog?.('Database Restored', 'The portal was restored from a backup file.');
-                  alert("Database restored successfully. The application will now reload.");
-                  window.location.reload();
-              }
-          } catch (err) {
-              alert("Error parsing backup file.");
-          }
-      };
-      reader.readAsText(file);
-  };
-
-  const handleClearDatabase = () => {
-      if (window.confirm("CRITICAL ACTION: This will delete ALL data in the portal (assets, houses, permits, etc) and reset to factory defaults. Are you absolutely sure?")) {
-          localStorage.clear();
-          window.location.reload();
-      }
+  const handleTestConnection = async () => {
+      setTestingConnection(true);
+      const result = await testConnection();
+      setConnectionStatus(result);
+      setTestingConnection(false);
   };
 
   const filteredStaff = staffMembers.filter(s => 
@@ -427,85 +400,20 @@ const Settings: React.FC<SettingsProps> = ({
     }
   };
   
-  const getRoleDescription = (role: string) => {
-      switch(role) {
-          case 'Admin': return 'Full System Access + User Management + Audit Logs';
-          case 'Executive': return 'Full Access + Analytics + Settings (No Logs)';
-          case 'Senior Management': return 'Asset Registry + Requests + Reports';
-          case 'Staff': return 'Basic Access (Requests, Forms, Houses) - No Assets';
-          default: return '';
-      }
-  }
-
-  const isCloudActive = isSupabaseConfigured();
+  const canManageStaff = currentUser.permissions?.manage_users || currentUser.role === 'Admin';
 
   return (
     <div className="animate-fade-in space-y-6 max-w-5xl mx-auto pb-20">
         <div className="flex border-b border-slate-200 overflow-x-auto bg-white rounded-t-xl">
-             <button 
-                onClick={() => setActiveTab('profile')}
-                className={`px-6 py-4 text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === 'profile' ? 'border-teal-600 text-teal-700 bg-teal-50/30' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
-            >
-                <UserCircle size={18} />
-                {t('tab_profile')}
-            </button>
-            {(currentUser.role === 'Admin' || currentUser.role === 'Executive') && (
-              <button 
-                onClick={() => setActiveTab('staff')}
-                className={`px-6 py-4 text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === 'staff' ? 'border-teal-600 text-teal-700 bg-teal-50/30' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
-              >
-                <Users size={18} />
-                Staff Management
-              </button>
-            )}
-            {(currentUser.role === 'Admin') && (
-              <button 
-                onClick={() => setActiveTab('logs')}
-                className={`px-6 py-4 text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === 'logs' ? 'border-teal-600 text-teal-700 bg-teal-50/30' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
-              >
-                <History size={18} />
-                Access Logs
-              </button>
-            )}
-            {(currentUser.role === 'Admin') && (
-                 <button 
-                    onClick={() => setActiveTab('general')}
-                    className={`px-6 py-4 text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === 'general' ? 'border-teal-600 text-teal-700 bg-teal-50/30' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
-                >
-                    <Globe size={18} />
-                    {t('tab_general')}
-                </button>
-            )}
-             {(currentUser.role === 'Admin' || currentUser.role === 'Executive') && (
-                <button 
-                onClick={() => setActiveTab('config')}
-                className={`px-6 py-4 text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === 'config' ? 'border-teal-600 text-teal-700 bg-teal-50/30' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
-                >
-                <ListTree size={18} />
-                {t('tab_config') || "Asset Config"}
-                </button>
-            )}
-            {(currentUser.role === 'Admin' || currentUser.role === 'Executive') && (
-                 <button 
-                    onClick={() => setActiveTab('permit-template')}
-                    className={`px-6 py-4 text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === 'permit-template' ? 'border-teal-600 text-teal-700 bg-teal-50/30' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
-                >
-                    <Layout size={18} />
-                    Permit Template
-                </button>
-            )}
-            {(currentUser.role === 'Admin') && (
-              <button 
-                onClick={() => setActiveTab('data')}
-                className={`px-6 py-4 text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === 'data' ? 'border-teal-600 text-teal-700 bg-teal-50/30' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
-              >
-                <Database size={18} />
-                Data & Storage
-              </button>
-            )}
+             <button onClick={() => setActiveTab('profile')} className={`px-6 py-4 text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === 'profile' ? 'border-teal-600 text-teal-700 bg-teal-50/30' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}><UserCircle size={18} /> {t('tab_profile')}</button>
+            {canManageStaff && <button onClick={() => setActiveTab('staff')} className={`px-6 py-4 text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === 'staff' ? 'border-teal-600 text-teal-700 bg-teal-50/30' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}><Users size={18} /> Staff Management</button>}
+            {(currentUser.role === 'Admin') && <button onClick={() => setActiveTab('logs')} className={`px-6 py-4 text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === 'logs' ? 'border-teal-600 text-teal-700 bg-teal-50/30' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}><History size={18} /> Access Logs</button>}
+            {(currentUser.role === 'Admin') && <button onClick={() => setActiveTab('general')} className={`px-6 py-4 text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === 'general' ? 'border-teal-600 text-teal-700 bg-teal-50/30' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}><Globe size={18} /> {t('tab_general')}</button>}
+             {(currentUser.role === 'Admin' || currentUser.role === 'Executive') && <button onClick={() => setActiveTab('config')} className={`px-6 py-4 text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === 'config' ? 'border-teal-600 text-teal-700 bg-teal-50/30' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}><ListTree size={18} /> {t('tab_config') || "Asset Config"}</button>}
+            {(currentUser.role === 'Admin' || currentUser.role === 'Executive') && <button onClick={() => setActiveTab('permit-template')} className={`px-6 py-4 text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === 'permit-template' ? 'border-teal-600 text-teal-700 bg-teal-50/30' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}><Layout size={18} /> Permit Template</button>}
+            {(currentUser.role === 'Admin') && <button onClick={() => setActiveTab('data')} className={`px-6 py-4 text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === 'data' ? 'border-teal-600 text-teal-700 bg-teal-50/30' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}><Database size={18} /> Data & Storage</button>}
         </div>
 
-        {/* Tab Content Containers */}
         <div className="bg-white rounded-b-xl border-x border-b border-slate-200 p-8 shadow-sm">
             {activeTab === 'profile' && (
                 <div className="space-y-8">
@@ -565,7 +473,6 @@ const Settings: React.FC<SettingsProps> = ({
                                     </div>
                                 </div>
 
-                                {/* Security Section */}
                                 <div className="pt-6 mt-6 border-t border-slate-100">
                                     <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-4">
                                         <Key size={18} className="text-teal-600" /> Security & Password
@@ -619,7 +526,6 @@ const Settings: React.FC<SettingsProps> = ({
                 </div>
             )}
 
-            {/* General Settings Tab content ... */}
             {activeTab === 'general' && (
                 <div className="space-y-8 animate-fade-in">
                     <div className="flex justify-between items-start border-b border-slate-100 pb-4">
@@ -638,84 +544,77 @@ const Settings: React.FC<SettingsProps> = ({
                                 <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">{t('secretariat_label')}</label>
                                 <input type="text" value={localSystemConfig.secretariatName} onChange={(e) => setLocalSystemConfig({...localSystemConfig, secretariatName: e.target.value})} className="w-full border border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-teal-500 outline-none bg-white" />
                             </div>
-                            <div className="md:col-span-2 border-t border-slate-100 pt-6 mt-2">
-                                <h3 className="font-bold text-slate-800 mb-4">Login Screen Branding</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            
+                            <div className="md:col-span-2 border-t border-slate-100 pt-4">
+                                <h4 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2"><Layout size={16}/> Login Screen Branding</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div>
-                                        <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Council Logo</label>
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-16 h-16 bg-slate-100 rounded-lg border border-slate-200 flex items-center justify-center overflow-hidden">
-                                                {localSystemConfig.councilLogo ? (
-                                                    <img src={localSystemConfig.councilLogo} alt="Logo" className="w-full h-full object-contain" />
-                                                ) : (
-                                                    <Building2 className="text-slate-300" />
-                                                )}
-                                            </div>
-                                            <div>
-                                                <button type="button" onClick={() => logoInputRef.current?.click()} className="text-sm bg-white border border-slate-300 px-3 py-1.5 rounded-lg font-medium text-slate-700 hover:bg-slate-50">Upload Logo</button>
-                                                <input type="file" ref={logoInputRef} onChange={handleLogoUpload} className="hidden" accept="image/*" />
-                                                {localSystemConfig.councilLogo && (
-                                                    <button type="button" onClick={() => setLocalSystemConfig(p => ({...p, councilLogo: undefined}))} className="ml-2 text-xs text-red-500 hover:text-red-700">Remove</button>
-                                                )}
-                                            </div>
-                                        </div>
+                                        <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Title Line 1</label>
+                                        <input type="text" value={localSystemConfig.loginTitle || ''} onChange={(e) => setLocalSystemConfig({...localSystemConfig, loginTitle: e.target.value})} placeholder="Digital Governance" className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white" />
                                     </div>
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">App Name / Title</label>
-                                            <input type="text" placeholder="Digital Governance" value={localSystemConfig.loginTitle || ''} onChange={(e) => setLocalSystemConfig({...localSystemConfig, loginTitle: e.target.value})} className="w-full border border-slate-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-teal-500 outline-none bg-white" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Title Highlight (Colored)</label>
-                                            <input type="text" placeholder="Reimagined." value={localSystemConfig.loginHighlight || ''} onChange={(e) => setLocalSystemConfig({...localSystemConfig, loginHighlight: e.target.value})} className="w-full border border-slate-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-teal-500 outline-none bg-white" />
-                                        </div>
+                                    <div>
+                                        <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Highlight Text</label>
+                                        <input type="text" value={localSystemConfig.loginHighlight || ''} onChange={(e) => setLocalSystemConfig({...localSystemConfig, loginHighlight: e.target.value})} placeholder="Reimagined." className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white" />
                                     </div>
-                                    <div className="md:col-span-2">
-                                        <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Subtitle / Welcome Message</label>
-                                        <textarea value={localSystemConfig.loginSubtitle || ''} onChange={(e) => setLocalSystemConfig({...localSystemConfig, loginSubtitle: e.target.value})} className="w-full border border-slate-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-teal-500 outline-none bg-white resize-none h-20" placeholder="Welcome to the official Council Portal..." />
+                                    <div>
+                                        <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Subtitle</label>
+                                        <input type="text" value={localSystemConfig.loginSubtitle || ''} onChange={(e) => setLocalSystemConfig({...localSystemConfig, loginSubtitle: e.target.value})} placeholder="Welcome to the portal..." className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white" />
                                     </div>
                                 </div>
                             </div>
-                             {/* Font Upload Section */}
-                             <div className="md:col-span-2 border-t border-slate-100 pt-6 mt-2">
-                                <h3 className="font-bold text-slate-800 mb-4">Custom Fonts</h3>
-                                <div>
-                                    <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1.5">Dhivehi Font (.ttf, .otf, .woff)</label>
-                                    <div className="flex items-center gap-4">
-                                        <div className="flex-1 border border-slate-300 rounded-lg px-4 py-2 bg-slate-50 text-sm text-slate-600 truncate">
-                                            {localSystemConfig.customDhivehiFontName || "Default (Noto Sans Thaana)"}
+
+                            <div className="md:col-span-2 border-t border-slate-100 pt-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-3">Council Logo</label>
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-16 h-16 bg-slate-100 border border-slate-300 rounded-lg flex items-center justify-center overflow-hidden">
+                                                {localSystemConfig.councilLogo ? <img src={localSystemConfig.councilLogo} className="w-full h-full object-contain" /> : <Building2 size={24} className="text-slate-400"/>}
+                                            </div>
+                                            <div>
+                                                <button type="button" onClick={() => logoInputRef.current?.click()} className="text-xs bg-slate-800 text-white px-3 py-2 rounded-lg font-bold hover:bg-slate-900 transition-colors flex items-center gap-2">
+                                                    <Upload size={14}/> Upload New Logo
+                                                </button>
+                                                <input type="file" ref={logoInputRef} onChange={handleLogoUpload} className="hidden" accept="image/*" />
+                                                <p className="text-[10px] text-slate-400 mt-1">Recommended: PNG with transparent background</p>
+                                            </div>
                                         </div>
-                                        <button type="button" onClick={() => fontInputRef.current?.click()} className="text-sm bg-white border border-slate-300 px-3 py-2 rounded-lg font-medium text-slate-700 hover:bg-slate-50">Upload Font</button>
-                                        <input type="file" ref={fontInputRef} onChange={handleFontUpload} className="hidden" accept=".ttf,.otf,.woff,.woff2" />
-                                        {localSystemConfig.customDhivehiFont && (
-                                            <button type="button" onClick={() => setLocalSystemConfig(p => ({...p, customDhivehiFont: undefined, customDhivehiFontName: undefined}))} className="text-xs text-red-500 hover:text-red-700">Reset</button>
-                                        )}
                                     </div>
-                                    <p className="text-xs text-slate-400 mt-2">This font will be applied automatically when the interface language is switched to Dhivehi.</p>
+                                    <div>
+                                        <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-3">Custom Font (Dhivehi)</label>
+                                        <div className="flex items-center gap-4">
+                                            <div className="flex-1 bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs font-mono text-slate-600 truncate">
+                                                {localSystemConfig.customDhivehiFontName || 'Default: Noto Sans Thaana'}
+                                            </div>
+                                            <button type="button" onClick={() => fontInputRef.current?.click()} className="text-xs bg-white border border-slate-300 text-slate-700 px-3 py-2 rounded-lg font-bold hover:bg-slate-50 transition-colors">
+                                                Upload .WOFF2
+                                            </button>
+                                            <input type="file" ref={fontInputRef} onChange={handleFontUpload} className="hidden" accept=".woff2,.ttf,.otf" />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <div className="pt-4">
+                        <div className="pt-4 flex items-center gap-4">
                             <button type="submit" className="bg-teal-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-teal-700 flex items-center gap-2 shadow-lg">
                                 <Save size={16} /> Save Configuration
                             </button>
+                            {generalSuccess && <span className="text-emerald-600 text-sm font-bold flex items-center gap-2 animate-in fade-in"><CheckCircle2 size={16}/> Saved</span>}
                         </div>
                     </form>
                 </div>
             )}
-
+            
             {activeTab === 'config' && (
-                <div className="space-y-8 animate-fade-in">
-                     {/* ... config content ... */}
-                     <div className="flex justify-between items-start border-b border-slate-100 pb-4">
-                        <div>
-                            <h2 className="text-xl font-bold text-slate-900">{t('tab_config') || "Asset Configuration"}</h2>
-                            <p className="text-sm text-slate-500">{t('config_subtitle') || "Manage system codes and categories."}</p>
-                        </div>
-                    </div>
-
-                    {/* Inventory Prefix Section */}
-                    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+               <div className="space-y-8 animate-fade-in">
+                   <div className="flex justify-between items-start border-b border-slate-100 pb-4">
+                       <div>
+                           <h2 className="text-xl font-bold text-slate-900">{t('tab_config') || "Asset Configuration"}</h2>
+                           <p className="text-sm text-slate-500">{t('config_subtitle') || "Manage system codes and categories."}</p>
+                       </div>
+                   </div>
+                   
+                   <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                          <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
                             <Tag size={18} className="text-teal-600" />
                             Global Inventory Settings
@@ -729,124 +628,84 @@ const Settings: React.FC<SettingsProps> = ({
                                     value={localSystemConfig.inventoryPrefix || '258'}
                                     onChange={(e) => setLocalSystemConfig({...localSystemConfig, inventoryPrefix: e.target.value})}
                                 />
-                                <button onClick={handleSaveGeneral} className="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-teal-700">Update</button>
                             </div>
                             <p className="text-xs text-slate-400 mt-2">This code (e.g., 258) is used as the prefix for all asset IDs (e.g., 258-2024-01-001).</p>
                          </div>
                     </div>
 
-                    {/* Categories Section */}
-                    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                                <Layers size={18} className="text-teal-600" />
-                                Asset Categories & Codes
-                            </h3>
-                            <button 
-                                onClick={() => {
-                                    if(onUpdateCategories) onUpdateCategories([...assetCategories, { id: `cat_${Date.now()}`, name: 'New Category', code: '99' }]);
-                                }}
-                                className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg font-bold flex items-center gap-1"
-                            >
-                                <Plus size={12}/> Add Category
-                            </button>
-                        </div>
-                        <div className="space-y-2">
-                            {assetCategories.map((cat, idx) => (
-                                <div key={cat.id} className="flex items-center gap-3">
-                                    <input 
-                                        type="text" 
-                                        value={cat.name} 
-                                        onChange={(e) => {
-                                            const newCats = [...assetCategories];
-                                            newCats[idx].name = e.target.value;
-                                            if(onUpdateCategories) onUpdateCategories(newCats);
-                                        }}
-                                        className="flex-1 border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 outline-none bg-white"
-                                        placeholder="Category Name"
-                                    />
-                                    <input 
-                                        type="text" 
-                                        value={cat.code} 
-                                        onChange={(e) => {
-                                            const newCats = [...assetCategories];
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {/* Asset Categories */}
+                        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                            <div className="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+                                <h3 className="font-bold text-slate-800">Asset Categories</h3>
+                                <button 
+                                    onClick={() => setLocalCategories([...localCategories, { id: `cat_${Date.now()}`, name: 'New Category', code: '00', nameDh: '' }])}
+                                    className="text-xs bg-white border border-slate-300 px-2 py-1 rounded hover:bg-slate-50 font-bold"
+                                >
+                                    + Add
+                                </button>
+                            </div>
+                            <div className="max-h-80 overflow-y-auto p-4 space-y-3">
+                                {localCategories.map((cat, idx) => (
+                                    <div key={cat.id} className="flex items-center gap-2">
+                                        <input type="text" className="w-12 border border-slate-300 rounded px-2 py-1 text-xs font-mono text-center bg-white" value={cat.code} onChange={(e) => {
+                                            const newCats = [...localCategories];
                                             newCats[idx].code = e.target.value;
-                                            if(onUpdateCategories) onUpdateCategories(newCats);
-                                        }}
-                                        className="w-24 border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 outline-none font-mono text-center bg-white"
-                                        placeholder="Code"
-                                    />
-                                    <button 
-                                        onClick={() => {
-                                             if(onUpdateCategories) onUpdateCategories(assetCategories.filter(c => c.id !== cat.id));
-                                        }}
-                                        className="p-2 text-slate-400 hover:text-red-600"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
-                                </div>
-                            ))}
+                                            setLocalCategories(newCats);
+                                        }} />
+                                        <input type="text" className="flex-1 border border-slate-300 rounded px-2 py-1 text-xs bg-white" value={cat.name} onChange={(e) => {
+                                            const newCats = [...localCategories];
+                                            newCats[idx].name = e.target.value;
+                                            setLocalCategories(newCats);
+                                        }} />
+                                        <button onClick={() => setLocalCategories(localCategories.filter(c => c.id !== cat.id))} className="text-red-400 hover:text-red-600"><X size={14}/></button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Asset Statuses */}
+                        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                            <div className="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+                                <h3 className="font-bold text-slate-800">Asset Statuses</h3>
+                                <button 
+                                    onClick={() => setLocalStatuses([...localStatuses, { id: `sts_${Date.now()}`, name: 'New Status', color: 'bg-slate-100 text-slate-800' }])}
+                                    className="text-xs bg-white border border-slate-300 px-2 py-1 rounded hover:bg-slate-50 font-bold"
+                                >
+                                    + Add
+                                </button>
+                            </div>
+                            <div className="max-h-80 overflow-y-auto p-4 space-y-3">
+                                {localStatuses.map((sts, idx) => (
+                                    <div key={sts.id} className="flex items-center gap-2">
+                                        <input type="text" className="flex-1 border border-slate-300 rounded px-2 py-1 text-xs bg-white" value={sts.name} onChange={(e) => {
+                                            const newSts = [...localStatuses];
+                                            newSts[idx].name = e.target.value;
+                                            setLocalStatuses(newSts);
+                                        }} />
+                                        <input type="text" className="flex-1 border border-slate-300 rounded px-2 py-1 text-xs bg-white" placeholder="Tailwind classes" value={sts.color} onChange={(e) => {
+                                            const newSts = [...localStatuses];
+                                            newSts[idx].color = e.target.value;
+                                            setLocalStatuses(newSts);
+                                        }} />
+                                        <div className={`w-6 h-6 rounded border border-slate-200 ${sts.color}`}></div>
+                                        <button onClick={() => setLocalStatuses(localStatuses.filter(s => s.id !== sts.id))} className="text-red-400 hover:text-red-600"><X size={14}/></button>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
 
-                     {/* Statuses Section */}
-                    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                                <Palette size={18} className="text-teal-600" />
-                                Asset Statuses
-                            </h3>
-                            <button 
-                                onClick={() => {
-                                    if(onUpdateStatuses) onUpdateStatuses([...assetStatuses, { id: `sts_${Date.now()}`, name: 'New Status', color: 'bg-slate-100 text-slate-800 border-slate-200' }]);
-                                }}
-                                className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg font-bold flex items-center gap-1"
-                            >
-                                <Plus size={12}/> Add Status
-                            </button>
-                        </div>
-                        <div className="space-y-2">
-                            {assetStatuses.map((sts, idx) => (
-                                <div key={sts.id} className="flex items-center gap-3">
-                                    <input 
-                                        type="text" 
-                                        value={sts.name} 
-                                        onChange={(e) => {
-                                            const newSts = [...assetStatuses];
-                                            newSts[idx].name = e.target.value;
-                                            if(onUpdateStatuses) onUpdateStatuses(newSts);
-                                        }}
-                                        className="flex-1 border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 outline-none bg-white"
-                                        placeholder="Status Name"
-                                    />
-                                    <input 
-                                        type="text" 
-                                        value={sts.color} 
-                                        onChange={(e) => {
-                                            const newSts = [...assetStatuses];
-                                            newSts[idx].color = e.target.value;
-                                            if(onUpdateStatuses) onUpdateStatuses(newSts);
-                                        }}
-                                        className="flex-1 border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 outline-none font-mono text-xs bg-white"
-                                        placeholder="Tailwind Classes"
-                                    />
-                                    <div className={`px-3 py-1 rounded text-xs border ${sts.color}`}>Preview</div>
-                                    <button 
-                                        onClick={() => {
-                                             if(onUpdateStatuses) onUpdateStatuses(assetStatuses.filter(s => s.id !== sts.id));
-                                        }}
-                                        className="p-2 text-slate-400 hover:text-red-600"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
+                    <div className="pt-4 flex items-center gap-4">
+                        <button onClick={handleSaveConfig} className="bg-teal-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-teal-700 flex items-center gap-2 shadow-lg">
+                            <Save size={16} /> Save Configuration
+                        </button>
+                        {generalSuccess && <span className="text-emerald-600 text-sm font-bold flex items-center gap-2 animate-in fade-in"><CheckCircle2 size={16}/> Saved</span>}
                     </div>
                 </div>
             )}
 
-            {/* Staff Tab content... */}
+            {/* Staff Tab content - UPDATED WITH PERMISSIONS */}
             {activeTab === 'staff' && (
                 <div className="space-y-6 animate-fade-in">
                     <div className="flex justify-between items-start border-b border-slate-100 pb-4">
@@ -899,7 +758,6 @@ const Settings: React.FC<SettingsProps> = ({
 
             {activeTab === 'logs' && (
                 <div className="space-y-6 animate-fade-in">
-                    {/* ... log content remains the same ... */}
                     <div className="flex justify-between items-start border-b border-slate-100 pb-4">
                         <div>
                             <h2 className="text-xl font-bold text-slate-900">System Access Logs</h2>
@@ -907,30 +765,23 @@ const Settings: React.FC<SettingsProps> = ({
                         </div>
                         <div className="bg-slate-100 px-3 py-1 rounded-lg text-xs font-mono text-slate-600">Total Records: {accessLogs.length}</div>
                     </div>
-                    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-                        <table className="min-w-full divide-y divide-slate-200">
-                            <thead className="bg-slate-50">
+                    <div className="border border-slate-200 rounded-xl overflow-hidden">
+                        <table className="w-full text-sm text-left">
+                            <thead className="bg-slate-50 text-slate-500 font-medium">
                                 <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Timestamp</th>
-                                    <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">User</th>
-                                    <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Action</th>
-                                    <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Details</th>
+                                    <th className="px-4 py-3">Timestamp</th>
+                                    <th className="px-4 py-3">User</th>
+                                    <th className="px-4 py-3">Action</th>
+                                    <th className="px-4 py-3">Details</th>
                                 </tr>
                             </thead>
-                            <tbody className="bg-white divide-y divide-slate-200">
-                                {accessLogs.slice(0, 50).map((log) => (
+                            <tbody className="divide-y divide-slate-100">
+                                {accessLogs.slice(0, 50).map(log => (
                                     <tr key={log.id} className="hover:bg-slate-50">
-                                        <td className="px-6 py-3 whitespace-nowrap text-xs font-mono text-slate-500">{new Date(log.timestamp).toLocaleString()}</td>
-                                        <td className="px-6 py-3 whitespace-nowrap">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-600">{log.userName.charAt(0)}</div>
-                                                <span className="text-xs font-medium text-slate-700">{log.userName}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-3 whitespace-nowrap">
-                                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${log.action === 'Login' ? 'bg-green-50 text-green-700' : log.action.includes('Delete') ? 'bg-red-50 text-red-700' : 'bg-blue-50 text-blue-700'}`}>{log.action}</span>
-                                        </td>
-                                        <td className="px-6 py-3 text-xs text-slate-600 truncate max-w-xs" title={log.details}>{log.details}</td>
+                                        <td className="px-4 py-2 font-mono text-xs text-slate-500">{new Date(log.timestamp).toLocaleString()}</td>
+                                        <td className="px-4 py-2 font-medium text-slate-700">{log.userName}</td>
+                                        <td className="px-4 py-2"><span className="bg-slate-100 px-2 py-0.5 rounded text-xs border border-slate-200">{log.action}</span></td>
+                                        <td className="px-4 py-2 text-slate-600">{log.details}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -939,220 +790,190 @@ const Settings: React.FC<SettingsProps> = ({
                 </div>
             )}
 
-            {/* Template Designer Tab */}
             {activeTab === 'permit-template' && (
                 <div className="space-y-8 animate-fade-in">
                     <div className="flex justify-between items-start border-b border-slate-100 pb-4">
                         <div>
-                            <h2 className="text-xl font-bold text-slate-900">Official Permit Template Designer</h2>
-                            <p className="text-sm text-slate-500">Overlay dynamic council data onto your high-resolution paper templates.</p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            {generalSuccess && (
-                                <span className="text-emerald-600 flex items-center gap-2 text-sm font-bold animate-in fade-in slide-in-from-right-2">
-                                    <CheckCircle2 size={18} /> Template Saved
-                                </span>
-                            )}
-                            <button onClick={handleRemoveTemplate} className="bg-white border border-red-200 text-red-600 px-3 py-2.5 rounded-xl text-sm font-bold hover:bg-red-50 flex items-center gap-2 transition-all">
-                                <Trash2 size={16} /> Reset
-                            </button>
-                            <button onClick={() => templateInputRef.current?.click()} className="bg-white border border-teal-600 text-teal-700 px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-teal-50 flex items-center gap-2 transition-all">
-                                <Upload size={16} /> Upload Background
-                            </button>
-                            <input type="file" ref={templateInputRef} onChange={handleTemplateUpload} className="hidden" accept="image/*" />
-                            <button onClick={handleSaveGeneral} className="bg-teal-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold hover:bg-teal-700 transition-all flex items-center gap-2 shadow-lg shadow-teal-600/20 active:scale-95">
-                                <Save size={16} /> {generalSuccess ? 'Saved!' : 'Save Template'}
-                            </button>
+                            <h2 className="text-xl font-bold text-slate-900">Permit Template Design</h2>
+                            <p className="text-sm text-slate-500">Customize the layout and text for printed garage permits.</p>
                         </div>
                     </div>
-
-                    {/* Warning if in Local Mode */}
-                    {!isCloudActive && (
-                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
-                            <div className="p-2 bg-amber-100 rounded-full text-amber-700"><AlertTriangle size={18} /></div>
-                            <div>
-                                <h4 className="text-sm font-bold text-amber-800">Local Mode Detected</h4>
-                                <p className="text-xs text-amber-700 mt-1 leading-relaxed">
-                                    You are currently saving changes to this browser's local storage. 
-                                    Templates created here <strong>will not appear on other computers</strong>. 
-                                    To sync templates across devices, please configure a Supabase database connection.
-                                </p>
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                        {/* Editor Canvas */}
-                        <div className="lg:col-span-8 bg-slate-100 rounded-2xl p-6 border border-slate-200 flex flex-col items-center relative min-h-[850px] overflow-hidden">
-                            <div className="mb-2 text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                <Layout size={12} /> Canvas Area: A4 Portrait (210mm x 297mm)
-                            </div>
-                            <div className="bg-white shadow-2xl relative w-[500px] h-[707px] origin-top scale-[0.9] lg:scale-100 overflow-hidden border border-slate-300" id="permit-designer-canvas">
-                                {localSystemConfig.garagePermitTemplate.backgroundImage ? (
-                                    <img src={localSystemConfig.garagePermitTemplate.backgroundImage} className="absolute inset-0 w-full h-full object-fill pointer-events-none" alt="Template" />
-                                ) : (
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-300 gap-4 bg-slate-50 border-2 border-dashed border-slate-200 m-4 rounded-xl">
-                                        <Layout size={64} strokeWidth={1} />
-                                        <p className="text-sm font-medium">Upload background image to begin</p>
-                                    </div>
-                                )}
-
-                                {/* Use localSystemConfig directly which has been merged with defaults */}
-                                {(Object.entries(localSystemConfig.garagePermitTemplate.fieldPositions) as [string, TemplateFieldPos][]).map(([key, pos]) => (
-                                    pos.visible && (
-                                        <div 
-                                            key={key}
-                                            onClick={() => setSelectedField(key)}
-                                            className={`absolute cursor-pointer border px-1.5 py-0.5 select-none transition-all group ${selectedField === key ? 'border-teal-500 bg-teal-50/70 ring-4 ring-teal-500/20 z-20 font-black' : 'border-slate-200/50 hover:border-slate-400 bg-white/40 z-10'}`}
-                                            style={{ 
-                                                top: `${pos.top}%`, 
-                                                left: `${pos.left}%`, 
-                                                fontSize: `${pos.fontSize}px`,
-                                                fontWeight: pos.fontWeight || 'normal',
-                                                textAlign: (pos.textAlign || 'left') as 'left' | 'right' | 'center',
-                                                color: selectedField === key ? '#0d9488' : '#334155',
-                                                width: 'auto',
-                                                minWidth: '100px'
-                                            }}
-                                        >
-                                            <span className="text-[8px] absolute -top-4 left-0 bg-slate-800 text-white px-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">{key}</span>
-                                            {key.toUpperCase()}
-                                        </div>
-                                    )
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Controls Panel */}
-                        <div className="lg:col-span-4 space-y-6">
-                            <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 sticky top-6">
-                                <h3 className="text-sm font-black text-slate-800 mb-6 flex items-center gap-2">
-                                    <SettingsIcon size={18} className="text-teal-600" /> 
-                                    {selectedField ? `Editing: ${selectedField}` : 'Field Inspector'}
-                                </h3>
-
-                                {selectedField ? (
-                                    <div className="space-y-6 animate-in fade-in slide-in-from-right-2">
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Vertical (%)</label>
-                                                <input 
-                                                    type="number" step="0.1"
-                                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white"
-                                                    value={localSystemConfig.garagePermitTemplate.fieldPositions[selectedField].top}
-                                                    onChange={(e) => updateField(selectedField, { top: Number(e.target.value) })}
-                                                />
-                                                <input type="range" min="0" max="100" step="0.5" className="w-full accent-teal-600" 
-                                                    value={localSystemConfig.garagePermitTemplate.fieldPositions[selectedField].top}
-                                                    onChange={(e) => updateField(selectedField, { top: Number(e.target.value) })}
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Horizontal (%)</label>
-                                                <input 
-                                                    type="number" step="0.1"
-                                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white"
-                                                    value={localSystemConfig.garagePermitTemplate.fieldPositions[selectedField].left}
-                                                    onChange={(e) => updateField(selectedField, { left: Number(e.target.value) })}
-                                                />
-                                                <input type="range" min="0" max="100" step="0.5" className="w-full accent-teal-600" 
-                                                    value={localSystemConfig.garagePermitTemplate.fieldPositions[selectedField].left}
-                                                    onChange={(e) => updateField(selectedField, { left: Number(e.target.value) })}
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Text Size (px)</label>
-                                                <input 
-                                                    type="number" 
-                                                    className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white"
-                                                    value={localSystemConfig.garagePermitTemplate.fieldPositions[selectedField].fontSize}
-                                                    onChange={(e) => updateField(selectedField, { fontSize: Number(e.target.value) })}
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Emphasis</label>
-                                                <button 
-                                                    onClick={() => updateField(selectedField, { fontWeight: localSystemConfig.garagePermitTemplate.fieldPositions[selectedField].fontWeight === 'bold' ? 'normal' : 'bold' })}
-                                                    className={`w-full flex items-center justify-center gap-2 py-2 border rounded-lg text-xs font-bold transition-all ${localSystemConfig.garagePermitTemplate.fieldPositions[selectedField].fontWeight === 'bold' ? 'bg-teal-600 border-teal-600 text-white shadow-md' : 'bg-white border-slate-300 text-slate-600 hover:border-slate-400'}`}
-                                                >
-                                                    <Bold size={14} /> Bold
-                                                </button>
-                                            </div>
-                                        </div>
-
+                    
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div className="space-y-6">
+                            <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
+                                <h4 className="font-bold text-slate-800 mb-4">Background & Layout</h4>
+                                <div className="space-y-4">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input 
+                                            type="checkbox" 
+                                            checked={localSystemConfig.garagePermitTemplate.useCustomTemplate} 
+                                            onChange={(e) => setLocalSystemConfig(prev => ({ ...prev, garagePermitTemplate: { ...prev.garagePermitTemplate, useCustomTemplate: e.target.checked } }))} 
+                                            className="w-4 h-4 text-teal-600 rounded" 
+                                        />
+                                        <span className="text-sm font-medium text-slate-700">Use Custom Background Image</span>
+                                    </label>
+                                    
+                                    {localSystemConfig.garagePermitTemplate.useCustomTemplate && (
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Text Alignment</label>
-                                            <div className="flex bg-white rounded-lg border border-slate-300 overflow-hidden">
-                                                <button onClick={() => updateField(selectedField, { textAlign: 'left' })} className={`flex-1 py-2 flex justify-center ${localSystemConfig.garagePermitTemplate.fieldPositions[selectedField].textAlign === 'left' || !localSystemConfig.garagePermitTemplate.fieldPositions[selectedField].textAlign ? 'bg-slate-200 text-slate-900' : 'hover:bg-slate-50 text-slate-500'}`}><AlignLeft size={16}/></button>
-                                                <button onClick={() => updateField(selectedField, { textAlign: 'center' })} className={`flex-1 py-2 flex justify-center border-x border-slate-300 ${localSystemConfig.garagePermitTemplate.fieldPositions[selectedField].textAlign === 'center' ? 'bg-slate-200 text-slate-900' : 'hover:bg-slate-50 text-slate-500'}`}><AlignCenter size={16}/></button>
-                                                <button onClick={() => updateField(selectedField, { textAlign: 'right' })} className={`flex-1 py-2 flex justify-center ${localSystemConfig.garagePermitTemplate.fieldPositions[selectedField].textAlign === 'right' ? 'bg-slate-200 text-slate-900' : 'hover:bg-slate-50 text-slate-500'}`}><AlignRight size={16}/></button>
-                                            </div>
-                                        </div>
-
-                                        <button 
-                                            onClick={() => updateField(selectedField, { visible: false })}
-                                            className="w-full py-2.5 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl border border-red-100 flex items-center justify-center gap-2 transition-colors"
-                                        >
-                                            <XCircle size={14} /> Hide Field From Printing
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <div className="text-xs text-slate-400 italic text-center py-10 bg-white rounded-xl border border-dashed border-slate-200">
-                                        Click any dynamic field on the left to adjust its printing properties.
-                                    </div>
-                                )}
-                                
-                                <div className="mt-8 pt-6 border-t border-slate-200">
-                                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                        <Layers size={14} /> Template Layers
-                                    </h4>
-                                    <div className="space-y-1 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                                        {Object.keys(localSystemConfig.garagePermitTemplate.fieldPositions).map(field => (
-                                            <div 
-                                                key={field} 
-                                                className={`flex items-center justify-between p-2.5 rounded-xl border cursor-pointer transition-all ${selectedField === field ? 'bg-teal-50 border-teal-300 shadow-sm' : 'bg-white border-slate-100 hover:border-slate-300'}`} 
-                                                onClick={() => setSelectedField(field)}
-                                            >
-                                                <span className="text-[10px] font-black text-slate-600 uppercase tracking-tight">{field}</span>
-                                                <div className="flex items-center gap-2">
-                                                    <button 
-                                                        onClick={(e) => { e.stopPropagation(); updateField(field, { visible: !localSystemConfig.garagePermitTemplate.fieldPositions[field].visible }); }}
-                                                        className={`p-1 rounded-md transition-colors ${localSystemConfig.garagePermitTemplate.fieldPositions[field].visible ? 'text-teal-600 bg-teal-50 hover:bg-teal-100' : 'text-slate-300 bg-slate-50 hover:bg-slate-100'}`}
-                                                    >
-                                                        <Eye size={14} />
-                                                    </button>
+                                            {localSystemConfig.garagePermitTemplate.backgroundImage ? (
+                                                <div className="relative w-32 h-44 bg-white border border-slate-300 rounded overflow-hidden group">
+                                                    <img src={localSystemConfig.garagePermitTemplate.backgroundImage} className="w-full h-full object-contain" />
+                                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                        <button onClick={handleRemoveTemplate} className="text-white hover:text-red-300"><Trash2 size={20}/></button>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ))}
-                                    </div>
+                                            ) : (
+                                                <div className="w-full h-32 border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center text-slate-400 gap-2 cursor-pointer hover:border-teal-500 hover:text-teal-500 transition-colors" onClick={() => templateInputRef.current?.click()}>
+                                                    <Upload size={24} />
+                                                    <span className="text-xs">Upload A4 Background (JPG)</span>
+                                                </div>
+                                            )}
+                                            <input type="file" ref={templateInputRef} onChange={handleTemplateUpload} className="hidden" accept="image/jpeg,image/png" />
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
-                            <div className="p-5 bg-teal-900 text-white rounded-2xl shadow-xl shadow-teal-900/20">
-                                <h4 className="text-xs font-black uppercase tracking-widest mb-2 flex items-center gap-2"><Info size={14}/> Usage Instructions</h4>
-                                <ul className="text-[10px] space-y-2 opacity-90 leading-relaxed font-medium">
-                                    <li className="flex items-start gap-2"><Check size={10} className="mt-0.5 text-emerald-400"/> Position fields relative to the corners of your scanned paper.</li>
-                                    <li className="flex items-start gap-2"><Check size={10} className="mt-0.5 text-emerald-400"/> Use "Text Alignment" for Right-to-Left (Thaana) support.</li>
-                                    <li className="flex items-start gap-2"><Check size={10} className="mt-0.5 text-emerald-400"/> Coordinates are in percentages for responsiveness across devices.</li>
-                                </ul>
+                            <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
+                                <h4 className="font-bold text-slate-800 mb-4">Template Text Content</h4>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Permit Title</label>
+                                        <input type="text" className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" value={localSystemConfig.garagePermitTemplate.title} onChange={(e) => setLocalSystemConfig(prev => ({ ...prev, garagePermitTemplate: { ...prev.garagePermitTemplate, title: e.target.value } }))} />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Declaration Text</label>
+                                        <textarea className="w-full border border-slate-300 rounded px-3 py-2 text-sm h-24 resize-none bg-white" value={localSystemConfig.garagePermitTemplate.declaration} onChange={(e) => setLocalSystemConfig(prev => ({ ...prev, garagePermitTemplate: { ...prev.garagePermitTemplate, declaration: e.target.value } }))} />
+                                    </div>
+                                </div>
                             </div>
+                        </div>
+
+                        <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 h-[600px] overflow-y-auto">
+                            <h4 className="font-bold text-slate-800 mb-4 flex justify-between items-center">
+                                Field Positioning
+                                <span className="text-xs font-normal text-slate-500 bg-white px-2 py-1 rounded border border-slate-200">Values in % (Top/Left)</span>
+                            </h4>
+                            <div className="space-y-2">
+                                {Object.entries(localSystemConfig.garagePermitTemplate.fieldPositions).map(([key, value]) => {
+                                    const pos = value as TemplateFieldPos;
+                                    return (
+                                    <div key={key} className="bg-white p-3 rounded border border-slate-200 text-xs">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <span className="font-bold text-slate-700 capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                                            <label className="flex items-center gap-1 cursor-pointer">
+                                                <input type="checkbox" checked={pos.visible} onChange={(e) => updateField(key, { visible: e.target.checked })} className="w-3 h-3" />
+                                                <span className="text-[10px]">Show</span>
+                                            </label>
+                                        </div>
+                                        {pos.visible && (
+                                            <div className="grid grid-cols-3 gap-2">
+                                                <div className="flex items-center gap-1">
+                                                    <span className="text-slate-400">T:</span>
+                                                    <input type="number" className="w-full border border-slate-300 rounded px-1 bg-white" value={pos.top} onChange={(e) => updateField(key, { top: Number(e.target.value) })} />
+                                                </div>
+                                                <div className="flex items-center gap-1">
+                                                    <span className="text-slate-400">L:</span>
+                                                    <input type="number" className="w-full border border-slate-300 rounded px-1 bg-white" value={pos.left} onChange={(e) => updateField(key, { left: Number(e.target.value) })} />
+                                                </div>
+                                                <div className="flex items-center gap-1">
+                                                    <span className="text-slate-400">Sz:</span>
+                                                    <input type="number" className="w-full border border-slate-300 rounded px-1 bg-white" value={pos.fontSize} onChange={(e) => updateField(key, { fontSize: Number(e.target.value) })} />
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="pt-4 flex items-center gap-4">
+                        <button onClick={handleSaveGeneral} className="bg-teal-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-teal-700 flex items-center gap-2 shadow-lg">
+                            <Save size={16} /> Save Template Config
+                        </button>
+                        {generalSuccess && <span className="text-emerald-600 text-sm font-bold flex items-center gap-2 animate-in fade-in"><CheckCircle2 size={16}/> Saved</span>}
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'data' && (
+                <div className="space-y-8 animate-fade-in">
+                    <div className="flex justify-between items-start border-b border-slate-100 pb-4">
+                        <div>
+                            <h2 className="text-xl font-bold text-slate-900">Data & Storage</h2>
+                            <p className="text-sm text-slate-500">Manage cloud connectivity and local backup.</p>
+                        </div>
+                        {isSupabaseConfigured() ? (
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg border border-emerald-100 text-sm font-medium">
+                                <Cloud size={16} /> Cloud Active
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 text-amber-700 rounded-lg border border-amber-100 text-sm font-medium">
+                                <Database size={16} /> Local Only
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
+                            <h4 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><Cloud size={18}/> Cloud Connection</h4>
+                            <p className="text-sm text-slate-600 mb-6">
+                                Test the connection to the Supabase backend. This ensures data is safely synced to the cloud.
+                            </p>
+                            <button 
+                                onClick={handleTestConnection}
+                                disabled={testingConnection}
+                                className="bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-100 flex items-center gap-2 w-full justify-center"
+                            >
+                                {testingConnection ? <Loader2 className="animate-spin" size={16}/> : <PlugZap size={16}/>}
+                                Test Connection
+                            </button>
+                            {connectionStatus && (
+                                <div className={`mt-4 p-3 rounded-lg text-xs font-mono border ${connectionStatus.success ? 'bg-emerald-100 border-emerald-200 text-emerald-800' : 'bg-red-100 border-red-200 text-red-800'}`}>
+                                    {connectionStatus.message}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
+                            <h4 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><Database size={18}/> Local Storage</h4>
+                            <p className="text-sm text-slate-600 mb-6">
+                                Current browser storage usage. Clearing this without cloud sync will result in data loss.
+                            </p>
+                            <div className="flex justify-between items-center mb-4 text-sm font-mono bg-white p-3 rounded border border-slate-200">
+                                <span>Used Storage:</span>
+                                <span>{((JSON.stringify(localStorage).length / 1024) / 1024).toFixed(2)} MB</span>
+                            </div>
+                            <button 
+                                onClick={() => {
+                                    if(window.confirm("WARNING: This will wipe all local data. Only proceed if Cloud Sync is confirmed.")) {
+                                        localStorage.clear();
+                                        window.location.reload();
+                                    }
+                                }}
+                                className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-lg text-sm font-bold hover:bg-red-100 flex items-center gap-2 w-full justify-center"
+                            >
+                                <Trash2 size={16}/> Clear Local Data
+                            </button>
                         </div>
                     </div>
                 </div>
             )}
 
             {isStaffModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto">
+                    <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full my-8">
                         <div className="p-6 border-b border-slate-100 flex justify-between items-center">
                             <h3 className="font-bold text-lg text-slate-800">{editingStaffId ? 'Edit Staff Profile' : 'Register New Staff'}</h3>
                             <button onClick={() => setIsStaffModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X size={20}/></button>
                         </div>
-                        <form onSubmit={handleSaveStaff} className="p-6 space-y-4">
-                            <div className="flex justify-center mb-4">
+                        <form onSubmit={handleSaveStaff} className="p-6 space-y-6">
+                            
+                            {/* Profile Photo */}
+                            <div className="flex justify-center">
                                 <div className="relative group cursor-pointer" onClick={() => staffPhotoInputRef.current?.click()}>
                                     <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden border-2 border-dashed border-slate-300 hover:border-teal-500 transition-colors">
                                         {newStaff.avatar ? <img src={newStaff.avatar} className="w-full h-full object-cover"/> : <Camera size={24} className="text-slate-400"/>}
@@ -1160,14 +981,20 @@ const Settings: React.FC<SettingsProps> = ({
                                     <input type="file" ref={staffPhotoInputRef} onChange={handleStaffPhotoChange} className="hidden" accept="image/*" />
                                 </div>
                             </div>
+
+                            {/* Basic Info */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Full Name</label>
-                                    <input required type="text" className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" value={newStaff.name} onChange={e => setNewStaff({...newStaff, name: e.target.value})} />
+                                    <input required type="text" className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none" value={newStaff.name} onChange={e => setNewStaff({...newStaff, name: e.target.value})} />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Role / Permissions</label>
-                                    <select className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" value={newStaff.role} onChange={e => setNewStaff({...newStaff, role: e.target.value as UserRole})}>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Primary Role</label>
+                                    <select 
+                                        className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none" 
+                                        value={newStaff.role} 
+                                        onChange={e => handleRoleChange(e.target.value as UserRole)}
+                                    >
                                         <option value="Staff">Staff</option>
                                         <option value="Senior Management">Senior Management</option>
                                         <option value="Executive">Executive</option>
@@ -1175,34 +1002,76 @@ const Settings: React.FC<SettingsProps> = ({
                                     </select>
                                 </div>
                             </div>
-                            
-                            {/* Permission Preview Box */}
-                            <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs">
-                                <span className="font-bold text-slate-700 block mb-1">Access Level: {newStaff.role}</span>
-                                <p className="text-slate-600">{getRoleDescription(newStaff.role || 'Staff')}</p>
+
+                            {/* GRANULAR PERMISSIONS SECTION */}
+                            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                                <h4 className="text-xs font-black text-slate-700 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                    <Shield size={14} className="text-teal-600" /> Module Permissions
+                                </h4>
+                                <p className="text-xs text-slate-500 mb-4">Toggle specific access areas for this staff member. Defaults are set based on the selected Role.</p>
+                                
+                                <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" checked={editingPermissions.dashboard} onChange={() => handlePermissionToggle('dashboard')} className="accent-teal-600 rounded" />
+                                        <span className="text-sm font-medium text-slate-700">View Dashboard</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" checked={editingPermissions.requests} onChange={() => handlePermissionToggle('requests')} className="accent-teal-600 rounded" />
+                                        <span className="text-sm font-medium text-slate-700">Requests</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" checked={editingPermissions.hudha} onChange={() => handlePermissionToggle('hudha')} className="accent-teal-600 rounded" />
+                                        <span className="text-sm font-medium text-slate-700">Hudha Forms</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" checked={editingPermissions.houses} onChange={() => handlePermissionToggle('houses')} className="accent-teal-600 rounded" />
+                                        <span className="text-sm font-medium text-slate-700">House Registry</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" checked={editingPermissions.assets} onChange={() => handlePermissionToggle('assets')} className="accent-teal-600 rounded" />
+                                        <span className="text-sm font-medium text-slate-700">Asset Registry</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" checked={editingPermissions.garage} onChange={() => handlePermissionToggle('garage')} className="accent-teal-600 rounded" />
+                                        <span className="text-sm font-medium text-slate-700">Garage Permits</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" checked={editingPermissions.analytics} onChange={() => handlePermissionToggle('analytics')} className="accent-teal-600 rounded" />
+                                        <span className="text-sm font-medium text-slate-700">Analytics</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" checked={editingPermissions.manage_users} onChange={() => handlePermissionToggle('manage_users')} className="accent-red-600 rounded" />
+                                        <span className="text-sm font-bold text-red-700">Manage Staff</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" checked={editingPermissions.delete_records} onChange={() => handlePermissionToggle('delete_records')} className="accent-red-600 rounded" />
+                                        <span className="text-sm font-bold text-red-700">Delete Records</span>
+                                    </label>
+                                </div>
                             </div>
 
+                            {/* Additional Info */}
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Email / Login ID</label>
-                                <input required type="email" className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" value={newStaff.email} onChange={e => setNewStaff({...newStaff, email: e.target.value})} />
+                                <input required type="email" className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none" value={newStaff.email} onChange={e => setNewStaff({...newStaff, email: e.target.value})} />
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Designation</label>
-                                <input type="text" className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" value={newStaff.designation} onChange={e => setNewStaff({...newStaff, designation: e.target.value})} />
+                                <input type="text" className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none" value={newStaff.designation} onChange={e => setNewStaff({...newStaff, designation: e.target.value})} />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Staff ID (RC)</label>
-                                    <input type="text" className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" value={newStaff.rcNo} onChange={e => setNewStaff({...newStaff, rcNo: e.target.value})} />
+                                    <input type="text" className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none" value={newStaff.rcNo} onChange={e => setNewStaff({...newStaff, rcNo: e.target.value})} />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Password</label>
-                                    <input type="password" placeholder="Leave blank to keep current" className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white" value={newStaff.password} onChange={e => setNewStaff({...newStaff, password: e.target.value})} />
+                                    <input type="password" placeholder="Leave blank to keep current" className="w-full border border-slate-300 rounded px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-teal-500 outline-none" value={newStaff.password} onChange={e => setNewStaff({...newStaff, password: e.target.value})} />
                                 </div>
                             </div>
-                            <div className="pt-4 flex justify-end gap-2">
+                            <div className="pt-4 flex justify-end gap-2 border-t border-slate-100">
                                 <button type="button" onClick={() => setIsStaffModalOpen(false)} className="px-4 py-2 text-sm font-bold text-slate-600 bg-slate-100 rounded hover:bg-slate-200">Cancel</button>
-                                <button type="submit" className="px-6 py-2 text-sm font-bold text-white bg-teal-600 rounded hover:bg-teal-700">Save Staff</button>
+                                <button type="submit" className="px-6 py-2 text-sm font-bold text-white bg-teal-600 rounded hover:bg-teal-700 shadow-sm">Save Staff</button>
                             </div>
                         </form>
                     </div>

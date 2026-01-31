@@ -1,34 +1,44 @@
 
 import React from 'react';
 import { LayoutDashboard, FileText, BarChart3, Settings, Building2, LogOut, Box, Users, Home, Globe, Hexagon, Car, Database, Cloud, CloudOff, RefreshCw, ClipboardList } from 'lucide-react';
-import { ViewState, UserRole, SystemConfig } from '../types';
+import { ViewState, UserRole, SystemConfig, UserPermissions, User } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
+import { getPermissionsForRole } from '../constants';
 
 interface SidebarProps {
   currentView: ViewState;
   onChangeView: (view: ViewState) => void;
   userRole: UserRole;
+  currentUser?: User;
   onLogout: () => void;
   systemConfig: SystemConfig;
   syncStatus?: 'idle' | 'syncing' | 'synced' | 'error' | 'local';
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, userRole, onLogout, systemConfig, syncStatus = 'local' }) => {
+const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, userRole, currentUser, onLogout, systemConfig, syncStatus = 'local' }) => {
   const { t, language, setLanguage, isRTL } = useLanguage();
   
+  // Define menu items with their corresponding permission keys
   const allNavItems = [
-    { id: 'dashboard', label: t('nav_dashboard'), icon: LayoutDashboard, roles: ['Admin', 'Executive', 'Senior Management', 'Staff'] },
-    { id: 'requests', label: t('nav_requests'), icon: FileText, roles: ['Admin', 'Executive', 'Senior Management', 'Staff'] },
-    { id: 'hudha', label: t('nav_hudha'), icon: ClipboardList, roles: ['Admin', 'Executive', 'Senior Management', 'Staff'] },
-    { id: 'houses', label: t('nav_houses'), icon: Home, roles: ['Admin', 'Executive', 'Senior Management', 'Staff'] },
-    { id: 'assets', label: t('nav_assets'), icon: Box, roles: ['Admin', 'Executive', 'Senior Management'] },
-    { id: 'garage', label: t('nav_garage'), icon: Car, roles: ['Admin', 'Executive', 'Senior Management', 'Staff'] },
-    { id: 'analytics', label: t('nav_analytics'), icon: BarChart3, roles: ['Admin', 'Executive'] },
-    // Enabled 'Staff' role for Settings so they can access the "My Profile" tab
-    { id: 'settings', label: t('nav_settings'), icon: Settings, roles: ['Admin', 'Executive', 'Senior Management', 'Staff'] },
+    { id: 'dashboard', label: t('nav_dashboard'), icon: LayoutDashboard, permission: 'dashboard' },
+    { id: 'requests', label: t('nav_requests'), icon: FileText, permission: 'requests' },
+    { id: 'hudha', label: t('nav_hudha'), icon: ClipboardList, permission: 'hudha' },
+    { id: 'houses', label: t('nav_houses'), icon: Home, permission: 'houses' },
+    { id: 'assets', label: t('nav_assets'), icon: Box, permission: 'assets' },
+    { id: 'garage', label: t('nav_garage'), icon: Car, permission: 'garage' },
+    { id: 'analytics', label: t('nav_analytics'), icon: BarChart3, permission: 'analytics' },
+    { id: 'settings', label: t('nav_settings'), icon: Settings, permission: 'settings' },
   ];
 
-  const navItems = allNavItems.filter(item => item.roles.includes(userRole));
+  // Logic to determine active permissions. 
+  // Fallback to role-based defaults if 'permissions' object is missing (legacy data support)
+  const activePermissions = currentUser?.permissions || getPermissionsForRole(userRole);
+
+  const navItems = allNavItems.filter(item => {
+      // Cast the string id to the permission key type safely
+      const permKey = item.permission as keyof UserPermissions;
+      return activePermissions[permKey] === true;
+  });
 
   const getSyncBadge = () => {
     switch(syncStatus) {

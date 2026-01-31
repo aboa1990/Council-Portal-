@@ -158,10 +158,25 @@ export interface GaragePermitTemplate {
 
 export type UserRole = 'Admin' | 'Executive' | 'Senior Management' | 'Staff';
 
+export interface UserPermissions {
+  dashboard: boolean;
+  requests: boolean;
+  hudha: boolean;
+  houses: boolean;
+  assets: boolean;
+  garage: boolean;
+  analytics: boolean;
+  settings: boolean;
+  // Specific Actions
+  manage_users: boolean;
+  delete_records: boolean;
+}
+
 export interface User {
   id: string;
   name: string;
   role: UserRole;
+  permissions?: UserPermissions; // Optional for backward compatibility
   avatar?: string;
   email: string;
   password?: string;

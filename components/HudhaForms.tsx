@@ -233,11 +233,11 @@ const HudhaForms: React.FC<HudhaFormsProps> = ({ systemConfig, currentUser, requ
                             <div>
                                 <div className="flex items-center gap-2 mb-2">
                                     <span className="text-xs font-bold uppercase w-24">{t('th_date')}:</span>
-                                    <input type="date" value={reqDate} onChange={e => setReqDate(e.target.value)} className="border-b border-slate-300 focus:outline-none px-1 text-sm bg-transparent" />
+                                    <input type="date" value={reqDate} onChange={e => setReqDate(e.target.value)} className="border-b border-slate-300 focus:outline-none px-1 text-sm bg-white" />
                                 </div>
                                 <div className="flex items-center gap-2 mb-2">
                                     <span className="text-xs font-bold uppercase w-24">{t('th_department')}:</span>
-                                    <input type="text" value={reqDepartment} onChange={e => setReqDepartment(e.target.value)} className="border-b border-slate-300 focus:outline-none px-1 text-sm bg-transparent w-48" />
+                                    <input type="text" value={reqDepartment} onChange={e => setReqDepartment(e.target.value)} className="border-b border-slate-300 focus:outline-none px-1 text-sm bg-white w-48" />
                                 </div>
                             </div>
                             <div className="text-right">
@@ -265,13 +265,13 @@ const HudhaForms: React.FC<HudhaFormsProps> = ({ systemConfig, currentUser, requ
                                     <tr key={item.id}>
                                         <td className="border border-slate-300 px-3 py-2 text-center">{idx + 1}</td>
                                         <td className="border border-slate-300 px-3 py-2">
-                                            <input type="text" className="w-full outline-none bg-transparent" value={item.description} onChange={(e) => updateReqItem(item.id, 'description', e.target.value)} placeholder="Item description..." />
+                                            <input type="text" className="w-full outline-none bg-white" value={item.description} onChange={(e) => updateReqItem(item.id, 'description', e.target.value)} placeholder="Item description..." />
                                         </td>
                                         <td className="border border-slate-300 px-3 py-2">
-                                            <input type="number" className="w-full outline-none bg-transparent text-center" value={item.quantity} onChange={(e) => updateReqItem(item.id, 'quantity', Number(e.target.value))} />
+                                            <input type="number" className="w-full outline-none bg-white text-center" value={item.quantity} onChange={(e) => updateReqItem(item.id, 'quantity', Number(e.target.value))} />
                                         </td>
                                         <td className="border border-slate-300 px-3 py-2">
-                                            <input type="number" className={`w-full outline-none bg-transparent ${isRTL ? 'text-left' : 'text-right'}`} value={item.rate} onChange={(e) => updateReqItem(item.id, 'rate', Number(e.target.value))} />
+                                            <input type="number" className={`w-full outline-none bg-white ${isRTL ? 'text-left' : 'text-right'}`} value={item.rate} onChange={(e) => updateReqItem(item.id, 'rate', Number(e.target.value))} />
                                         </td>
                                         <td className={`border border-slate-300 px-3 py-2 font-medium ${isRTL ? 'text-left' : 'text-right'}`}>
                                             {(item.quantity * item.rate).toFixed(2)}
@@ -298,7 +298,7 @@ const HudhaForms: React.FC<HudhaFormsProps> = ({ systemConfig, currentUser, requ
 
                         <div className="mb-8">
                             <label className="block text-xs font-bold uppercase mb-1">{t('purpose_justification')}:</label>
-                            <textarea className="w-full border border-slate-300 rounded p-2 text-sm h-24 resize-none focus:outline-none focus:border-slate-500 bg-transparent" value={reqPurpose} onChange={(e) => setReqPurpose(e.target.value)}></textarea>
+                            <textarea className="w-full border border-slate-300 rounded p-2 text-sm h-24 resize-none focus:outline-none focus:border-slate-500 bg-white" value={reqPurpose} onChange={(e) => setReqPurpose(e.target.value)}></textarea>
                         </div>
                         
                         <div className="flex justify-end gap-4 mt-8 pt-4 border-t border-slate-200">
@@ -450,7 +450,7 @@ const HudhaForms: React.FC<HudhaFormsProps> = ({ systemConfig, currentUser, requ
                         <span className="text-xs font-bold uppercase w-32 flex-shrink-0">{t('project_item')}:</span>
                         <input 
                             type="text" 
-                            className="w-full border-b border-slate-300 focus:outline-none px-1 text-sm bg-transparent" 
+                            className="w-full border-b border-slate-300 focus:outline-none px-1 text-sm bg-white" 
                             placeholder="Enter project or item name..."
                             value={projectTitle}
                             onChange={(e) => setProjectTitle(e.target.value)}
@@ -478,7 +478,7 @@ const HudhaForms: React.FC<HudhaFormsProps> = ({ systemConfig, currentUser, requ
                                 <td key={i} className="border border-slate-300 px-3 py-2">
                                     <input 
                                         type="text" 
-                                        className="w-full text-center outline-none bg-transparent"
+                                        className="w-full text-center outline-none bg-white"
                                         placeholder={`Supplier ${i+1}`}
                                         value={q.supplier}
                                         onChange={(e) => updateQuotation(i, 'supplier', e.target.value)}
@@ -492,7 +492,7 @@ const HudhaForms: React.FC<HudhaFormsProps> = ({ systemConfig, currentUser, requ
                                 <td key={i} className="border border-slate-300 px-3 py-2">
                                     <input 
                                         type="number" 
-                                        className="w-full text-center outline-none bg-transparent font-medium"
+                                        className="w-full text-center outline-none bg-white font-medium"
                                         placeholder="0.00"
                                         value={q.price}
                                         onChange={(e) => updateQuotation(i, 'price', Number(e.target.value))}
@@ -506,7 +506,7 @@ const HudhaForms: React.FC<HudhaFormsProps> = ({ systemConfig, currentUser, requ
                                 <td key={i} className="border border-slate-300 px-3 py-2">
                                     <input 
                                         type="text" 
-                                        className="w-full text-center outline-none bg-transparent"
+                                        className="w-full text-center outline-none bg-white"
                                         placeholder="e.g. 5 days"
                                         value={q.duration}
                                         onChange={(e) => updateQuotation(i, 'duration', e.target.value)}
@@ -519,7 +519,7 @@ const HudhaForms: React.FC<HudhaFormsProps> = ({ systemConfig, currentUser, requ
                              {quotations.map((q, i) => (
                                 <td key={i} className="border border-slate-300 px-3 py-2">
                                     <textarea 
-                                        className="w-full text-center outline-none bg-transparent resize-none h-16"
+                                        className="w-full text-center outline-none bg-white resize-none h-16"
                                         placeholder="Warranty, specs..."
                                         value={q.comments}
                                         onChange={(e) => updateQuotation(i, 'comments', e.target.value)}
@@ -558,7 +558,7 @@ const HudhaForms: React.FC<HudhaFormsProps> = ({ systemConfig, currentUser, requ
                 <div className="mb-8">
                     <label className="block text-xs font-bold uppercase mb-1">{t('recommendation')}:</label>
                     <textarea 
-                        className="w-full border border-slate-300 rounded p-2 text-sm h-24 resize-none focus:outline-none focus:border-slate-500 bg-transparent"
+                        className="w-full border border-slate-300 rounded p-2 text-sm h-24 resize-none focus:outline-none focus:border-slate-500 bg-white"
                         placeholder="e.g. Lowest price compliant with requirements..."
                         value={selectionReason}
                         onChange={(e) => setSelectionReason(e.target.value)}
